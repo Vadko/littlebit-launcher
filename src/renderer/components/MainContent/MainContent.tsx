@@ -4,6 +4,7 @@ import { useStore } from '../../store/useStore';
 import { GameHero } from './GameHero';
 import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
+import { VideoCard } from './VideoCard';
 import { Button } from '../ui/Button';
 import { InstallationInfo } from '../../types/game';
 
@@ -121,11 +122,30 @@ export const MainContent: React.FC = () => {
         <InfoCard game={selectedGame} />
       </div>
 
+      {selectedGame.videoUrl && (
+        <div className="mb-6">
+          <VideoCard videoUrl={selectedGame.videoUrl} />
+        </div>
+      )}
+
+      {selectedGame.gameDescription && (
+        <div className="glass-card mb-6">
+          <h3 className="text-lg font-head font-semibold text-white mb-3">
+            Про гру
+          </h3>
+          <p className="text-text-muted leading-relaxed whitespace-pre-line">
+            {selectedGame.gameDescription}
+          </p>
+        </div>
+      )}
+
       <div className="glass-card mb-6">
         <h3 className="text-lg font-head font-semibold text-white mb-3">
           Про переклад
         </h3>
-        <p className="text-text-muted leading-relaxed">{selectedGame.description}</p>
+        <p className="text-text-muted leading-relaxed whitespace-pre-line">
+          {selectedGame.description}
+        </p>
       </div>
 
       <div className="space-y-4">

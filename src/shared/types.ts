@@ -14,15 +14,17 @@ export interface Game {
   version: string; // Version of the translation (e.g., "1.0.0", "2024-01-15")
   team: string;
   description: string;
+  gameDescription?: string; // Optional description about the game itself
   downloadUrl: string;
   supportUrl?: string; // Optional URL for supporting the translation (donate, patreon, etc.)
+  videoUrl?: string; // Optional YouTube video URL
   installPaths: {
     steam?: string;
     gog?: string;
     epic?: string;
   };
   targetSubfolder?: string; // Optional subfolder within game directory (e.g., "Data/Translations")
-  status: 'in-progress' | 'done' | 'early-access' | 'funded';
+  status: 'in-progress' | 'completed' | 'early-access' | 'funded';
 }
 
 export interface InstallationInfo {

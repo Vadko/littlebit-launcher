@@ -5,7 +5,7 @@ import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
 import { useStore, useFilteredGames } from '../../store/useStore';
 
-type FilterType = 'all' | 'in-progress' | 'done' | 'early-access';
+type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
 
 export const Sidebar: React.FC = () => {
   const { selectedGame, filter, searchQuery, setSelectedGame, setFilter, setSearchQuery } =
@@ -15,7 +15,7 @@ export const Sidebar: React.FC = () => {
   const filters: { label: string; value: FilterType }[] = [
     { label: 'Усі', value: 'all' },
     { label: 'В процесі', value: 'in-progress' },
-    { label: 'Завершено', value: 'done' },
+    { label: 'Готово', value: 'completed' },
     { label: 'Ранній доступ', value: 'early-access' },
   ];
 

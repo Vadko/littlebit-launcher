@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Game } from '../types/game';
 import { fetchGames } from '../utils/api';
 
-type FilterType = 'all' | 'in-progress' | 'done' | 'early-access';
+type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
 
 interface Store {
   games: Game[];
