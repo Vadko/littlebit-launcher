@@ -1,0 +1,38 @@
+import React from 'react';
+
+interface ButtonProps {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'glass';
+  onClick?: () => void;
+  className?: string;
+  disabled?: boolean;
+  icon?: React.ReactNode;
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  onClick,
+  className = '',
+  disabled = false,
+  icon,
+}) => {
+  const baseStyles = 'px-8 py-3.5 rounded-xl font-semibold text-base flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const variants = {
+    primary: 'bg-gradient-to-r from-[#00c6ff] to-[#0072ff] text-white shadow-[0_4px_15px_rgba(0,114,255,0.4)] hover:shadow-[0_8px_25px_rgba(0,114,255,0.6)] hover:brightness-110 hover:-translate-y-0.5',
+    secondary: 'glass-button text-white',
+    glass: 'glass-button text-white',
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseStyles} ${variants[variant]} ${className}`}
+    >
+      {icon && <span>{icon}</span>}
+      {children}
+    </button>
+  );
+};
