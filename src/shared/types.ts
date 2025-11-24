@@ -28,6 +28,7 @@ export interface ElectronAPI {
   fetchGames: () => Promise<Game[]>;
   installTranslation: (gameId: string, platform: string) => Promise<void>;
   openExternal: (url: string) => Promise<void>;
+  selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => void;
 }
 

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchGames } from './api';
@@ -78,6 +78,20 @@ ipcMain.handle('install-translation', async (_, gameId: string, platform: string
 
 ipcMain.handle('open-external', async (_, url: string) => {
   await shell.openExternal(url);
+});
+
+ipcMain.handle('select-game-folder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: 'Оберіть папку з грою',
+    buttonLabel: 'Обрати',
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
 });
 
 // App lifecycle

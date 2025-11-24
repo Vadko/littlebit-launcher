@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Download, Heart, Gamepad2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { GameHero } from './GameHero';
@@ -8,6 +8,53 @@ import { Button } from '../ui/Button';
 
 export const MainContent: React.FC = () => {
   const { selectedGame } = useStore();
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installProgress, setInstallProgress] = useState(0);
+
+  const handleInstall = async () => {
+    if (!selectedGame || isInstalling) return;
+
+    // Check if Electron API is available
+    if (!window.electronAPI) {
+      alert('⚠️ Встановлення доступне тільки в десктопній версії додатку');
+      return;
+    }
+
+    try {
+      setIsInstalling(true);
+      setInstallProgress(0);
+
+      // Setup progress listener
+      window.electronAPI.onInstallProgress?.((progress: number) => {
+        setInstallProgress(progress);
+      });
+
+      // Get the first available platform
+      const platform = selectedGame.platforms[0] || 'steam';
+
+      // Start installation
+      await window.electronAPI.installTranslation(selectedGame.id, platform);
+
+      alert(`✅ Переклад ${selectedGame.nameUk} успішно встановлено!`);
+      setInstallProgress(100);
+    } catch (error) {
+      console.error('Installation error:', error);
+      alert(`❌ Помилка встановлення: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
+    } finally {
+      setIsInstalling(false);
+      setInstallProgress(0);
+    }
+  };
+
+  const handleSupport = () => {
+    // Open support link
+    const supportUrl = 'https://github.com/LittleBitUA';
+    if (window.electronAPI) {
+      window.electronAPI.openExternal(supportUrl);
+    } else {
+      window.open(supportUrl, '_blank');
+    }
+  };
 
   if (!selectedGame) {
     return (
@@ -39,13 +86,42 @@ export const MainContent: React.FC = () => {
         <p className="text-text-muted leading-relaxed">{selectedGame.description}</p>
       </div>
 
-      <div className="flex gap-4">
-        <Button variant="primary" icon={<Download size={20} />}>
-          Встановити переклад
-        </Button>
-        <Button variant="secondary" icon={<Heart size={20} />}>
-          Підтримати проєкт
-        </Button>
+      <div className="space-y-4">
+        {isInstalling && (
+          <div className="glass-card">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Встановлення перекладу...</span>
+              <span className="text-sm font-bold text-neon-blue">{Math.round(installProgress)}%</span>
+            </div>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-neon-blue to-neon-purple"
+                style={{
+                  width: `${installProgress}%`,
+                  boxShadow: '0 0 10px rgba(0, 242, 255, 0.5)',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-4">
+          <Button
+            variant="primary"
+            icon={<Download size={20} />}
+            onClick={handleInstall}
+            disabled={isInstalling}
+          >
+            {isInstalling ? 'Встановлення...' : 'Встановити переклад'}
+          </Button>
+          <Button
+            variant="secondary"
+            icon={<Heart size={20} />}
+            onClick={handleSupport}
+          >
+            Підтримати проєкт
+          </Button>
+        </div>
       </div>
     </div>
   );
