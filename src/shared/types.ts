@@ -15,11 +15,13 @@ export interface Game {
   team: string;
   description: string;
   downloadUrl: string;
+  supportUrl?: string; // Optional URL for supporting the translation (donate, patreon, etc.)
   installPaths: {
     steam?: string;
     gog?: string;
     epic?: string;
   };
+  targetSubfolder?: string; // Optional subfolder within game directory (e.g., "Data/Translations")
   status: 'in-progress' | 'done' | 'early-access' | 'funded';
 }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Game } from '../../types/game';
 import { Gamepad2, HardDrive, Calendar, Users } from 'lucide-react';
+import { formatDate } from '../../utils/dateFormatter';
 
 interface InfoCardProps {
   game: Game;
@@ -40,7 +41,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
         <InfoItem
           icon={<Calendar size={18} />}
           label="Оновлено"
-          value={game.updated}
+          value={formatDate(game.updated)}
         />
         <InfoItem icon={<Users size={18} />} label="Команда" value={game.team} />
       </div>

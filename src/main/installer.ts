@@ -78,10 +78,10 @@ export async function installTranslation(
     onProgress?.(80);
 
     // 5. Copy files to game directory
-    const targetPath = game.installPaths[gamePath.platform];
-    const fullTargetPath = targetPath
-      ? path.join(gamePath.path, targetPath)
-      : gamePath.path;
+    // installPaths is only used for finding the game
+    const fullTargetPath = gamePath.path;
+
+    console.log(`[Installer] Installing to: ${fullTargetPath}`);
 
     await copyDirectory(extractDir, fullTargetPath);
 

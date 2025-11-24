@@ -86,8 +86,11 @@ export const MainContent: React.FC = () => {
   };
 
   const handleSupport = () => {
-    // Open support link
-    const supportUrl = 'https://github.com/LittleBitUA';
+    if (!selectedGame) return;
+
+    // Use game-specific support URL or fallback to default
+    const supportUrl = selectedGame.supportUrl || 'https://github.com/LittleBitUA';
+
     if (window.electronAPI) {
       window.electronAPI.openExternal(supportUrl);
     } else {
