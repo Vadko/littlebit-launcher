@@ -3,6 +3,7 @@ import { Minimize2, Maximize2, X } from 'lucide-react';
 import { AmbientBackground } from './components/Layout/AmbientBackground';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { MainContent } from './components/MainContent/MainContent';
+import { UpdateNotification } from './components/UpdateNotification/UpdateNotification';
 import { useStore } from './store/useStore';
 
 declare global {
@@ -68,6 +69,9 @@ export const App: React.FC = () => {
         <Sidebar />
         <MainContent />
       </div>
+
+      {/* Update notification */}
+      <UpdateNotification />
     </div>
   );
 };

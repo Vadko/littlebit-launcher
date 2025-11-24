@@ -30,6 +30,14 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => void;
+  // Auto-updater
+  checkForUpdates: () => Promise<{ available: boolean; updateInfo?: any; message?: string; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => void;
+  onUpdateAvailable: (callback: (info: any) => void) => void;
+  onUpdateDownloaded: (callback: (info: any) => void) => void;
+  onUpdateProgress: (callback: (progress: any) => void) => void;
+  onUpdateError: (callback: (error: any) => void) => void;
 }
 
 declare global {

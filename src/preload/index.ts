@@ -10,6 +10,22 @@ const electronAPI: ElectronAPI = {
   onInstallProgress: (callback: (progress: number) => void) => {
     ipcRenderer.on('install-progress', (_, progress) => callback(progress));
   },
+  // Auto-updater
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateAvailable: (callback: (info: any) => void) => {
+    ipcRenderer.on('update-available', (_, info) => callback(info));
+  },
+  onUpdateDownloaded: (callback: (info: any) => void) => {
+    ipcRenderer.on('update-downloaded', (_, info) => callback(info));
+  },
+  onUpdateProgress: (callback: (progress: any) => void) => {
+    ipcRenderer.on('update-progress', (_, progress) => callback(progress));
+  },
+  onUpdateError: (callback: (error: any) => void) => {
+    ipcRenderer.on('update-error', (_, error) => callback(error));
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

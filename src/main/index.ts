@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { join } from 'path';
+import { autoUpdater } from 'electron-updater';
 import { fetchGames } from './api';
 import { installTranslation } from './installer';
 
@@ -95,9 +96,65 @@ ipcMain.handle('select-game-folder', async () => {
   return result.filePaths[0];
 });
 
+// Auto-updater configuration
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info);
+  mainWindow?.webContents.send('update-available', info);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info);
+  mainWindow?.webContents.send('update-downloaded', info);
+});
+
+autoUpdater.on('error', (error) => {
+  console.error('Update error:', error);
+  mainWindow?.webContents.send('update-error', error);
+});
+
+autoUpdater.on('download-progress', (progress) => {
+  mainWindow?.webContents.send('update-progress', progress);
+});
+
+// IPC handlers for updates
+ipcMain.handle('check-for-updates', async () => {
+  if (!app.isPackaged) {
+    return { available: false, message: 'Updates only work in packaged app' };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { available: true, updateInfo: result?.updateInfo };
+  } catch (error) {
+    return { available: false, error: error.message };
+  }
+});
+
+ipcMain.handle('download-update', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall();
+});
+
 // App lifecycle
 app.whenReady().then(() => {
   createWindow();
+
+  // Check for updates after 3 seconds (only in production)
+  if (app.isPackaged) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates();
+    }, 3000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
