@@ -19,9 +19,11 @@ export async function fetchGames(): Promise<Game[]> {
       response.on('end', () => {
         try {
           const parsed = JSON.parse(data);
-          resolve(parsed.games || []);
+          const games = parsed.games || [];
+          console.log(`[API] Fetched ${games.length} games from GitHub`);
+          resolve(games);
         } catch (error) {
-          console.error('Error parsing games JSON from GitHub:', error);
+          console.error('[API] Error parsing games JSON from GitHub:', error);
           // Fallback to local file
           resolve(fetchGamesFromLocal());
         }
@@ -29,7 +31,7 @@ export async function fetchGames(): Promise<Game[]> {
     });
 
     request.on('error', (error) => {
-      console.error('Error fetching games from GitHub:', error);
+      console.error('[API] Error fetching games from GitHub:', error);
       // Fallback to local file
       resolve(fetchGamesFromLocal());
     });
@@ -54,9 +56,11 @@ function fetchGamesFromLocal(): Game[] {
 
     const data = fs.readFileSync(gamesJsonPath, 'utf-8');
     const parsed = JSON.parse(data);
-    return parsed.games || [];
+    const games = parsed.games || [];
+    console.log(`[API] Loaded ${games.length} games from local file`);
+    return games;
   } catch (error) {
-    console.error('Error reading local games JSON:', error);
+    console.error('[API] Error reading local games JSON:', error);
     return [];
   }
 }

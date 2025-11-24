@@ -19,7 +19,7 @@ interface Store {
   setSearchQuery: (query: string) => void;
 }
 
-export const useStore = create<Store>((set, get) => ({
+export const useStore = create<Store>((set) => ({
   games: [],
   selectedGame: null,
   filter: 'all',
@@ -58,10 +58,7 @@ export const useFilteredGames = () => {
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      return (
-        game.name.toLowerCase().includes(query) ||
-        game.nameUk.toLowerCase().includes(query)
-      );
+      return game.name.toLowerCase().includes(query);
     }
 
     return true;

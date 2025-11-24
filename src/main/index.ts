@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { join } from 'path';
 import { autoUpdater } from 'electron-updater';
 import { fetchGames } from './api';
-import { installTranslation } from './installer';
+import { installTranslation, checkInstallation } from './installer';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -75,6 +75,15 @@ ipcMain.handle('install-translation', async (_, gameId: string, platform: string
   } catch (error) {
     console.error('Error installing translation:', error);
     throw error;
+  }
+});
+
+ipcMain.handle('check-installation', async (_, gameId: string) => {
+  try {
+    return await checkInstallation(gameId);
+  } catch (error) {
+    console.error('Error checking installation:', error);
+    return null;
   }
 });
 

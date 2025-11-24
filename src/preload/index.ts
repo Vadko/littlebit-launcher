@@ -5,6 +5,7 @@ const electronAPI: ElectronAPI = {
   fetchGames: () => ipcRenderer.invoke('fetch-games'),
   installTranslation: (gameId: string, platform: string) =>
     ipcRenderer.invoke('install-translation', gameId, platform),
+  checkInstallation: (gameId: string) => ipcRenderer.invoke('check-installation', gameId),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {

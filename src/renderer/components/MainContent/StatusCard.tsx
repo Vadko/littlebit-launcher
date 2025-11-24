@@ -23,11 +23,6 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => {
           value={game.progress.editing}
           color="#bd00ff"
         />
-        <ProgressBar
-          label="Озвучення"
-          value={game.progress.voicing}
-          color="#ff0055"
-        />
       </div>
     </div>
   );

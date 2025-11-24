@@ -1,15 +1,46 @@
-import React, { useState } from 'react';
-import { Download, Heart, Gamepad2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, RefreshCw, Heart, Gamepad2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { GameHero } from './GameHero';
 import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { Button } from '../ui/Button';
+import { InstallationInfo } from '../../types/game';
 
 export const MainContent: React.FC = () => {
   const { selectedGame } = useStore();
   const [isInstalling, setIsInstalling] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
+  const [installationInfo, setInstallationInfo] = useState<InstallationInfo | null>(null);
+  const [isCheckingInstallation, setIsCheckingInstallation] = useState(false);
+
+  // Check installation status when game changes
+  useEffect(() => {
+    const checkInstallationStatus = async () => {
+      if (!selectedGame || !window.electronAPI) {
+        setInstallationInfo(null);
+        return;
+      }
+
+      setIsCheckingInstallation(true);
+      try {
+        const info = await window.electronAPI.checkInstallation(selectedGame.id);
+        setInstallationInfo(info);
+      } catch (error) {
+        console.error('Error checking installation:', error);
+        setInstallationInfo(null);
+      } finally {
+        setIsCheckingInstallation(false);
+      }
+    };
+
+    checkInstallationStatus();
+  }, [selectedGame]);
+
+  const isUpdateAvailable =
+    installationInfo &&
+    selectedGame &&
+    installationInfo.version !== selectedGame.version;
 
   const handleInstall = async () => {
     if (!selectedGame || isInstalling) return;
@@ -35,7 +66,15 @@ export const MainContent: React.FC = () => {
       // Start installation
       await window.electronAPI.installTranslation(selectedGame.id, platform);
 
-      alert(`✅ Переклад ${selectedGame.nameUk} успішно встановлено!`);
+      // Refresh installation info
+      const newInfo = await window.electronAPI.checkInstallation(selectedGame.id);
+      setInstallationInfo(newInfo);
+
+      const message = isUpdateAvailable
+        ? `✅ Переклад ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
+        : `✅ Переклад ${selectedGame.name} успішно встановлено!`;
+
+      alert(message);
       setInstallProgress(100);
     } catch (error) {
       console.error('Installation error:', error);
@@ -87,10 +126,44 @@ export const MainContent: React.FC = () => {
       </div>
 
       <div className="space-y-4">
+        {/* Installation status badge */}
+        {installationInfo && !isInstalling && (
+          <div className="glass-card">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isUpdateAvailable ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'
+                  }`}
+                />
+                <div>
+                  <div className="text-sm font-medium text-white">
+                    {isUpdateAvailable
+                      ? '⚡ Доступне оновлення'
+                      : '✓ Переклад встановлено'}
+                  </div>
+                  <div className="text-xs text-text-muted mt-0.5">
+                    {isUpdateAvailable ? (
+                      <>
+                        Встановлена версія: v{installationInfo.version} → Нова версія: v
+                        {selectedGame?.version}
+                      </>
+                    ) : (
+                      <>Версія: v{installationInfo.version}</>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isInstalling && (
           <div className="glass-card">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-white">Встановлення перекладу...</span>
+              <span className="text-sm font-medium text-white">
+                {isUpdateAvailable ? 'Оновлення перекладу...' : 'Встановлення перекладу...'}
+              </span>
               <span className="text-sm font-bold text-neon-blue">{Math.round(installProgress)}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
@@ -108,11 +181,19 @@ export const MainContent: React.FC = () => {
         <div className="flex gap-4">
           <Button
             variant="primary"
-            icon={<Download size={20} />}
+            icon={isUpdateAvailable ? <RefreshCw size={20} /> : <Download size={20} />}
             onClick={handleInstall}
-            disabled={isInstalling}
+            disabled={isInstalling || isCheckingInstallation}
           >
-            {isInstalling ? 'Встановлення...' : 'Встановити переклад'}
+            {isInstalling
+              ? isUpdateAvailable
+                ? 'Оновлення...'
+                : 'Встановлення...'
+              : isUpdateAvailable
+                ? `Оновити до v${selectedGame?.version}`
+                : installationInfo
+                  ? `Перевстановити (v${installationInfo.version})`
+                  : 'Встановити переклад'}
           </Button>
           <Button
             variant="secondary"

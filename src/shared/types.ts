@@ -1,18 +1,17 @@
 export interface Game {
   id: string;
   name: string;
-  nameUk: string;
   banner: string;
   logo: string;
   thumbnail: string;
   progress: {
     translation: number;
     editing: number;
-    voicing: number;
   };
   platforms: ('steam' | 'gog' | 'epic')[];
   size: string;
   updated: string;
+  version: string; // Version of the translation (e.g., "1.0.0", "2024-01-15")
   team: string;
   description: string;
   downloadUrl: string;
@@ -24,9 +23,17 @@ export interface Game {
   status: 'in-progress' | 'done' | 'early-access' | 'funded';
 }
 
+export interface InstallationInfo {
+  gameId: string;
+  version: string;
+  installedAt: string;
+  gamePath: string;
+}
+
 export interface ElectronAPI {
   fetchGames: () => Promise<Game[]>;
   installTranslation: (gameId: string, platform: string) => Promise<void>;
+  checkInstallation: (gameId: string) => Promise<InstallationInfo | null>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => void;

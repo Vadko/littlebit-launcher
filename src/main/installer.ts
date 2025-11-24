@@ -5,10 +5,13 @@ import { promisify } from 'util';
 import AdmZip from 'adm-zip';
 import { fetchGames } from './api';
 import { getFirstAvailableGamePath } from './game-detector';
+import { InstallationInfo } from '../shared/types';
 
 const mkdir = promisify(fs.mkdir);
 const readdir = promisify(fs.readdir);
 const unlink = promisify(fs.unlink);
+
+const INSTALLATION_INFO_FILE = '.littlebit-translation.json';
 
 /**
  * Main installation function
@@ -29,19 +32,25 @@ export async function installTranslation(
       throw new Error(`Гру ${gameId} не знайдено`);
     }
 
+    console.log(`[Installer] Installing translation for: ${game.name} (${gameId})`);
+    console.log(`[Installer] Install paths config:`, JSON.stringify(game.installPaths, null, 2));
+    console.log(`[Installer] Requested platform: ${platform}`);
+
     onProgress?.(10);
 
     // 2. Detect game installation path
     const gamePath = getFirstAvailableGamePath(game.installPaths);
 
     if (!gamePath || !gamePath.exists) {
+      console.error(`[Installer] Game not found. Searched paths:`, game.installPaths);
       throw new Error(
         `Гру не знайдено на вашому комп'ютері.\n\n` +
-          `Переконайтесь, що гра встановлена через ${platform.toUpperCase()}.`
+          `Переконайтесь, що гра встановлена через ${platform.toUpperCase()}.\n\n` +
+          `Шукали папку: ${game.installPaths[platform] || 'не вказано'}`
       );
     }
 
-    console.log(`Game found at: ${gamePath.path}`);
+    console.log(`[Installer] ✓ Game found at: ${gamePath.path} (${gamePath.platform})`);
     onProgress?.(20);
 
     // 3. Download translation archive
@@ -50,6 +59,9 @@ export async function installTranslation(
     await mkdir(downloadDir, { recursive: true });
 
     const archivePath = path.join(downloadDir, `${gameId}_translation.zip`);
+
+    console.log(`[Installer] Downloading from: ${game.downloadUrl}`);
+    console.log(`[Installer] Saving to: ${archivePath}`);
 
     await downloadFile(game.downloadUrl, archivePath, (downloadProgress) => {
       // Map download progress to 20-70%
@@ -80,9 +92,36 @@ export async function installTranslation(
 
     onProgress?.(100);
 
-    console.log(`Translation for ${gameId} installed successfully at ${fullTargetPath}`);
+    // 7. Save installation info
+    await saveInstallationInfo(gamePath.path, {
+      gameId: game.id,
+      version: game.version,
+      installedAt: new Date().toISOString(),
+      gamePath: gamePath.path,
+    });
+
+    console.log(`[Installer] Translation for ${gameId} installed successfully at ${fullTargetPath}`);
   } catch (error) {
-    console.error('Installation error:', error);
+    console.error('[Installer] Installation error:', error);
+
+    // Provide more helpful error messages
+    if (error instanceof Error) {
+      if (error.message.includes('ERR_CONNECTION_REFUSED')) {
+        throw new Error(
+          'Не вдалося завантажити файл перекладу.\n\n' +
+            'Можливі причини:\n' +
+            '• Сервер недоступний\n' +
+            '• Перевірте підключення до Інтернету\n' +
+            '• URL завантаження може бути неправильним'
+        );
+      } else if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+        throw new Error(
+          'Не вдалося підключитися до сервера.\n\n' +
+            'Перевірте підключення до Інтернету та спробуйте ще раз.'
+        );
+      }
+    }
+
     throw error;
   }
 }
@@ -96,12 +135,15 @@ export async function downloadFile(
   onProgress?: (progress: number) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    console.log(`[Downloader] Starting download: ${url}`);
+
     const request = net.request(url);
     const writeStream = fs.createWriteStream(outputPath);
     let downloadedBytes = 0;
     let totalBytes = 0;
 
     request.on('response', (response) => {
+      console.log(`[Downloader] Response status: ${response.statusCode}`);
       // Handle redirects
       const statusCode = response.statusCode;
       if (
@@ -149,6 +191,8 @@ export async function downloadFile(
     });
 
     request.on('error', (error) => {
+      console.error(`[Downloader] Request error:`, error);
+      console.error(`[Downloader] Failed URL: ${url}`);
       writeStream.close();
       reject(error);
     });
@@ -253,4 +297,68 @@ async function deleteDirectory(dirPath: string): Promise<void> {
   }
 
   await fs.promises.rmdir(dirPath);
+}
+
+/**
+ * Save installation info to game directory
+ */
+async function saveInstallationInfo(
+  gamePath: string,
+  info: InstallationInfo
+): Promise<void> {
+  try {
+    const infoPath = path.join(gamePath, INSTALLATION_INFO_FILE);
+    await fs.promises.writeFile(infoPath, JSON.stringify(info, null, 2), 'utf-8');
+    console.log(`[Installer] Installation info saved to: ${infoPath}`);
+  } catch (error) {
+    console.warn('[Installer] Failed to save installation info:', error);
+    // Don't throw - installation succeeded even if we can't save the info
+  }
+}
+
+/**
+ * Check if translation is installed and get installation info
+ */
+export async function checkInstallation(gameId: string): Promise<InstallationInfo | null> {
+  try {
+    console.log(`[Installer] Checking installation for: ${gameId}`);
+
+    // Fetch game metadata
+    const games = await fetchGames();
+    const game = games.find((g) => g.id === gameId);
+
+    if (!game) {
+      console.warn(`[Installer] Game ${gameId} not found`);
+      return null;
+    }
+
+    // Detect game installation path
+    const gamePath = getFirstAvailableGamePath(game.installPaths);
+
+    if (!gamePath || !gamePath.exists) {
+      console.log(`[Installer] Game not installed on this computer`);
+      return null;
+    }
+
+    // Check for installation info file
+    const infoPath = path.join(gamePath.path, INSTALLATION_INFO_FILE);
+
+    if (!fs.existsSync(infoPath)) {
+      console.log(`[Installer] No translation installed (info file not found)`);
+      return null;
+    }
+
+    // Read installation info
+    const infoContent = await fs.promises.readFile(infoPath, 'utf-8');
+    const info: InstallationInfo = JSON.parse(infoContent);
+
+    console.log(
+      `[Installer] Translation installed: version ${info.version}, installed at ${info.installedAt}`
+    );
+
+    return info;
+  } catch (error) {
+    console.error('[Installer] Error checking installation:', error);
+    return null;
+  }
 }

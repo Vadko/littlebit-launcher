@@ -13,7 +13,7 @@ export const GameListItem: React.FC<GameListItemProps> = ({
   onClick,
 }) => {
   const averageProgress = Math.round(
-    (game.progress.translation + game.progress.editing + game.progress.voicing) / 3
+    (game.progress.translation + game.progress.editing) / 2
   );
 
   return (
@@ -29,18 +29,18 @@ export const GameListItem: React.FC<GameListItemProps> = ({
         {game.thumbnail ? (
           <img
             src={game.thumbnail}
-            alt={game.nameUk}
+            alt={game.name}
             className="w-full h-full object-cover"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-white font-bold text-sm">
-            {game.nameUk.charAt(0)}
+            {game.name.charAt(0)}
           </div>
         )}
       </div>
       <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-sm text-white mb-1 truncate">
-          {game.nameUk}
+          {game.name}
         </h4>
         <div className="h-1 bg-glass-hover rounded-full overflow-hidden">
           <div
