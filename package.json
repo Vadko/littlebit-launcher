@@ -18,9 +18,11 @@
     "preview": "electron-vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\""
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "types:generate": "npx supabase gen types typescript --project-id qgylrzebvqayqswhewyz > src/lib/database.types.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.84.0",
     "adm-zip": "^0.5.16",
     "electron-updater": "^6.1.7",
     "lucide-react": "^0.294.0",

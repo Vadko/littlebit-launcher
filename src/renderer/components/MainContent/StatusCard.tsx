@@ -15,12 +15,12 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => {
       <div>
         <ProgressBar
           label="Переклад"
-          value={game.progress.translation}
+          value={game.translation_progress}
           color="#00f2ff"
         />
         <ProgressBar
           label="Редагування"
-          value={game.progress.editing}
+          value={game.editing_progress}
           color="#bd00ff"
         />
       </div>

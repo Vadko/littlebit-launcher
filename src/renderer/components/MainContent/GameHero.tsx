@@ -1,18 +1,22 @@
 import React from 'react';
 import { Game } from '../../types/game';
+import { getGameImageUrl } from '../../utils/imageUrl';
 
 interface GameHeroProps {
   game: Game;
 }
 
 export const GameHero: React.FC<GameHeroProps> = ({ game }) => {
+  const bannerUrl = getGameImageUrl(game.banner_path);
+  const logoUrl = getGameImageUrl(game.logo_path);
+
   return (
     <div className="relative h-[300px] rounded-2xl overflow-hidden mb-6">
       {/* Background image */}
       <div className="absolute inset-0">
-        {game.banner ? (
+        {bannerUrl ? (
           <img
-            src={game.banner}
+            src={bannerUrl}
             alt={game.name}
             className="w-full h-full object-cover"
           />
@@ -24,9 +28,9 @@ export const GameHero: React.FC<GameHeroProps> = ({ game }) => {
 
       {/* Game logo */}
       <div className="relative h-full flex items-end p-8">
-        {game.logo ? (
+        {logoUrl ? (
           <img
-            src={game.logo}
+            src={logoUrl}
             alt={game.name}
             className="max-h-32 max-w-md object-contain drop-shadow-[0_0_20px_rgba(0,0,0,0.8)]"
           />

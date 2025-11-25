@@ -33,37 +33,43 @@ export async function installTranslation(
     }
 
     console.log(`[Installer] Installing translation for: ${game.name} (${gameId})`);
-    console.log(`[Installer] Install paths config:`, JSON.stringify(game.installPaths, null, 2));
+    console.log(`[Installer] Install paths config:`, JSON.stringify(game.install_paths, null, 2));
     console.log(`[Installer] Requested platform: ${platform}`);
 
     onProgress?.(10);
 
     // 2. Detect game installation path
-    const gamePath = getFirstAvailableGamePath(game.installPaths);
+    const gamePath = getFirstAvailableGamePath(game.install_paths);
 
     if (!gamePath || !gamePath.exists) {
-      console.error(`[Installer] Game not found. Searched paths:`, game.installPaths);
+      console.error(`[Installer] Game not found. Searched paths:`, game.install_paths);
+      const platformPath = platform === 'steam' ? game.install_paths.steam :
+                          platform === 'gog' ? game.install_paths.gog : undefined;
       throw new Error(
         `Гру не знайдено на вашому комп'ютері.\n\n` +
           `Переконайтесь, що гра встановлена через ${platform.toUpperCase()}.\n\n` +
-          `Шукали папку: ${game.installPaths[platform] || 'не вказано'}`
+          `Шукали папку: ${platformPath || 'не вказано'}`
       );
     }
 
     console.log(`[Installer] ✓ Game found at: ${gamePath.path} (${gamePath.platform})`);
     onProgress?.(20);
 
-    // 3. Download translation archive
+    // 3. Download translation archive from Supabase Storage
     const tempDir = app.getPath('temp');
     const downloadDir = path.join(tempDir, 'little-bit-downloads');
     await mkdir(downloadDir, { recursive: true });
 
     const archivePath = path.join(downloadDir, `${gameId}_translation.zip`);
 
-    console.log(`[Installer] Downloading from: ${game.downloadUrl}`);
+    // Get download URL from Supabase Storage
+    const { getArchiveDownloadUrl } = await import('../lib/api');
+    const downloadUrl = getArchiveDownloadUrl(game.archive_path);
+
+    console.log(`[Installer] Downloading from Supabase: ${downloadUrl}`);
     console.log(`[Installer] Saving to: ${archivePath}`);
 
-    await downloadFile(game.downloadUrl, archivePath, (downloadProgress) => {
+    await downloadFile(downloadUrl, archivePath, (downloadProgress) => {
       // Map download progress to 20-70%
       const overallProgress = 20 + downloadProgress * 0.5;
       onProgress?.(overallProgress);
@@ -184,7 +190,7 @@ export async function downloadFile(
         resolve();
       });
 
-      response.on('error', (error) => {
+      response.on('error', (error: Error) => {
         writeStream.close();
         reject(error);
       });
@@ -333,7 +339,7 @@ export async function checkInstallation(gameId: string): Promise<InstallationInf
     }
 
     // Detect game installation path
-    const gamePath = getFirstAvailableGamePath(game.installPaths);
+    const gamePath = getFirstAvailableGamePath(game.install_paths);
 
     if (!gamePath || !gamePath.exists) {
       console.log(`[Installer] Game not installed on this computer`);

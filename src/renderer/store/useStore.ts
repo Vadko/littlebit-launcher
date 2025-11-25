@@ -17,6 +17,8 @@ interface Store {
   setSelectedGame: (game: Game | null) => void;
   setFilter: (filter: FilterType) => void;
   setSearchQuery: (query: string) => void;
+  updateGame: (updatedGame: Game) => void;
+  initRealtimeSubscription: () => void;
 }
 
 export const useStore = create<Store>((set) => ({
@@ -43,6 +45,32 @@ export const useStore = create<Store>((set) => ({
   setSelectedGame: (game) => set({ selectedGame: game }),
   setFilter: (filter) => set({ filter }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+
+  updateGame: (updatedGame) =>
+    set((state) => {
+      const games = state.games.map((game) =>
+        game.id === updatedGame.id ? updatedGame : game
+      );
+
+      // Update selected game if it's the one that was updated
+      const selectedGame =
+        state.selectedGame?.id === updatedGame.id ? updatedGame : state.selectedGame;
+
+      return { games, selectedGame };
+    }),
+
+  initRealtimeSubscription: () => {
+    if (!window.electronAPI) return;
+
+    // Subscribe to game updates
+    window.electronAPI.subscribeGameUpdates();
+
+    // Listen for updates
+    window.electronAPI.onGameUpdated((updatedGame) => {
+      console.log('Game updated via real-time:', updatedGame);
+      useStore.getState().updateGame(updatedGame);
+    });
+  },
 }));
 
 // Selector for filtered games

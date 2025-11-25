@@ -3,8 +3,10 @@ import { join } from 'path';
 import { autoUpdater } from 'electron-updater';
 import { fetchGames } from './api';
 import { installTranslation, checkInstallation } from './installer';
+import { subscribeToGameUpdates } from '../lib/api';
 
 let mainWindow: BrowserWindow | null = null;
+let unsubscribeRealtime: (() => void) | null = null;
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
@@ -65,6 +67,31 @@ ipcMain.handle('fetch-games', async () => {
     console.error('Error fetching games:', error);
     return [];
   }
+});
+
+// Subscribe to real-time updates
+ipcMain.handle('subscribe-game-updates', () => {
+  // Unsubscribe from previous subscription if exists
+  if (unsubscribeRealtime) {
+    unsubscribeRealtime();
+  }
+
+  // Subscribe to game updates
+  unsubscribeRealtime = subscribeToGameUpdates((updatedGame) => {
+    // Send update to renderer process
+    mainWindow?.webContents.send('game-updated', updatedGame);
+  });
+
+  return { success: true };
+});
+
+// Unsubscribe from real-time updates
+ipcMain.handle('unsubscribe-game-updates', () => {
+  if (unsubscribeRealtime) {
+    unsubscribeRealtime();
+    unsubscribeRealtime = null;
+  }
+  return { success: true };
 });
 
 ipcMain.handle('install-translation', async (_, gameId: string, platform: string) => {
@@ -137,7 +164,7 @@ ipcMain.handle('check-for-updates', async () => {
     const result = await autoUpdater.checkForUpdates();
     return { available: true, updateInfo: result?.updateInfo };
   } catch (error) {
-    return { available: false, error: error.message };
+    return { available: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
 
@@ -146,7 +173,7 @@ ipcMain.handle('download-update', async () => {
     await autoUpdater.downloadUpdate();
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
 
@@ -173,6 +200,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // Cleanup real-time subscription
+  if (unsubscribeRealtime) {
+    unsubscribeRealtime();
+    unsubscribeRealtime = null;
+  }
+
   if (process.platform !== 'darwin') {
     app.quit();
   }

@@ -27,6 +27,12 @@ const electronAPI: ElectronAPI = {
   onUpdateError: (callback: (error: any) => void) => {
     ipcRenderer.on('update-error', (_, error) => callback(error));
   },
+  // Real-time updates
+  subscribeGameUpdates: () => ipcRenderer.invoke('subscribe-game-updates'),
+  unsubscribeGameUpdates: () => ipcRenderer.invoke('unsubscribe-game-updates'),
+  onGameUpdated: (callback: (game: any) => void) => {
+    ipcRenderer.on('game-updated', (_, game) => callback(game));
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

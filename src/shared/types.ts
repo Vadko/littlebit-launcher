@@ -1,30 +1,25 @@
 export interface Game {
   id: string;
+  slug: string;
   name: string;
-  banner: string;
-  logo: string;
-  thumbnail: string;
-  progress: {
-    translation: number;
-    editing: number;
-  };
-  platforms: ('steam' | 'gog' | 'epic')[];
-  size: string;
-  updated: string;
-  version: string; // Version of the translation (e.g., "1.0.0", "2024-01-15")
+  version: string;
+  translation_progress: number;
+  editing_progress: number;
   team: string;
-  description: string;
-  gameDescription?: string; // Optional description about the game itself
-  downloadUrl: string;
-  supportUrl?: string; // Optional URL for supporting the translation (donate, patreon, etc.)
-  videoUrl?: string; // Optional YouTube video URL
-  installPaths: {
+  status: 'completed' | 'in-progress' | 'planned';
+  platforms: string[];
+  install_paths: {
     steam?: string;
     gog?: string;
-    epic?: string;
   };
-  targetSubfolder?: string; // Optional subfolder within game directory (e.g., "Data/Translations")
-  status: 'in-progress' | 'completed' | 'early-access' | 'funded';
+  archive_path: string;
+  banner_path: string | null;
+  logo_path: string | null;
+  thumbnail_path: string | null;
+  game_description: string | null;
+  description: string | null;
+  support_url: string | null;
+  video_url: string | null;
 }
 
 export interface InstallationInfo {
@@ -49,6 +44,10 @@ export interface ElectronAPI {
   onUpdateDownloaded: (callback: (info: any) => void) => void;
   onUpdateProgress: (callback: (progress: any) => void) => void;
   onUpdateError: (callback: (error: any) => void) => void;
+  // Real-time updates
+  subscribeGameUpdates: () => Promise<{ success: boolean }>;
+  unsubscribeGameUpdates: () => Promise<{ success: boolean }>;
+  onGameUpdated: (callback: (game: Game) => void) => void;
 }
 
 declare global {

@@ -19,7 +19,9 @@
       "Bash(pnpm remove:*)",
       "Read(//private/tmp/**)",
       "Bash([ -f README.md ])",
-      "Bash([ -d out ])"
+      "Bash([ -d out ])",
+      "Bash(mkdir:*)",
+      "Bash(pnpm type-check:*)"
     ],
     "deny": [],
     "ask": []

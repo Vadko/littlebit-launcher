@@ -6,7 +6,7 @@ import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
 import { Button } from '../ui/Button';
-import { InstallationInfo } from '../../types/game';
+import type { InstallationInfo } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
   const { selectedGame } = useStore();
@@ -90,7 +90,7 @@ export const MainContent: React.FC = () => {
     if (!selectedGame) return;
 
     // Use game-specific support URL or fallback to default
-    const supportUrl = selectedGame.supportUrl || 'https://github.com/LittleBitUA';
+    const supportUrl = selectedGame.support_url || 'https://github.com/LittleBitUA';
 
     if (window.electronAPI) {
       window.electronAPI.openExternal(supportUrl);
@@ -122,19 +122,19 @@ export const MainContent: React.FC = () => {
         <InfoCard game={selectedGame} />
       </div>
 
-      {selectedGame.videoUrl && (
+      {selectedGame.video_url && (
         <div className="mb-6">
-          <VideoCard videoUrl={selectedGame.videoUrl} />
+          <VideoCard videoUrl={selectedGame.video_url} />
         </div>
       )}
 
-      {selectedGame.gameDescription && (
+      {selectedGame.game_description && (
         <div className="glass-card mb-6">
           <h3 className="text-lg font-head font-semibold text-white mb-3">
             Про гру
           </h3>
           <p className="text-text-muted leading-relaxed whitespace-pre-line">
-            {selectedGame.gameDescription}
+            {selectedGame.game_description}
           </p>
         </div>
       )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Game } from '../../types/game';
+import { getGameImageUrl } from '../../utils/imageUrl';
 
 interface GameListItemProps {
   game: Game;
@@ -13,8 +14,10 @@ export const GameListItem: React.FC<GameListItemProps> = ({
   onClick,
 }) => {
   const averageProgress = Math.round(
-    (game.progress.translation + game.progress.editing) / 2
+    (game.translation_progress + game.editing_progress) / 2
   );
+
+  const thumbnailUrl = getGameImageUrl(game.thumbnail_path);
 
   return (
     <div
@@ -26,9 +29,9 @@ export const GameListItem: React.FC<GameListItemProps> = ({
       }`}
     >
       <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
-        {game.thumbnail ? (
+        {thumbnailUrl ? (
           <img
-            src={game.thumbnail}
+            src={thumbnailUrl}
             alt={game.name}
             className="w-full h-full object-cover"
           />

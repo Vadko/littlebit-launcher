@@ -17,11 +17,13 @@ declare global {
 }
 
 export const App: React.FC = () => {
-  const { fetchGames } = useStore();
+  const { fetchGames, initRealtimeSubscription } = useStore();
 
   useEffect(() => {
     fetchGames();
-  }, [fetchGames]);
+    // Initialize real-time subscription for game updates
+    initRealtimeSubscription();
+  }, [fetchGames, initRealtimeSubscription]);
 
   const handleMinimize = () => {
     window.windowControls?.minimize();
