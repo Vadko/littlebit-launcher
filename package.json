@@ -44,7 +44,7 @@
     "compression": "store",
     "publish": {
       "provider": "github",
-      "owner": "your-github-username",
+      "owner": "Vadko",
       "repo": "littlebit-launcher"
     },
     "win": {
