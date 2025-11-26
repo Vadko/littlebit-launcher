@@ -21,7 +21,8 @@
       "Bash([ -f README.md ])",
       "Bash([ -d out ])",
       "Bash(mkdir:*)",
-      "Bash(pnpm type-check:*)"
+      "Bash(pnpm type-check:*)",
+      "WebFetch(domain:electron-vite.org)"
     ],
     "deny": [],
     "ask": []

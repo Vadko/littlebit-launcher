@@ -1,9 +1,14 @@
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { autoUpdater } from 'electron-updater';
 import { fetchGames } from './api';
 import { installTranslation, checkInstallation } from './installer';
 import { subscribeToGameUpdates } from '../lib/api';
+
+// ESM compatibility for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let mainWindow: BrowserWindow | null = null;
 let unsubscribeRealtime: (() => void) | null = null;

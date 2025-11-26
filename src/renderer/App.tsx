@@ -23,7 +23,8 @@ export const App: React.FC = () => {
     fetchGames();
     // Initialize real-time subscription for game updates
     initRealtimeSubscription();
-  }, [fetchGames, initRealtimeSubscription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleMinimize = () => {
     window.windowControls?.minimize();

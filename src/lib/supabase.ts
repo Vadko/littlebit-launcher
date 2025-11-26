@@ -1,9 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 
-// TODO: Замініть ці значення на реальні URL та ключ з вашого Supabase проекту
-const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+// Get Supabase credentials from environment variables
+// electron-vite automatically loads .env files
+// Variables with VITE_ prefix are available in renderer process via import.meta.env
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase credentials. Please create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY'
+  );
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {

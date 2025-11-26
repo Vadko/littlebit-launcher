@@ -16,6 +16,7 @@ jobs:
   release:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    environment: production
 
     strategy:
       max-parallel: 1
@@ -53,6 +54,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build application
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: pnpm build
 
       - name: Build and publish (Windows)
@@ -60,6 +64,8 @@ jobs:
         timeout-minutes: 20
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: pnpm dist:win --publish always
 
       - name: Build and publish (Linux)
@@ -67,4 +73,6 @@ jobs:
         timeout-minutes: 20
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: pnpm dist:linux --publish always
