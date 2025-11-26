@@ -48,8 +48,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
     );
   }
 
-  // YouTube embed
-  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  // YouTube embed with parameters to fix error 137 in Electron
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
 
   return (
     <div className="glass-card">
@@ -62,7 +62,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
           src={embedUrl}
           title="YouTube video player"
           frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
       </div>
