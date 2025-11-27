@@ -48,8 +48,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
     );
   }
 
-  // YouTube embed
-  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  // YouTube embed (using youtube-nocookie.com to avoid error 153)
+  const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}`;
 
   return (
     <div className="glass-card">
