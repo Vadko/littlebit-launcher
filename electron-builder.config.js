@@ -17,15 +17,13 @@ module.exports = {
 
   compression: 'store',
 
-  publish: {
-    provider: 'github',
-    owner: 'Vadko',
-    repo: 'littlebit-launcher',
-  },
-
-  snap: {
-    publish: null,
-  },
+  publish: [
+    {
+      provider: 'github',
+      owner: 'Vadko',
+      repo: 'littlebit-launcher',
+    },
+  ],
 
   win: {
     target: [
