@@ -22,7 +22,8 @@
       "Bash([ -d out ])",
       "Bash(mkdir:*)",
       "Bash(pnpm type-check:*)",
-      "WebFetch(domain:electron-vite.org)"
+      "WebFetch(domain:electron-vite.org)",
+      "Bash(gh repo view:*)"
     ],
     "deny": [],
     "ask": []

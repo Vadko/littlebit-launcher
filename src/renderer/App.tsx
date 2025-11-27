@@ -45,6 +45,9 @@ export const App: React.FC = () => {
       {/* Title bar */}
       <div className="drag-region fixed top-0 left-0 right-0 h-8 flex items-center justify-between px-4 z-50">
         <div className="text-xs text-text-muted font-medium">Little Bit</div>
+        <div className="text-[10px] text-text-muted/50 absolute left-1/2 -translate-x-1/2">
+          v{window.electronAPI?.getVersion?.() || ''}
+        </div>
         <div className="no-drag flex gap-2">
           <button
             onClick={handleMinimize}

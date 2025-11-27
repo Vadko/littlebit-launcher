@@ -48,6 +48,8 @@ export interface ElectronAPI {
   subscribeGameUpdates: () => Promise<{ success: boolean }>;
   unsubscribeGameUpdates: () => Promise<{ success: boolean }>;
   onGameUpdated: (callback: (game: Game) => void) => void;
+  // Version
+  getVersion: () => string;
 }
 
 declare global {

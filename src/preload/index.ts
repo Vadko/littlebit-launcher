@@ -33,6 +33,8 @@ const electronAPI: ElectronAPI = {
   onGameUpdated: (callback: (game: any) => void) => {
     ipcRenderer.on('game-updated', (_, game) => callback(game));
   },
+  // Version
+  getVersion: () => ipcRenderer.sendSync('get-version'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
