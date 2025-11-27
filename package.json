@@ -1,21 +1,21 @@
 {
   "name": "little-bit",
   "version": "1.4.0",
-  "type": "module",
   "description": "Інсталятор українських перекладів відеоігор",
-  "main": "out/main/index.js",
   "author": {
     "name": "Little Bit UA",
     "email": "info@littlebit.org.ua"
   },
   "license": "MIT",
+  "type": "module",
+  "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "preview": "electron-vite preview",
     "build": "electron-vite build",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",
-    "preview": "electron-vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
@@ -29,62 +29,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zustand": "^4.4.7"
-  },
-  "build": {
-    "appId": "com.littlebit.launcher",
-    "productName": "Little Bit",
-    "copyright": "Copyright © 2024 Little Bit UA",
-    "directories": {
-      "output": "release/${version}"
-    },
-    "files": [
-      "out/**/*"
-    ],
-    "asarUnpack": [
-      "**/*.node"
-    ],
-    "compression": "store",
-    "publish": {
-      "provider": "github",
-      "owner": "Vadko",
-      "repo": "littlebit-launcher",
-      "private": true
-    },
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "publisherName": "Little Bit UA",
-      "verifyUpdateCodeSignature": false
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Utility",
-      "maintainer": "Little Bit UA <info@littlebit.org.ua>"
-    },
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
-      "deleteAppDataOnUninstall": false,
-      "differentialPackage": true
-    },
-    "electronDist": "node_modules/electron/dist",
-    "electronVersion": "28.0.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",
