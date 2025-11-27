@@ -15,6 +15,8 @@ module.exports = {
 
   asarUnpack: ['**/*.node'],
 
+  electronLanguages: ['en-US', 'uk'],
+
   compression: 'store',
 
   publish: [

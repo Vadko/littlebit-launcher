@@ -1,12 +1,8 @@
 import type { Database } from '../lib/database.types';
 
-type InstallSource = Database['public']['Enums']['install_source'];
 type GameStatus = Database['public']['Enums']['game_status'];
 
-export interface InstallPath {
-  type: InstallSource;
-  path: string;
-}
+export type InstallPath = Database['public']['CompositeTypes']['install_path_entry'];
 
 export interface Game {
   id: string;
@@ -18,10 +14,7 @@ export interface Game {
   team: string;
   status: GameStatus;
   platforms: string[];
-  install_paths: {
-    steam?: string;
-    gog?: string;
-  };
+  install_paths: InstallPath[];
   archive_path: string;
   banner_path: string | null;
   logo_path: string | null;

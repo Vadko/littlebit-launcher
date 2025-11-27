@@ -46,8 +46,7 @@ export async function installTranslation(
 
     if (!gamePath || !gamePath.exists) {
       console.error(`[Installer] Game not found. Searched paths:`, game.install_paths);
-      const platformPath = platform === 'steam' ? game.install_paths.steam :
-                          platform === 'gog' ? game.install_paths.gog : undefined;
+      const platformPath = game.install_paths.find(p => p.type === platform)?.path;
 
       // Special error to indicate manual folder selection needed
       const error: any = new Error(

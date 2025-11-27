@@ -2,9 +2,11 @@ import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import type { InstallPath } from '../shared/types';
+import type { Database } from '../lib/database.types';
 
 export interface GamePath {
-  platform: 'steam' | 'gog' | 'epic';
+  platform: Database['public']['Enums']['install_source'];
   path: string;
   exists: boolean;
 }
@@ -223,81 +225,31 @@ function findGOGGame(gameFolderName: string): string | null {
 }
 
 /**
- * Detect Epic Games installation path
- */
-function getEpicPath(): string | null {
-  try {
-    if (process.platform === 'win32') {
-      const defaultPath = 'C:\\Program Files\\Epic Games';
-      if (fs.existsSync(defaultPath)) {
-        return defaultPath;
-      }
-    } else if (process.platform === 'darwin') {
-      // Epic Games on macOS
-      const defaultPath = path.join(os.homedir(), 'Library/Application Support/Epic/EpicGamesLauncher');
-      if (fs.existsSync(defaultPath)) {
-        return '/Applications'; // Games are usually in Applications
-      }
-    }
-  } catch (error) {
-    console.error('Error detecting Epic path:', error);
-  }
-  return null;
-}
-
-/**
- * Find Epic game by folder name
- */
-function findEpicGame(gameFolderName: string): string | null {
-  const epicPath = getEpicPath();
-  if (!epicPath) return null;
-
-  const gamePath = path.join(epicPath, gameFolderName);
-  if (fs.existsSync(gamePath)) {
-    return gamePath;
-  }
-
-  return null;
-}
-
-/**
  * Detect all possible paths for a game
  */
-export function detectGamePaths(installPaths: {
-  steam?: string;
-  gog?: string;
-  epic?: string;
-}): GamePath[] {
+export function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
   const results: GamePath[] = [];
 
-  // Check Steam
-  if (installPaths.steam) {
-    const steamPath = findSteamGame(installPaths.steam);
-    results.push({
-      platform: 'steam',
-      path: steamPath || '',
-      exists: !!steamPath,
-    });
-  }
+  for (const installPath of installPaths) {
+    if (!installPath.type || !installPath.path) continue;
 
-  // Check GOG
-  if (installPaths.gog) {
-    const gogPath = findGOGGame(installPaths.gog);
-    results.push({
-      platform: 'gog',
-      path: gogPath || '',
-      exists: !!gogPath,
-    });
-  }
+    let foundPath: string | null = null;
 
-  // Check Epic
-  if (installPaths.epic) {
-    const epicPath = findEpicGame(installPaths.epic);
-    results.push({
-      platform: 'epic',
-      path: epicPath || '',
-      exists: !!epicPath,
-    });
+    if (installPath.type === 'steam') {
+      foundPath = findSteamGame(installPath.path);
+      results.push({
+        platform: 'steam',
+        path: foundPath || '',
+        exists: !!foundPath,
+      });
+    } else if (installPath.type === 'gog') {
+      foundPath = findGOGGame(installPath.path);
+      results.push({
+        platform: 'gog',
+        path: foundPath || '',
+        exists: !!foundPath,
+      });
+    }
   }
 
   return results;
@@ -306,11 +258,7 @@ export function detectGamePaths(installPaths: {
 /**
  * Get the first available game path
  */
-export function getFirstAvailableGamePath(installPaths: {
-  steam?: string;
-  gog?: string;
-  epic?: string;
-}): GamePath | null {
+export function getFirstAvailableGamePath(installPaths: InstallPath[]): GamePath | null {
   const paths = detectGamePaths(installPaths);
   return paths.find(p => p.exists) || null;
 }

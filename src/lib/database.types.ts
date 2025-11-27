@@ -77,7 +77,9 @@ export type Database = {
           game_description: string | null
           game_id: string
           id: string
-          install_paths: Json
+          install_paths:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           is_active: boolean
           logo_path: string | null
           name: string
@@ -104,7 +106,9 @@ export type Database = {
           game_description?: string | null
           game_id: string
           id?: string
-          install_paths?: Json
+          install_paths?:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           is_active?: boolean
           logo_path?: string | null
           name: string
@@ -131,7 +135,9 @@ export type Database = {
           game_description?: string | null
           game_id?: string
           id?: string
-          install_paths?: Json
+          install_paths?:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           is_active?: boolean
           logo_path?: string | null
           name?: string
@@ -183,7 +189,9 @@ export type Database = {
           editing_progress: number
           game_description: string | null
           id: string
-          install_paths: Json
+          install_paths:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           logo_path: string | null
           name: string
           platforms: string[]
@@ -211,7 +219,9 @@ export type Database = {
           editing_progress?: number
           game_description?: string | null
           id?: string
-          install_paths?: Json
+          install_paths?:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           logo_path?: string | null
           name: string
           platforms?: string[]
@@ -239,7 +249,9 @@ export type Database = {
           editing_progress?: number
           game_description?: string | null
           id?: string
-          install_paths?: Json
+          install_paths?:
+            | Database["public"]["CompositeTypes"]["install_path_entry"][]
+            | null
           logo_path?: string | null
           name?: string
           platforms?: string[]
@@ -509,14 +521,16 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
-      validate_install_paths: { Args: { paths: Json }; Returns: boolean }
     }
     Enums: {
       game_status: "completed" | "in-progress" | "planned"
       install_source: "steam" | "gog"
     }
     CompositeTypes: {
-      [_ in never]: never
+      install_path_entry: {
+        type: Database["public"]["Enums"]["install_source"] | null
+        path: string | null
+      }
     }
   }
 }
