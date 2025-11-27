@@ -15,7 +15,7 @@ importers:
         specifier: ^0.5.16
         version: 0.5.16
       electron-updater:
-        specifier: ^6.1.7
+        specifier: ^6.6.2
         version: 6.6.2
       lucide-react:
         specifier: ^0.294.0

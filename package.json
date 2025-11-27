@@ -24,7 +24,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
     "adm-zip": "^0.5.16",
-    "electron-updater": "^6.1.7",
+    "electron-updater": "^6.6.2",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -47,7 +47,8 @@
     "publish": {
       "provider": "github",
       "owner": "Vadko",
-      "repo": "littlebit-launcher"
+      "repo": "littlebit-launcher",
+      "private": true
     },
     "win": {
       "target": [

@@ -145,22 +145,6 @@ ipcMain.handle('select-game-folder', async () => {
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
-
-const githubToken = import.meta.env.VITE_GH_TOKEN;
-
-if (githubToken) {
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'Vadko',
-    repo: 'littlebit-launcher',
-    private: true,
-    token: githubToken,
-  });
-} else {
-  console.warn('GH_TOKEN not set. Auto-updates may not work for private repository.');
-  console.warn('Set GH_TOKEN environment variable or the repo should be public.');
-}
-
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info);
   mainWindow?.webContents.send('update-available', info);
@@ -173,7 +157,6 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('error', (error) => {
   console.error('Update error:', error);
-  mainWindow?.webContents.send('update-error', error);
 });
 
 autoUpdater.on('download-progress', (progress) => {
@@ -181,18 +164,6 @@ autoUpdater.on('download-progress', (progress) => {
 });
 
 // IPC handlers for updates
-ipcMain.handle('check-for-updates', async () => {
-  if (!app.isPackaged) {
-    return { available: false, message: 'Updates only work in packaged app' };
-  }
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    return { available: true, updateInfo: result?.updateInfo };
-  } catch (error) {
-    return { available: false, error: error instanceof Error ? error.message : 'Unknown error' };
-  }
-});
-
 ipcMain.handle('download-update', async () => {
   try {
     await autoUpdater.downloadUpdate();
