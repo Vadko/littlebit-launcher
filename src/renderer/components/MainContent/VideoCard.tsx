@@ -58,6 +58,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
       </h3>
       <div className="relative rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
         <iframe
+          referrerPolicy="strict-origin-when-cross-origin"
           className="absolute top-0 left-0 w-full h-full"
           src={embedUrl}
           title="YouTube video player"
