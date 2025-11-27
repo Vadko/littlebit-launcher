@@ -76,4 +76,4 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm dist:linux --x64 -l AppImage -l rpm --publish always
+        run: pnpm dist:linux --publish always
