@@ -39,12 +39,10 @@ export const MainContent: React.FC = () => {
   }, [selectedGame]);
 
   const isUpdateAvailable =
-    installationInfo &&
-    selectedGame &&
-    installationInfo.version !== selectedGame.version;
+    installationInfo && selectedGame && installationInfo.version !== selectedGame.version;
 
   const handleInstall = async (customGamePath?: string) => {
-    if (!selectedGame || isInstalling) return;
+    if (!selectedGame || isInstalling || isCheckingInstallation) return;
 
     // Check if Electron API is available
     if (!window.electronAPI) {
@@ -65,7 +63,11 @@ export const MainContent: React.FC = () => {
       const platform = selectedGame.platforms[0] || 'steam';
 
       // Start installation
-      const result: InstallResult = await window.electronAPI.installTranslation(selectedGame.id, platform, customGamePath);
+      const result: InstallResult = await window.electronAPI.installTranslation(
+        selectedGame.id,
+        platform,
+        customGamePath
+      );
 
       // Check if installation failed
       if (!result.success && result.error) {
@@ -101,7 +103,9 @@ export const MainContent: React.FC = () => {
       setInstallProgress(100);
     } catch (error) {
       console.error('Installation error:', error);
-      alert(`❌ Помилка встановлення: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
+      alert(
+        `❌ Помилка встановлення: ${error instanceof Error ? error.message : 'Невідома помилка'}`
+      );
     } finally {
       setIsInstalling(false);
       setInstallProgress(0);
@@ -139,40 +143,33 @@ export const MainContent: React.FC = () => {
     <div className="flex-1 overflow-y-auto px-8 py-6">
       <GameHero game={selectedGame} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <StatusCard game={selectedGame} />
-        <InfoCard game={selectedGame} />
-      </div>
-
-      {selectedGame.video_url && (
-        <div className="mb-6">
-          <VideoCard videoUrl={selectedGame.video_url} />
-        </div>
-      )}
-
-      {selectedGame.game_description && (
-        <div className="glass-card mb-6">
-          <h3 className="text-lg font-head font-semibold text-white mb-3">
-            Про гру
-          </h3>
-          <p className="text-text-muted leading-relaxed whitespace-pre-line">
-            {selectedGame.game_description}
-          </p>
-        </div>
-      )}
-
       <div className="glass-card mb-6">
-        <h3 className="text-lg font-head font-semibold text-white mb-3">
-          Про переклад
-        </h3>
-        <p className="text-text-muted leading-relaxed whitespace-pre-line">
-          {selectedGame.description}
-        </p>
+        <div className="flex gap-4">
+          <Button
+            variant="primary"
+            icon={isUpdateAvailable ? <RefreshCw size={20} /> : <Download size={20} />}
+            onClick={() => handleInstall()}
+            disabled={isInstalling}
+          >
+            {isInstalling
+              ? isUpdateAvailable
+                ? 'Оновлення...'
+                : 'Встановлення...'
+              : isUpdateAvailable && !isCheckingInstallation
+                ? `Оновити до v${selectedGame?.version}`
+                : installationInfo
+                  ? `Перевстановити (v${installationInfo.version})`
+                  : 'Встановити переклад'}
+          </Button>
+          <Button variant="secondary" icon={<Heart size={20} />} onClick={handleSupport}>
+            Підтримати проєкт
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 mb-6">
         {/* Installation status badge */}
-        {installationInfo && !isInstalling && (
+        {installationInfo && !isCheckingInstallation && !isInstalling && (
           <div className="glass-card">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -207,9 +204,13 @@ export const MainContent: React.FC = () => {
           <div className="glass-card">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-white">
-                {isUpdateAvailable ? 'Оновлення перекладу...' : 'Встановлення перекладу...'}
+                {isUpdateAvailable
+                  ? 'Оновлення перекладу...'
+                  : 'Встановлення перекладу...'}
               </span>
-              <span className="text-sm font-bold text-neon-blue">{Math.round(installProgress)}%</span>
+              <span className="text-sm font-bold text-neon-blue">
+                {Math.round(installProgress)}%
+              </span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
               <div
@@ -222,33 +223,34 @@ export const MainContent: React.FC = () => {
             </div>
           </div>
         )}
-
-        <div className="flex gap-4">
-          <Button
-            variant="primary"
-            icon={isUpdateAvailable ? <RefreshCw size={20} /> : <Download size={20} />}
-            onClick={() => handleInstall()}
-            disabled={isInstalling || isCheckingInstallation}
-          >
-            {isInstalling
-              ? isUpdateAvailable
-                ? 'Оновлення...'
-                : 'Встановлення...'
-              : isUpdateAvailable
-                ? `Оновити до v${selectedGame?.version}`
-                : installationInfo
-                  ? `Перевстановити (v${installationInfo.version})`
-                  : 'Встановити переклад'}
-          </Button>
-          <Button
-            variant="secondary"
-            icon={<Heart size={20} />}
-            onClick={handleSupport}
-          >
-            Підтримати проєкт
-          </Button>
-        </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <StatusCard game={selectedGame} />
+        <InfoCard game={selectedGame} />
+      </div>
+
+      {selectedGame.video_url && (
+        <div className="mb-6">
+          <VideoCard videoUrl={selectedGame.video_url} />
+        </div>
+      )}
+
+      <div className="glass-card mb-6">
+        <h3 className="text-lg font-head font-semibold text-white mb-3">Про переклад</h3>
+        <p className="text-text-muted leading-relaxed whitespace-pre-line">
+          {selectedGame.description}
+        </p>
+      </div>
+
+      {selectedGame.game_description && (
+        <div className="glass-card mb-6">
+          <h3 className="text-lg font-head font-semibold text-white mb-3">Про гру</h3>
+          <p className="text-text-muted leading-relaxed whitespace-pre-line">
+            {selectedGame.game_description}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

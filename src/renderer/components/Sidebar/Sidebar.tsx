@@ -4,12 +4,19 @@ import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
 import { useStore, useFilteredGames } from '../../store/useStore';
+import logo from '../../../../resources/icon.png';
 
 type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
 
 export const Sidebar: React.FC = () => {
-  const { selectedGame, filter, searchQuery, setSelectedGame, setFilter, setSearchQuery } =
-    useStore();
+  const {
+    selectedGame,
+    filter,
+    searchQuery,
+    setSelectedGame,
+    setFilter,
+    setSearchQuery,
+  } = useStore();
   const filteredGames = useFilteredGames();
 
   const filters: { label: string; value: FilterType }[] = [
@@ -23,9 +30,11 @@ export const Sidebar: React.FC = () => {
     <GlassPanel className="w-[280px] h-full flex flex-col p-4 gap-4">
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-border">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center">
-          <span className="text-white font-bold text-lg">LB</span>
-        </div>
+        <img
+          src={logo}
+          alt="Little Bit logo"
+          className="w-12 h-12"
+        />
         <div>
           <h1 className="text-lg font-head font-bold text-white">Little Bit</h1>
           <p className="text-xs text-text-muted">Українські переклади</p>
@@ -87,7 +96,9 @@ export const Sidebar: React.FC = () => {
           onClick={() => {
             // TODO: Відкрити модальне вікно профілю
             console.log('Профіль - в розробці');
-            alert('Little Bit v1.0.0\n\nІнсталятор українських перекладів відеоігор\n\n💙 Дякуємо за підтримку!');
+            alert(
+              'Little Bit v1.0.0\n\nІнсталятор українських перекладів відеоігор\n\n💙 Дякуємо за підтримку!'
+            );
           }}
           className="flex-1 p-3 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"
           title="Профіль"

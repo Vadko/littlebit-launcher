@@ -8,6 +8,7 @@ module.exports = {
   copyright: 'Copyright © 2024 Little Bit UA',
 
   directories: {
+    buildResources: 'resources',
     output: 'release/${version}',
   },
 
