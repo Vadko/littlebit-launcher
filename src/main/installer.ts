@@ -1,9 +1,10 @@
-import { app, net, shell } from 'electron';
+import { app, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import AdmZip from 'adm-zip';
+import got from 'got';
 import { fetchGames } from './api';
 import { getFirstAvailableGamePath } from './game-detector';
 import { InstallationInfo, Game } from '../shared/types';
@@ -204,115 +205,72 @@ export async function downloadFile(
   outputPath: string,
   onProgress?: (progress: DownloadProgress) => void
 ): Promise<void> {
-  return new Promise((resolve, reject) => {
-    console.log(`[Downloader] Starting download: ${url}`);
+  console.log(`[Downloader] Starting download: ${url}`);
 
-    const request = net.request(url);
-    const writeStream = fs.createWriteStream(outputPath);
-    let downloadedBytes = 0;
-    let totalBytes = 0;
-    let lastProgressTime = Date.now();
-    let lastDownloadedBytes = 0;
-    let speedSamples: number[] = [];
-    const SPEED_SAMPLE_SIZE = 5; // Average over last 5 samples for smoother speed
+  const writeStream = fs.createWriteStream(outputPath);
+  const speedSamples: number[] = [];
+  const SPEED_SAMPLE_SIZE = 5;
+  let lastProgressTime = Date.now();
+  let lastDownloadedBytes = 0;
 
-    request.on('response', (response) => {
-      console.log(`[Downloader] Response status: ${response.statusCode}`);
-      // Handle redirects
-      const statusCode = response.statusCode;
-      if (
-        statusCode === 301 ||
-        statusCode === 302 ||
-        statusCode === 307 ||
-        statusCode === 308
-      ) {
-        const redirectUrl = response.headers.location;
-        if (redirectUrl) {
-          const url = typeof redirectUrl === 'string' ? redirectUrl : redirectUrl[0];
-          console.log(`Following redirect to: ${url}`);
-          writeStream.close();
-          downloadFile(url, outputPath, onProgress).then(resolve).catch(reject);
-          return;
-        }
-      }
+  try {
+    const downloadStream = got.stream(url, {
+      followRedirect: true,
+      timeout: {
+        lookup: 10000,
+        connect: 10000,
+        secureConnect: 10000,
+        response: 30000,
+      },
+    });
 
-      if (statusCode !== 200) {
-        writeStream.close();
-        reject(new Error(`Не вдалося завантажити файл (код помилки: ${statusCode})`));
-        return;
-      }
+    downloadStream.on('downloadProgress', (progress) => {
+      const { transferred, total, percent } = progress;
 
-      const contentLength = response.headers['content-length'];
-      const lengthStr = typeof contentLength === 'string' ? contentLength : contentLength?.[0] || '0';
-      totalBytes = parseInt(lengthStr, 10) || 0;
+      if (onProgress && total) {
+        const now = Date.now();
+        const timeDiff = (now - lastProgressTime) / 1000;
 
-      response.on('data', (chunk) => {
-        writeStream.write(chunk);
-        downloadedBytes += chunk.length;
+        if (timeDiff >= 0.1) {
+          const bytesThisPeriod = transferred - lastDownloadedBytes;
+          const currentSpeed = bytesThisPeriod / timeDiff;
 
-        if (onProgress && totalBytes > 0) {
-          const now = Date.now();
-          const timeDiff = (now - lastProgressTime) / 1000; // in seconds
-
-          // Calculate speed (only if enough time has passed to avoid spikes)
-          if (timeDiff >= 0.1) {
-            const bytesThisPeriod = downloadedBytes - lastDownloadedBytes;
-            const currentSpeed = bytesThisPeriod / timeDiff;
-
-            // Add to samples and keep only last N samples
-            speedSamples.push(currentSpeed);
-            if (speedSamples.length > SPEED_SAMPLE_SIZE) {
-              speedSamples.shift();
-            }
-
-            // Calculate average speed
-            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
-
-            // Calculate time remaining
-            const remainingBytes = totalBytes - downloadedBytes;
-            const timeRemaining = avgSpeed > 0 ? remainingBytes / avgSpeed : 0;
-
-            const progress: DownloadProgress = {
-              percent: (downloadedBytes / totalBytes) * 100,
-              downloadedBytes,
-              totalBytes,
-              bytesPerSecond: avgSpeed,
-              timeRemaining,
-            };
-
-            onProgress(progress);
-
-            lastProgressTime = now;
-            lastDownloadedBytes = downloadedBytes;
+          speedSamples.push(currentSpeed);
+          if (speedSamples.length > SPEED_SAMPLE_SIZE) {
+            speedSamples.shift();
           }
+
+          const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
+          const remainingBytes = total - transferred;
+          const timeRemaining = avgSpeed > 0 ? remainingBytes / avgSpeed : 0;
+
+          onProgress({
+            percent: percent * 100,
+            downloadedBytes: transferred,
+            totalBytes: total,
+            bytesPerSecond: avgSpeed,
+            timeRemaining,
+          });
+
+          lastProgressTime = now;
+          lastDownloadedBytes = transferred;
         }
-      });
-
-      response.on('end', () => {
-        writeStream.end();
-        resolve();
-      });
-
-      response.on('error', (error: Error) => {
-        writeStream.close();
-        reject(error);
-      });
+      }
     });
 
-    request.on('error', (error) => {
-      console.error(`[Downloader] Request error:`, error);
-      console.error(`[Downloader] Failed URL: ${url}`);
-      writeStream.close();
-      reject(error);
+    await new Promise<void>((resolve, reject) => {
+      downloadStream.pipe(writeStream);
+      downloadStream.on('error', reject);
+      writeStream.on('error', reject);
+      writeStream.on('finish', resolve);
     });
 
-    writeStream.on('error', (error) => {
-      writeStream.close();
-      reject(error);
-    });
-
-    request.end();
-  });
+    console.log(`[Downloader] Download completed: ${outputPath}`);
+  } catch (error) {
+    console.error(`[Downloader] Download error:`, error);
+    writeStream.close();
+    throw new Error(`Не вдалося завантажити файл: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 /**

@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "2.86.0",
     "adm-zip": "^0.5.16",
     "electron-updater": "6.6.2",
+    "got": "^14.6.5",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
