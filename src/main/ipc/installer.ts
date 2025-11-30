@@ -7,9 +7,17 @@ export function setupInstallerHandlers(): void {
     'install-translation',
     async (_, gameId: string, platform: string, customGamePath?: string) => {
       try {
-        await installTranslation(gameId, platform, (progress) => {
-          getMainWindow()?.webContents.send('install-progress', progress);
-        }, customGamePath);
+        await installTranslation(
+          gameId,
+          platform,
+          (progress) => {
+            getMainWindow()?.webContents.send('install-progress', progress);
+          },
+          customGamePath,
+          (downloadProgress) => {
+            getMainWindow()?.webContents.send('download-progress', downloadProgress);
+          }
+        );
         return { success: true };
       } catch (error) {
         console.error('Error installing translation:', error);

@@ -8,7 +8,7 @@ import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
 import { Button } from '../ui/Button';
-import type { InstallationInfo, InstallResult } from '../../../shared/types';
+import type { InstallationInfo, InstallResult, DownloadProgress } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
   const { selectedGame } = useStore();
@@ -16,6 +16,7 @@ export const MainContent: React.FC = () => {
   const { showConfirm } = useConfirmStore();
   const [isInstalling, setIsInstalling] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [installationInfo, setInstallationInfo] = useState<InstallationInfo | null>(null);
   const [isCheckingInstallation, setIsCheckingInstallation] = useState(false);
 
@@ -60,10 +61,10 @@ export const MainContent: React.FC = () => {
       return;
     }
 
-    // Check if installer file is present
+    // Check if installer file is present (any platform)
     const hasInstaller =
-      (process.platform === 'win32' && selectedGame.installation_file_windows_path) ||
-      (process.platform === 'linux' && selectedGame.installation_file_linux_path);
+      selectedGame.installation_file_windows_path ||
+      selectedGame.installation_file_linux_path;
 
     // Show warning if installer is present
     if (hasInstaller) {
@@ -89,10 +90,16 @@ export const MainContent: React.FC = () => {
     try {
       setIsInstalling(true);
       setInstallProgress(0);
+      setDownloadProgress(null);
 
-      // Setup progress listener
+      // Setup progress listeners
       window.electronAPI.onInstallProgress?.((progress: number) => {
         setInstallProgress(progress);
+      });
+
+      window.electronAPI.onDownloadProgress?.((progress: DownloadProgress) => {
+        console.log('[Download Progress]', progress);
+        setDownloadProgress(progress);
       });
 
       // Get the first available platform
@@ -156,7 +163,25 @@ export const MainContent: React.FC = () => {
     } finally {
       setIsInstalling(false);
       setInstallProgress(0);
+      setDownloadProgress(null);
     }
+  };
+
+  // Helper function to format bytes
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+  };
+
+  // Helper function to format time
+  const formatTime = (seconds: number): string => {
+    if (seconds === 0 || !isFinite(seconds)) return '--:--';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleSupport = () => {
@@ -253,15 +278,17 @@ export const MainContent: React.FC = () => {
           <div className="glass-card">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-white">
-                {isUpdateAvailable
-                  ? 'Оновлення перекладу...'
-                  : 'Встановлення перекладу...'}
+                {downloadProgress && downloadProgress.totalBytes > 0
+                  ? 'Завантаження файлів...'
+                  : isUpdateAvailable
+                    ? 'Оновлення перекладу...'
+                    : 'Встановлення перекладу...'}
               </span>
               <span className="text-sm font-bold text-neon-blue">
                 {Math.round(installProgress)}%
               </span>
             </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
               <div
                 className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-neon-blue to-neon-purple"
                 style={{
@@ -270,6 +297,28 @@ export const MainContent: React.FC = () => {
                 }}
               />
             </div>
+            {downloadProgress && downloadProgress.totalBytes > 0 && (
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Завантажено:</span>
+                  <span className="text-white font-medium">
+                    {formatBytes(downloadProgress.downloadedBytes)} / {formatBytes(downloadProgress.totalBytes)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Швидкість:</span>
+                  <span className="text-neon-blue font-medium">
+                    {formatBytes(downloadProgress.bytesPerSecond)}/с
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-muted">Залишилось часу:</span>
+                  <span className="text-neon-purple font-medium">
+                    {formatTime(downloadProgress.timeRemaining)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

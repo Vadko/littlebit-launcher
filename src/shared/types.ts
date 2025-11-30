@@ -16,6 +16,7 @@ export interface Game {
   platforms: string[];
   install_paths: InstallPath[];
   archive_path: string | null;
+  archive_size: string | null;
   banner_path: string | null;
   logo_path: string | null;
   thumbnail_path: string | null;
@@ -34,6 +35,14 @@ export interface InstallationInfo {
   gamePath: string;
 }
 
+export interface DownloadProgress {
+  percent: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  bytesPerSecond: number;
+  timeRemaining: number; // in seconds
+}
+
 export interface InstallResult {
   success: boolean;
   error?: {
@@ -49,6 +58,7 @@ export interface ElectronAPI {
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => void;
+  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
   // Auto-updater
   checkForUpdates: () => Promise<{ available: boolean; updateInfo?: unknown; message?: string; error?: string }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;

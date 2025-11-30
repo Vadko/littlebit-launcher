@@ -28,6 +28,7 @@ export async function getApprovedGames(): Promise<Game[]> {
     platforms: game.platforms,
     install_paths: game.install_paths || [],
     archive_path: game.archive_path || '',
+    archive_size: game.archive_size,
     banner_path: game.banner_path,
     logo_path: game.logo_path,
     thumbnail_path: game.thumbnail_path,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Game } from '../../types/game';
-import { Gamepad2, Calendar, Users } from 'lucide-react';
+import { Gamepad2, Calendar, Users, HardDrive } from 'lucide-react';
 
 interface InfoCardProps {
   game: Game;
@@ -42,6 +42,11 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
           value={game.version || 'N/A'}
         />
         <InfoItem icon={<Users size={18} />} label="Команда" value={game.team} />
+        <InfoItem
+          icon={<HardDrive size={18} />}
+          label="Розмір"
+          value={game.archive_size || 'N/A'}
+        />
       </div>
     </div>
   );

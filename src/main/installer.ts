@@ -21,7 +21,8 @@ export async function installTranslation(
   gameId: string,
   platform: string,
   onProgress?: (progress: number) => void,
-  customGamePath?: string
+  customGamePath?: string,
+  onDownloadProgress?: (progress: DownloadProgress) => void
 ): Promise<void> {
   try {
     onProgress?.(5);
@@ -83,8 +84,9 @@ export async function installTranslation(
 
     await downloadFile(downloadUrl, archivePath, (downloadProgress) => {
       // Map download progress to 20-70%
-      const overallProgress = 20 + downloadProgress * 0.5;
+      const overallProgress = 20 + downloadProgress.percent * 0.5;
       onProgress?.(overallProgress);
+      onDownloadProgress?.(downloadProgress);
     });
 
     onProgress?.(70);
@@ -186,13 +188,21 @@ export async function installTranslation(
   }
 }
 
+export interface DownloadProgress {
+  percent: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  bytesPerSecond: number;
+  timeRemaining: number; // in seconds
+}
+
 /**
  * Download file from URL with progress tracking
  */
 export async function downloadFile(
   url: string,
   outputPath: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: DownloadProgress) => void
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     console.log(`[Downloader] Starting download: ${url}`);
@@ -201,6 +211,10 @@ export async function downloadFile(
     const writeStream = fs.createWriteStream(outputPath);
     let downloadedBytes = 0;
     let totalBytes = 0;
+    let lastProgressTime = Date.now();
+    let lastDownloadedBytes = 0;
+    let speedSamples: number[] = [];
+    const SPEED_SAMPLE_SIZE = 5; // Average over last 5 samples for smoother speed
 
     request.on('response', (response) => {
       console.log(`[Downloader] Response status: ${response.statusCode}`);
@@ -237,8 +251,40 @@ export async function downloadFile(
         downloadedBytes += chunk.length;
 
         if (onProgress && totalBytes > 0) {
-          const progress = (downloadedBytes / totalBytes) * 100;
-          onProgress(progress);
+          const now = Date.now();
+          const timeDiff = (now - lastProgressTime) / 1000; // in seconds
+
+          // Calculate speed (only if enough time has passed to avoid spikes)
+          if (timeDiff >= 0.1) {
+            const bytesThisPeriod = downloadedBytes - lastDownloadedBytes;
+            const currentSpeed = bytesThisPeriod / timeDiff;
+
+            // Add to samples and keep only last N samples
+            speedSamples.push(currentSpeed);
+            if (speedSamples.length > SPEED_SAMPLE_SIZE) {
+              speedSamples.shift();
+            }
+
+            // Calculate average speed
+            const avgSpeed = speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length;
+
+            // Calculate time remaining
+            const remainingBytes = totalBytes - downloadedBytes;
+            const timeRemaining = avgSpeed > 0 ? remainingBytes / avgSpeed : 0;
+
+            const progress: DownloadProgress = {
+              percent: (downloadedBytes / totalBytes) * 100,
+              downloadedBytes,
+              totalBytes,
+              bytesPerSecond: avgSpeed,
+              timeRemaining,
+            };
+
+            onProgress(progress);
+
+            lastProgressTime = now;
+            lastDownloadedBytes = downloadedBytes;
+          }
         }
       });
 
