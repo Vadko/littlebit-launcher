@@ -18,7 +18,7 @@ module.exports = {
 
   electronLanguages: ['en-US', 'uk'],
 
-  artifactName: "${productName}-${os}.${ext}",
+  artifactName: "${productName}-${os}-${version}.${ext}",
 
   compression: 'store',
 
