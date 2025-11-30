@@ -4,11 +4,24 @@ import * as path from 'path';
 import * as os from 'os';
 import type { InstallPath } from '../shared/types';
 import type { Database } from '../lib/database.types';
+import { parseLibraryFolders, parseAppManifest } from './utils/vdf-parser';
 
 export interface GamePath {
   platform: Database['public']['Enums']['install_source'];
   path: string;
   exists: boolean;
+}
+
+/**
+ * Validate if a path is a valid Steam installation
+ */
+function isValidSteamPath(steamPath: string): boolean {
+  try {
+    const requiredDirs = ['steamapps', 'appcache', 'config'];
+    return requiredDirs.every(dir => fs.existsSync(path.join(steamPath, dir)));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -30,8 +43,10 @@ function getSteamPath(): string | null {
         const match = output.match(/InstallPath\s+REG_SZ\s+(.+)/);
         if (match && match[1]) {
           const steamPath = match[1].trim();
-          console.log('[GameDetector] Steam found at:', steamPath);
-          return steamPath;
+          if (isValidSteamPath(steamPath)) {
+            console.log('[GameDetector] Steam found at:', steamPath);
+            return steamPath;
+          }
         }
       } catch (err) {
         console.log('[GameDetector] 64-bit registry not found, trying 32-bit...');
@@ -44,8 +59,10 @@ function getSteamPath(): string | null {
           const match = output.match(/InstallPath\s+REG_SZ\s+(.+)/);
           if (match && match[1]) {
             const steamPath = match[1].trim();
-            console.log('[GameDetector] Steam found at (32-bit):', steamPath);
-            return steamPath;
+            if (isValidSteamPath(steamPath)) {
+              console.log('[GameDetector] Steam found at (32-bit):', steamPath);
+              return steamPath;
+            }
           }
         } catch (innerErr) {
           console.warn('[GameDetector] Registry query failed, trying default paths...');
@@ -61,29 +78,42 @@ function getSteamPath(): string | null {
       ];
 
       for (const defaultPath of defaultPaths) {
-        if (fs.existsSync(defaultPath)) {
+        if (fs.existsSync(defaultPath) && isValidSteamPath(defaultPath)) {
           console.log('[GameDetector] Steam found at default location:', defaultPath);
           return defaultPath;
         }
       }
     } else if (process.platform === 'darwin') {
       // macOS
-      const defaultPath = path.join(os.homedir(), 'Library/Application Support/Steam');
-      if (fs.existsSync(defaultPath)) {
-        console.log('[GameDetector] Steam found at:', defaultPath);
-        return defaultPath;
+      const macPaths = [
+        path.join(os.homedir(), 'Library/Application Support/Steam'),
+        '/Applications/Steam.app/Contents/MacOS',
+      ];
+
+      for (const macPath of macPaths) {
+        if (fs.existsSync(macPath) && isValidSteamPath(macPath)) {
+          console.log('[GameDetector] Steam found at:', macPath);
+          return macPath;
+        }
       }
     } else if (process.platform === 'linux') {
-      // Linux
-      const defaultPath = path.join(os.homedir(), '.steam/steam');
-      if (fs.existsSync(defaultPath)) {
-        console.log('[GameDetector] Steam found at:', defaultPath);
-        return defaultPath;
-      }
-      const flatpakPath = path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.steam/steam');
-      if (fs.existsSync(flatpakPath)) {
-        console.log('[GameDetector] Steam found at:', flatpakPath);
-        return flatpakPath;
+      // Linux - multiple installation methods
+      const linuxPaths = [
+        path.join(os.homedir(), '.steam/steam'),
+        path.join(os.homedir(), '.local/share/Steam'),
+        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.steam/steam'),
+        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.local/share/Steam'),
+        '/usr/share/steam',
+        '/usr/local/share/steam',
+        path.join(os.homedir(), 'snap/steam/common/.steam/steam'),
+        path.join(os.homedir(), 'snap/steam/common/.local/share/Steam'),
+      ];
+
+      for (const linuxPath of linuxPaths) {
+        if (fs.existsSync(linuxPath) && isValidSteamPath(linuxPath)) {
+          console.log('[GameDetector] Steam found at:', linuxPath);
+          return linuxPath;
+        }
       }
     }
   } catch (error) {
@@ -105,12 +135,12 @@ function getSteamLibraryFolders(steamPath: string): string[] {
     if (fs.existsSync(libraryFoldersPath)) {
       const content = fs.readFileSync(libraryFoldersPath, 'utf8');
 
-      // Parse VDF format (simple regex approach)
-      const pathMatches = content.matchAll(/"path"\s+"([^"]+)"/g);
-      for (const match of pathMatches) {
-        const libraryPath = match[1].replace(/\\\\/g, '\\');
-        const steamappsPath = path.join(libraryPath, 'steamapps');
-        if (fs.existsSync(steamappsPath)) {
+      // Use proper VDF parser
+      const libraryPaths = parseLibraryFolders(content);
+      for (const libraryPath of libraryPaths) {
+        const normalizedPath = libraryPath.replace(/\\\\/g, '\\');
+        const steamappsPath = path.join(normalizedPath, 'steamapps');
+        if (fs.existsSync(steamappsPath) && !folders.includes(steamappsPath)) {
           console.log('[GameDetector] Additional Steam library found:', steamappsPath);
           folders.push(steamappsPath);
         }
@@ -122,6 +152,63 @@ function getSteamLibraryFolders(steamPath: string): string[] {
 
   console.log(`[GameDetector] Total Steam libraries found: ${folders.length}`);
   return folders;
+}
+
+/**
+ * Get all installed games from appmanifest files
+ */
+function getAllSteamGames(libraryFolders: string[]): Map<string, string> {
+  const games = new Map<string, string>(); // installdir -> full path
+
+  for (const folder of libraryFolders) {
+    try {
+      const files = fs.readdirSync(folder);
+      const manifestFiles = files.filter(f => f.startsWith('appmanifest_') && f.endsWith('.acf'));
+
+      for (const manifestFile of manifestFiles) {
+        const manifestPath = path.join(folder, manifestFile);
+        try {
+          const content = fs.readFileSync(manifestPath, 'utf8');
+          const manifest = parseAppManifest(content);
+
+          if (manifest && manifest.installdir) {
+            const gamePath = path.join(folder, 'common', manifest.installdir);
+            if (fs.existsSync(gamePath)) {
+              games.set(manifest.installdir.toLowerCase(), gamePath);
+              console.log(`[GameDetector] Found game: ${manifest.name} (${manifest.installdir})`);
+            }
+          }
+        } catch (err) {
+          console.error(`[GameDetector] Error parsing manifest ${manifestFile}:`, err);
+        }
+      }
+    } catch (err) {
+      console.error(`[GameDetector] Error reading library folder ${folder}:`, err);
+    }
+  }
+
+  return games;
+}
+
+/**
+ * Fuzzy match game folder names
+ */
+function fuzzyMatchFolder(searchName: string, availableFolders: string[]): string | null {
+  const searchLower = searchName.toLowerCase();
+
+  // Exact match
+  const exactMatch = availableFolders.find(f => f.toLowerCase() === searchLower);
+  if (exactMatch) return exactMatch;
+
+  // Contains match
+  const containsMatch = availableFolders.find(f => f.toLowerCase().includes(searchLower));
+  if (containsMatch) return containsMatch;
+
+  // Reverse contains match
+  const reverseContains = availableFolders.find(f => searchLower.includes(f.toLowerCase()));
+  if (reverseContains) return reverseContains;
+
+  return null;
 }
 
 /**
@@ -147,6 +234,7 @@ function findSteamGame(gameFolderName: string): string | null {
 
   const libraryFolders = getSteamLibraryFolders(steamPath);
 
+  // First, try exact path matching
   for (const folder of libraryFolders) {
     const commonPath = path.join(folder, 'common', normalizedFolderName);
     console.log(`[GameDetector] Checking path: ${commonPath}`);
@@ -155,22 +243,32 @@ function findSteamGame(gameFolderName: string): string | null {
       console.log(`[GameDetector] ✓ Game found at: ${commonPath}`);
       return commonPath;
     }
+  }
 
-    // List what's actually in the common folder for debugging
-    const commonFolder = path.join(folder, 'common');
-    if (fs.existsSync(commonFolder)) {
-      try {
-        const actualFolders = fs.readdirSync(commonFolder, { withFileTypes: true })
-          .filter(dirent => dirent.isDirectory())
-          .map(dirent => dirent.name)
-          .slice(0, 10); // Limit to first 10 for logging
-        console.log(`[GameDetector] Available games in ${commonFolder}:`, actualFolders);
-      } catch (err) {
-        console.error('[GameDetector] Error reading common folder:', err);
-      }
+  // If not found, try parsing appmanifest files for more accurate detection
+  console.log('[GameDetector] Exact match not found, scanning appmanifest files...');
+  const installedGames = getAllSteamGames(libraryFolders);
+
+  // Try to find game by installdir
+  const gamePath = installedGames.get(normalizedFolderName.toLowerCase());
+  if (gamePath) {
+    console.log(`[GameDetector] ✓ Game found via appmanifest: ${gamePath}`);
+    return gamePath;
+  }
+
+  // Try fuzzy matching
+  const availableFolders = Array.from(installedGames.keys());
+  const fuzzyMatch = fuzzyMatchFolder(normalizedFolderName, availableFolders);
+  if (fuzzyMatch) {
+    const fuzzyPath = installedGames.get(fuzzyMatch);
+    if (fuzzyPath) {
+      console.log(`[GameDetector] ✓ Game found via fuzzy match: ${fuzzyPath} (matched "${fuzzyMatch}")`);
+      return fuzzyPath;
     }
   }
 
+  // List available games for debugging
+  console.log(`[GameDetector] Available games (${installedGames.size}):`, Array.from(installedGames.keys()).slice(0, 20));
   console.warn(`[GameDetector] ✗ Game "${gameFolderName}" not found in any Steam library`);
   return null;
 }
