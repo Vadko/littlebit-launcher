@@ -4,8 +4,8 @@
  */
 module.exports = {
   appId: 'com.littlebit.launcher',
-  productName: 'Little Bit',
-  copyright: 'Copyright © 2024 Little Bit UA',
+  productName: 'LittleBit',
+  copyright: 'Copyright © 2025 Little Bit UA',
 
   directories: {
     buildResources: 'resources',
@@ -18,7 +18,7 @@ module.exports = {
 
   electronLanguages: ['en-US', 'uk'],
 
-  artifactName: "${productName}-${os}-${version}.${ext}",
+  artifactName: "${productName}-${os}.${ext}",
 
   compression: 'store',
 
