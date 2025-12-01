@@ -14,6 +14,9 @@ const electronAPI: ElectronAPI = {
   onDownloadProgress: (callback) => {
     ipcRenderer.on('download-progress', (_, progress) => callback(progress));
   },
+  onInstallationStatus: (callback) => {
+    ipcRenderer.on('installation-status', (_, status) => callback(status));
+  },
   // Auto-updater
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),

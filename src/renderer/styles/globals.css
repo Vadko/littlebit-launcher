@@ -10,6 +10,11 @@
   box-sizing: border-box;
 }
 
+img {
+  pointer-events: none;
+  user-select: none;
+}
+
 :root {
   /* Colors */
   --bg-dark: #050b14;

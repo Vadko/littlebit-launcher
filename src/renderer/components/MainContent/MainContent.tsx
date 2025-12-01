@@ -11,14 +11,18 @@ import { Button } from '../ui/Button';
 import type { InstallationInfo, InstallResult, DownloadProgress } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
-  const { selectedGame } = useStore();
+  const { selectedGame, getInstallationProgress, setInstallationProgress, clearInstallationProgress } = useStore();
   const { showModal } = useModalStore();
   const { showConfirm } = useConfirmStore();
-  const [isInstalling, setIsInstalling] = useState(false);
-  const [installProgress, setInstallProgress] = useState(0);
-  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [installationInfo, setInstallationInfo] = useState<InstallationInfo | null>(null);
   const [isCheckingInstallation, setIsCheckingInstallation] = useState(false);
+
+  // Get installation progress for selected game
+  const gameProgress = selectedGame ? getInstallationProgress(selectedGame.id) : undefined;
+  const isInstalling = gameProgress?.isInstalling || false;
+  const installProgress = gameProgress?.progress || 0;
+  const downloadProgress = gameProgress?.downloadProgress || null;
+  const statusMessage = gameProgress?.statusMessage || null;
 
   // Check installation status when game changes
   useEffect(() => {
@@ -88,17 +92,25 @@ export const MainContent: React.FC = () => {
     if (!selectedGame) return;
 
     try {
-      setIsInstalling(true);
-      setInstallProgress(0);
-      setDownloadProgress(null);
-
-      // Setup progress listeners
-      window.electronAPI.onInstallProgress?.((progress: number) => {
-        setInstallProgress(progress);
+      setInstallationProgress(selectedGame.id, {
+        isInstalling: true,
+        progress: 0,
+        downloadProgress: null,
+        statusMessage: null,
       });
 
+      // Setup progress listeners
       window.electronAPI.onDownloadProgress?.((progress: DownloadProgress) => {
-        setDownloadProgress(progress);
+        setInstallationProgress(selectedGame.id, {
+          progress: progress.percent,
+          downloadProgress: progress,
+        });
+      });
+
+      window.electronAPI.onInstallationStatus?.((status) => {
+        setInstallationProgress(selectedGame.id, {
+          statusMessage: status.message,
+        });
       });
 
       // Get the first available platform
@@ -154,7 +166,6 @@ export const MainContent: React.FC = () => {
         message,
         type: 'success',
       });
-      setInstallProgress(100);
     } catch (error) {
       console.error('Installation error:', error);
       showModal({
@@ -163,9 +174,7 @@ export const MainContent: React.FC = () => {
         type: 'error',
       });
     } finally {
-      setIsInstalling(false);
-      setInstallProgress(0);
-      setDownloadProgress(null);
+      clearInstallationProgress(selectedGame.id);
     }
   };
 
@@ -279,47 +288,50 @@ export const MainContent: React.FC = () => {
 
         {isInstalling && (
           <div className="glass-card">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-white">
-                {downloadProgress && downloadProgress.totalBytes > 0
-                  ? 'Завантаження файлів...'
-                  : isUpdateAvailable
-                    ? 'Оновлення перекладу...'
-                    : 'Встановлення перекладу...'}
-              </span>
-              <span className="text-sm font-bold text-neon-blue">
-                {Math.round(installProgress)}%
-              </span>
-            </div>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
-              <div
-                className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-neon-blue to-neon-purple"
-                style={{
-                  width: `${installProgress}%`,
-                  boxShadow: '0 0 10px rgba(0, 242, 255, 0.5)',
-                }}
-              />
-            </div>
-            {downloadProgress && downloadProgress.totalBytes > 0 && (
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Завантажено:</span>
-                  <span className="text-white font-medium">
-                    {formatBytes(downloadProgress.downloadedBytes)} / {formatBytes(downloadProgress.totalBytes)}
+            {downloadProgress && downloadProgress.totalBytes > 0 ? (
+              <>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-white">Завантаження файлів...</span>
+                  <span className="text-sm font-bold text-neon-blue">
+                    {Math.round(installProgress)}%
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Швидкість:</span>
-                  <span className="text-neon-blue font-medium">
-                    {formatBytes(downloadProgress.bytesPerSecond)}/с
-                  </span>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
+                  <div
+                    className="h-full rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-neon-blue to-neon-purple"
+                    style={{
+                      width: `${installProgress}%`,
+                      boxShadow: '0 0 10px rgba(0, 242, 255, 0.5)',
+                    }}
+                  />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Залишилось часу:</span>
-                  <span className="text-neon-purple font-medium">
-                    {formatTime(downloadProgress.timeRemaining)}
-                  </span>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Завантажено:</span>
+                    <span className="text-white font-medium">
+                      {formatBytes(downloadProgress.downloadedBytes)} / {formatBytes(downloadProgress.totalBytes)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Швидкість:</span>
+                    <span className="text-neon-blue font-medium">
+                      {formatBytes(downloadProgress.bytesPerSecond)}/с
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">Залишилось часу:</span>
+                    <span className="text-neon-purple font-medium">
+                      {formatTime(downloadProgress.timeRemaining)}
+                    </span>
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-neon-blue border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm font-medium text-white">
+                  {statusMessage || (isUpdateAvailable ? 'Оновлення перекладу...' : 'Встановлення перекладу...')}
+                </span>
               </div>
             )}
           </div>

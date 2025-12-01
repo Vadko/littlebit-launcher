@@ -10,12 +10,12 @@ export function setupInstallerHandlers(): void {
         await installTranslation(
           gameId,
           platform,
-          (progress) => {
-            getMainWindow()?.webContents.send('install-progress', progress);
-          },
           customGamePath,
           (downloadProgress) => {
             getMainWindow()?.webContents.send('download-progress', downloadProgress);
+          },
+          (status) => {
+            getMainWindow()?.webContents.send('installation-status', status);
           }
         );
         return { success: true };

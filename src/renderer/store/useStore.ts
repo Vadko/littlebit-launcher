@@ -1,8 +1,16 @@
 import { create } from 'zustand';
 import { Game } from '../types/game';
 import { fetchGames } from '../utils/api';
+import type { DownloadProgress } from '../../shared/types';
 
 type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
+
+interface InstallationProgress {
+  isInstalling: boolean;
+  progress: number;
+  downloadProgress: DownloadProgress | null;
+  statusMessage: string | null;
+}
 
 interface Store {
   games: Game[];
@@ -14,6 +22,7 @@ interface Store {
   installedGames: Map<string, { version: string }>;
   gamesWithUpdates: Set<string>;
   isInitialLoad: boolean;
+  installationProgress: Map<string, InstallationProgress>;
 
   // Actions
   fetchGames: () => Promise<void>;
@@ -27,6 +36,9 @@ interface Store {
   markGameAsUpdated: (gameId: string) => void;
   clearGameUpdate: (gameId: string) => void;
   setInitialLoadComplete: () => void;
+  setInstallationProgress: (gameId: string, progress: Partial<InstallationProgress>) => void;
+  clearInstallationProgress: (gameId: string) => void;
+  getInstallationProgress: (gameId: string) => InstallationProgress | undefined;
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -39,6 +51,7 @@ export const useStore = create<Store>((set, get) => ({
   installedGames: new Map(),
   gamesWithUpdates: new Set(),
   isInitialLoad: true,
+  installationProgress: new Map(),
 
   fetchGames: async () => {
     set({ isLoading: true, error: null });
@@ -59,9 +72,14 @@ export const useStore = create<Store>((set, get) => ({
 
   updateGame: (updatedGame) =>
     set((state) => {
-      const games = state.games.map((game) =>
-        game.id === updatedGame.id ? updatedGame : game
-      );
+      let games: Game[];
+      if (state.games.find((game) => game.id === updatedGame.id)) {
+        games = state.games.map((game) =>
+          game.id === updatedGame.id ? updatedGame : game
+        );
+      } else {
+        games = [...state.games, updatedGame].sort((gameA, gameB) => gameA.name.localeCompare(gameB.name));
+      }
 
       // Update selected game if it's the one that was updated
       const selectedGame =
@@ -137,6 +155,32 @@ export const useStore = create<Store>((set, get) => ({
 
   setInitialLoadComplete: () => {
     set({ isInitialLoad: false });
+  },
+
+  setInstallationProgress: (gameId: string, progress: Partial<InstallationProgress>) => {
+    set((state) => {
+      const newMap = new Map(state.installationProgress);
+      const currentProgress = newMap.get(gameId) || {
+        isInstalling: false,
+        progress: 0,
+        downloadProgress: null,
+        statusMessage: null,
+      };
+      newMap.set(gameId, { ...currentProgress, ...progress });
+      return { installationProgress: newMap };
+    });
+  },
+
+  clearInstallationProgress: (gameId: string) => {
+    set((state) => {
+      const newMap = new Map(state.installationProgress);
+      newMap.delete(gameId);
+      return { installationProgress: newMap };
+    });
+  },
+
+  getInstallationProgress: (gameId: string) => {
+    return get().installationProgress.get(gameId);
   },
 
   initRealtimeSubscription: () => {

@@ -3,7 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import AdmZip from 'adm-zip';
+import { createHash } from 'crypto';
+import StreamZip from 'node-stream-zip';
 import got from 'got';
 import { fetchGames } from './api';
 import { getFirstAvailableGamePath } from './game-detector';
@@ -18,16 +19,18 @@ const INSTALLATION_INFO_FILE = '.littlebit-translation.json';
 /**
  * Main installation function
  */
+export interface InstallationStatus {
+  message: string;
+}
+
 export async function installTranslation(
   gameId: string,
   platform: string,
-  onProgress?: (progress: number) => void,
   customGamePath?: string,
-  onDownloadProgress?: (progress: DownloadProgress) => void
+  onDownloadProgress?: (progress: DownloadProgress) => void,
+  onStatus?: (status: InstallationStatus) => void
 ): Promise<void> {
   try {
-    onProgress?.(5);
-
     // 1. Fetch game metadata
     const games = await fetchGames();
     const game = games.find((g) => g.id === gameId);
@@ -39,8 +42,6 @@ export async function installTranslation(
     console.log(`[Installer] Installing translation for: ${game.name} (${gameId})`);
     console.log(`[Installer] Install paths config:`, JSON.stringify(game.install_paths, null, 2));
     console.log(`[Installer] Requested platform: ${platform}`);
-
-    onProgress?.(10);
 
     // 2. Detect game installation path
     const gamePath = customGamePath
@@ -62,9 +63,32 @@ export async function installTranslation(
     }
 
     console.log(`[Installer] ✓ Game found at: ${gamePath.path} (${gamePath.platform})`);
-    onProgress?.(20);
 
-    // 3. Download translation archive from Supabase Storage
+    // 3. Check available disk space
+    if (game.archive_size) {
+      // Parse size string like "150 MB" to bytes
+      const requiredSpace = parseSizeToBytes(game.archive_size);
+
+      if (requiredSpace > 0) {
+        // We need 3x space: for archive + extracted files + final copy
+        const neededSpace = requiredSpace * 3;
+
+        const diskSpace = await checkDiskSpace(gamePath.path);
+
+        if (diskSpace < neededSpace) {
+          throw new Error(
+            `Недостатньо місця на диску.\n\n` +
+            `Необхідно: ${formatBytes(neededSpace)}\n` +
+            `Доступно: ${formatBytes(diskSpace)}\n\n` +
+            `Звільніть місце та спробуйте знову.`
+          );
+        }
+
+        console.log(`[Installer] ✓ Disk space check passed (available: ${formatBytes(diskSpace)}, needed: ${formatBytes(neededSpace)})`);
+      }
+    }
+
+    // 4. Download translation archive from Supabase Storage
     const tempDir = app.getPath('temp');
     const downloadDir = path.join(tempDir, 'little-bit-downloads');
     await mkdir(downloadDir, { recursive: true });
@@ -84,19 +108,32 @@ export async function installTranslation(
     console.log(`[Installer] Saving to: ${archivePath}`);
 
     await downloadFile(downloadUrl, archivePath, (downloadProgress) => {
-      // Map download progress to 20-70%
-      const overallProgress = 20 + downloadProgress.percent * 0.5;
-      onProgress?.(overallProgress);
       onDownloadProgress?.(downloadProgress);
     });
 
-    onProgress?.(70);
+    // Verify file hash if available
+    if (game.archive_hash) {
+      onStatus?.({ message: 'Перевірка цілісності файлу...' });
+      console.log(`[Installer] Verifying file hash...`);
+      const isValid = await verifyFileHash(archivePath, game.archive_hash);
+
+      if (!isValid) {
+        // Delete corrupted file
+        if (fs.existsSync(archivePath)) {
+          await unlink(archivePath);
+        }
+        throw new Error(
+          'Файл перекладу пошкоджено або змінено.\n\n' +
+          'Спробуйте завантажити ще раз або зверніться до підтримки.'
+        );
+      }
+      console.log(`[Installer] ✓ File hash verified successfully`);
+    }
 
     // 4. Extract archive
+    onStatus?.({ message: 'Розпакування файлів...' });
     const extractDir = path.join(downloadDir, `${gameId}_extract`);
     await extractArchive(archivePath, extractDir);
-
-    onProgress?.(80);
 
     // 5. Check for installer file and run if present
     const installerFileName = getInstallerFileName(game);
@@ -112,19 +149,14 @@ export async function installTranslation(
     }
 
     // 6. Copy files to game directory
-    // installPaths is only used for finding the game
+    onStatus?.({ message: 'Копіювання файлів перекладу...' });
     const fullTargetPath = gamePath.path;
-
     console.log(`[Installer] Installing to: ${fullTargetPath}`);
-
     await copyDirectory(extractDir, fullTargetPath);
 
-    onProgress?.(95);
-
     // 7. Cleanup
+    onStatus?.({ message: 'Очищення тимчасових файлів...' });
     await cleanup(archivePath, extractDir);
-
-    onProgress?.(100);
 
     // 8. Save installation info
     await saveInstallationInfo(gamePath.path, {
@@ -198,9 +230,70 @@ export interface DownloadProgress {
 }
 
 /**
- * Download file from URL with progress tracking
+ * Download file from URL with progress tracking and retry logic
  */
 export async function downloadFile(
+  url: string,
+  outputPath: string,
+  onProgress?: (progress: DownloadProgress) => void,
+  maxRetries: number = 3
+): Promise<void> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 1) {
+        console.log(`[Downloader] Retry attempt ${attempt}/${maxRetries}`);
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 10000)));
+      }
+
+      await downloadFileAttempt(url, outputPath, onProgress);
+      return; // Success
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.error(`[Downloader] Attempt ${attempt}/${maxRetries} failed:`, lastError.message);
+
+      // Clean up partial download
+      if (fs.existsSync(outputPath)) {
+        try {
+          await unlink(outputPath);
+        } catch (cleanupError) {
+          console.warn('[Downloader] Failed to clean up partial download:', cleanupError);
+        }
+      }
+
+      // Don't retry on certain errors
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        if (message.includes('404') || message.includes('not found') || message.includes('forbidden')) {
+          throw error; // Don't retry on these errors
+        }
+      }
+    }
+  }
+
+  // All retries failed - clean up any partial file
+  if (fs.existsSync(outputPath)) {
+    try {
+      await unlink(outputPath);
+      console.log('[Downloader] Cleaned up failed download file');
+    } catch (cleanupError) {
+      console.warn('[Downloader] Failed to clean up after all retries:', cleanupError);
+    }
+  }
+
+  throw new Error(
+    `Не вдалося завантажити файл після ${maxRetries} спроб.\n\n` +
+    `Остання помилка: ${lastError?.message || 'Невідома помилка'}\n\n` +
+    'Перевірте підключення до Інтернету та спробуйте ще раз.'
+  );
+}
+
+/**
+ * Single download attempt
+ */
+async function downloadFileAttempt(
   url: string,
   outputPath: string,
   onProgress?: (progress: DownloadProgress) => void
@@ -208,7 +301,7 @@ export async function downloadFile(
   console.log(`[Downloader] Starting download: ${url}`);
 
   const writeStream = fs.createWriteStream(outputPath);
-  let startTime = Date.now();
+  const startTime = Date.now();
   let lastUpdateTime = Date.now();
 
   try {
@@ -250,8 +343,17 @@ export async function downloadFile(
 
     await new Promise<void>((resolve, reject) => {
       downloadStream.pipe(writeStream);
-      downloadStream.on('error', reject);
-      writeStream.on('error', reject);
+
+      downloadStream.on('error', (error) => {
+        writeStream.close();
+        reject(error);
+      });
+
+      writeStream.on('error', (error) => {
+        downloadStream.destroy();
+        reject(error);
+      });
+
       writeStream.on('finish', resolve);
     });
 
@@ -259,19 +361,42 @@ export async function downloadFile(
   } catch (error) {
     console.error(`[Downloader] Download error:`, error);
     writeStream.close();
-    throw new Error(`Не вдалося завантажити файл: ${error instanceof Error ? error.message : 'Unknown error'}`);
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+
+      if (message.includes('enotfound') || message.includes('getaddrinfo')) {
+        throw new Error('Не вдалося підключитися до сервера. Перевірте підключення до Інтернету.');
+      }
+
+      if (message.includes('etimedout') || message.includes('timeout')) {
+        throw new Error('Час очікування вичерпано. Перевірте підключення до Інтернету.');
+      }
+
+      if (message.includes('econnreset') || message.includes('socket hang up')) {
+        throw new Error('З\'єднання розірвано. Перевірте підключення до Інтернету.');
+      }
+
+      if (message.includes('econnrefused')) {
+        throw new Error('Сервер недоступний. Спробуйте пізніше.');
+      }
+    }
+
+    throw new Error(`Помилка завантаження: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
   }
 }
 
 /**
- * Extract ZIP archive
+ * Extract ZIP archive with UTF-8 support
  */
 async function extractArchive(archivePath: string, extractPath: string): Promise<void> {
   try {
     await mkdir(extractPath, { recursive: true });
 
-    const zip = new AdmZip(archivePath);
-    zip.extractAllTo(extractPath, true);
+    const zip = new StreamZip.async({ file: archivePath });
+    await zip.extract(null, extractPath);
+    await zip.close();
 
     console.log(`Extracted archive to: ${extractPath}`);
   } catch (error) {
@@ -530,5 +655,71 @@ function getPreviousInstallPath(gameId: string): string | null {
     return installInfoPath;
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * Verify file hash (SHA-256)
+ */
+async function verifyFileHash(filePath: string, expectedHash: string): Promise<boolean> {
+  try {
+    const fileBuffer = await fs.promises.readFile(filePath);
+    const hash = createHash('sha256');
+    hash.update(fileBuffer);
+    const actualHash = hash.digest('hex');
+
+    console.log(`[Hash] Expected: ${expectedHash}`);
+    console.log(`[Hash] Actual:   ${actualHash}`);
+
+    return actualHash === expectedHash;
+  } catch (error) {
+    console.error('[Hash] Error verifying file hash:', error);
+    return false;
+  }
+}
+
+/**
+ * Parse size string like "150.00 MB" to bytes (reverse of formatBytes)
+ */
+function parseSizeToBytes(sizeString: string): number {
+  const match = sizeString.trim().match(/([\d.]+)\s*(B|KB|MB|GB)/i);
+  if (!match) return 0;
+
+  const value = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+
+  const multipliers: Record<string, number> = {
+    'B': 1,
+    'KB': 1024,
+    'MB': 1024 * 1024,
+    'GB': 1024 * 1024 * 1024,
+  };
+
+  return value * (multipliers[unit] || 0);
+}
+
+/**
+ * Format bytes to human readable string
+ */
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+}
+
+/**
+ * Check available disk space
+ */
+async function checkDiskSpace(targetPath: string): Promise<number> {
+  try {
+    const stats = await fs.promises.statfs(targetPath);
+    // Available space = block size * available blocks
+    return stats.bavail * stats.bsize;
+  } catch (error) {
+    console.error('[DiskSpace] Error checking disk space:', error);
+    // Return a large number to not block installation if we can't check
+    return Number.MAX_SAFE_INTEGER;
   }
 }

@@ -67,6 +67,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          archive_hash: string | null
           archive_path: string | null
           archive_size: string | null
           banner_path: string | null
@@ -98,6 +99,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          archive_hash?: string | null
           archive_path?: string | null
           archive_size?: string | null
           banner_path?: string | null
@@ -129,6 +131,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          archive_hash?: string | null
           archive_path?: string | null
           archive_size?: string | null
           banner_path?: string | null
@@ -186,6 +189,7 @@ export type Database = {
           approved: boolean
           approved_at: string | null
           approved_by: string | null
+          archive_hash: string | null
           archive_path: string | null
           archive_size: string | null
           banner_path: string | null
@@ -218,6 +222,7 @@ export type Database = {
           approved?: boolean
           approved_at?: string | null
           approved_by?: string | null
+          archive_hash?: string | null
           archive_path?: string | null
           archive_size?: string | null
           banner_path?: string | null
@@ -250,6 +255,7 @@ export type Database = {
           approved?: boolean
           approved_at?: string | null
           approved_by?: string | null
+          archive_hash?: string | null
           archive_path?: string | null
           archive_size?: string | null
           banner_path?: string | null
