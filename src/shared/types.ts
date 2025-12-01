@@ -35,6 +35,7 @@ export interface InstallationInfo {
   installedAt: string;
   gamePath: string;
   hasBackup?: boolean;
+  installedFiles?: string[]; // Relative paths of all installed files
 }
 
 export interface DownloadProgress {

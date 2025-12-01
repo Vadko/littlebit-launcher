@@ -154,6 +154,10 @@ export async function installTranslation(
     const fullTargetPath = gamePath.path;
     console.log(`[Installer] Installing to: ${fullTargetPath}`);
 
+    // Get list of all files that will be installed
+    const installedFiles = await getAllFiles(extractDir);
+    console.log(`[Installer] Will install ${installedFiles.length} files`);
+
     // Create backup of files that will be overwritten (if enabled)
     if (createBackup) {
       onStatus?.({ message: 'Створення резервної копії...' });
@@ -176,6 +180,7 @@ export async function installTranslation(
       installedAt: new Date().toISOString(),
       gamePath: gamePath.path,
       hasBackup: createBackup,
+      installedFiles,
     });
 
     console.log(`[Installer] Translation for ${gameId} installed successfully at ${fullTargetPath}`);
@@ -449,11 +454,18 @@ async function restoreBackup(backupDir: string, targetDir: string): Promise<void
 }
 
 /**
- * Backup files that will be overwritten
+ * Backup files that will be overwritten (only if backup doesn't exist already)
  */
 async function backupFiles(sourceDir: string, targetDir: string): Promise<void> {
   try {
     const backupDir = path.join(targetDir, BACKUP_DIR_NAME);
+
+    // If backup already exists, don't overwrite it (preserve original files)
+    if (fs.existsSync(backupDir)) {
+      console.log(`[Backup] Backup already exists, skipping to preserve original files: ${backupDir}`);
+      return;
+    }
+
     await mkdir(backupDir, { recursive: true });
 
     // Read all files from source directory
@@ -486,6 +498,30 @@ async function backupFiles(sourceDir: string, targetDir: string): Promise<void> 
       `Помилка створення резервної копії: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
+}
+
+/**
+ * Get list of all files in directory recursively (relative paths)
+ */
+async function getAllFiles(dir: string, baseDir: string = dir): Promise<string[]> {
+  const files: string[] = [];
+  const entries = await readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      // Recursively get files from subdirectory
+      const subFiles = await getAllFiles(fullPath, baseDir);
+      files.push(...subFiles);
+    } else {
+      // Store relative path
+      const relativePath = path.relative(baseDir, fullPath);
+      files.push(relativePath);
+    }
+  }
+
+  return files;
 }
 
 /**
@@ -684,7 +720,45 @@ export async function uninstallTranslation(gameId: string): Promise<void> {
     const gamePath = installInfo.gamePath;
     const backupDir = path.join(gamePath, BACKUP_DIR_NAME);
 
-    // Only restore files from backup if backup was created
+    // Step 1: Delete all installed files (including new files that weren't backed up)
+    if (installInfo.installedFiles && installInfo.installedFiles.length > 0) {
+      console.log(`[Installer] Deleting ${installInfo.installedFiles.length} installed files...`);
+      const directoriesDeleted = new Set<string>();
+
+      for (const relativePath of installInfo.installedFiles) {
+        const filePath = path.join(gamePath, relativePath);
+        try {
+          if (fs.existsSync(filePath)) {
+            await unlink(filePath);
+            console.log(`[Installer] Deleted: ${relativePath}`);
+
+            // Try to delete empty parent directories
+            let dirPath = path.dirname(filePath);
+            while (dirPath !== gamePath && !directoriesDeleted.has(dirPath)) {
+              try {
+                const entries = await readdir(dirPath);
+                if (entries.length === 0) {
+                  await fs.promises.rmdir(dirPath);
+                  directoriesDeleted.add(dirPath);
+                  console.log(`[Installer] Deleted empty directory: ${path.relative(gamePath, dirPath)}`);
+                  dirPath = path.dirname(dirPath);
+                } else {
+                  break; // Directory not empty, stop
+                }
+              } catch (error) {
+                break; // Failed to delete or read, stop
+              }
+            }
+          }
+        } catch (error) {
+          console.warn(`[Installer] Failed to delete file ${relativePath}:`, error);
+        }
+      }
+    } else {
+      console.warn('[Installer] No installed files list found, skipping file deletion');
+    }
+
+    // Step 2: Restore files from backup (original files that were overwritten)
     if (installInfo.hasBackup !== false && fs.existsSync(backupDir)) {
       console.log(`[Installer] Restoring files from backup: ${backupDir}`);
       await restoreBackup(backupDir, gamePath);
