@@ -59,6 +59,7 @@ export interface InstallResult {
 export interface ElectronAPI {
   fetchGames: () => Promise<Game[]>;
   installTranslation: (gameId: string, platform: string, customGamePath?: string) => Promise<InstallResult>;
+  uninstallTranslation: (gameId: string) => Promise<InstallResult>;
   checkInstallation: (gameId: string) => Promise<InstallationInfo | null>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;

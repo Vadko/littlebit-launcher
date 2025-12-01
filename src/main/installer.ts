@@ -15,6 +15,7 @@ const readdir = promisify(fs.readdir);
 const unlink = promisify(fs.unlink);
 
 const INSTALLATION_INFO_FILE = '.littlebit-translation.json';
+const BACKUP_DIR_NAME = '.littlebit-backup';
 
 /**
  * Main installation function
@@ -148,10 +149,15 @@ export async function installTranslation(
       }
     }
 
-    // 6. Copy files to game directory
-    onStatus?.({ message: 'Копіювання файлів перекладу...' });
+    // 6. Backup original files and copy translation files
+    onStatus?.({ message: 'Створення резервної копії...' });
     const fullTargetPath = gamePath.path;
     console.log(`[Installer] Installing to: ${fullTargetPath}`);
+
+    // Create backup of files that will be overwritten
+    await backupFiles(extractDir, fullTargetPath);
+
+    onStatus?.({ message: 'Копіювання файлів перекладу...' });
     await copyDirectory(extractDir, fullTargetPath);
 
     // 7. Cleanup
@@ -407,6 +413,76 @@ async function extractArchive(archivePath: string, extractPath: string): Promise
 }
 
 /**
+ * Restore files from backup
+ */
+async function restoreBackup(backupDir: string, targetDir: string): Promise<void> {
+  try {
+    const entries = await readdir(backupDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const backupPath = path.join(backupDir, entry.name);
+      const targetPath = path.join(targetDir, entry.name);
+
+      if (entry.isDirectory()) {
+        // Recursively restore subdirectory
+        await restoreBackup(backupPath, targetPath);
+      } else {
+        // Restore file
+        await fs.promises.copyFile(backupPath, targetPath);
+        console.log(`[Restore] Restored: ${entry.name}`);
+      }
+    }
+
+    console.log('[Restore] Restore completed');
+  } catch (error) {
+    console.error('[Restore] Error restoring backup:', error);
+    throw new Error(
+      `Помилка відновлення файлів: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Backup files that will be overwritten
+ */
+async function backupFiles(sourceDir: string, targetDir: string): Promise<void> {
+  try {
+    const backupDir = path.join(targetDir, BACKUP_DIR_NAME);
+    await mkdir(backupDir, { recursive: true });
+
+    // Read all files from source directory
+    const entries = await readdir(sourceDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const sourcePath = path.join(sourceDir, entry.name);
+      const targetPath = path.join(targetDir, entry.name);
+      const backupPath = path.join(backupDir, entry.name);
+
+      if (entry.isDirectory()) {
+        // Recursively backup subdirectory
+        await backupFiles(sourcePath, targetPath);
+      } else {
+        // Check if file exists in target directory
+        if (fs.existsSync(targetPath)) {
+          // Backup the original file
+          const backupFileDir = path.dirname(backupPath);
+          await mkdir(backupFileDir, { recursive: true });
+          await fs.promises.copyFile(targetPath, backupPath);
+          console.log(`[Backup] Backed up: ${entry.name}`);
+        }
+      }
+    }
+
+    console.log(`[Backup] Backup completed to: ${backupDir}`);
+  } catch (error) {
+    console.error('[Backup] Error creating backup:', error);
+    throw new Error(
+      `Помилка створення резервної копії: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
  * Copy directory recursively
  */
 async function copyDirectory(source: string, destination: string): Promise<void> {
@@ -574,6 +650,72 @@ async function saveInstallationInfo(
   } catch (error) {
     console.warn('[Installer] Failed to save installation info:', error);
     // Don't throw - installation succeeded even if we can't save the info
+  }
+}
+
+/**
+ * Uninstall translation
+ */
+export async function uninstallTranslation(gameId: string): Promise<void> {
+  try {
+    console.log(`[Installer] Uninstalling translation for: ${gameId}`);
+
+    // Fetch game metadata
+    const games = await fetchGames();
+    const game = games.find((g) => g.id === gameId);
+
+    if (!game) {
+      throw new Error(`Гру ${gameId} не знайдено`);
+    }
+
+    // Check if translation is installed
+    const installInfo = await checkInstallation(gameId);
+
+    if (!installInfo) {
+      throw new Error('Переклад не встановлено');
+    }
+
+    const gamePath = installInfo.gamePath;
+    const backupDir = path.join(gamePath, BACKUP_DIR_NAME);
+
+    // Restore files from backup
+    if (fs.existsSync(backupDir)) {
+      console.log(`[Installer] Restoring files from backup: ${backupDir}`);
+      await restoreBackup(backupDir, gamePath);
+
+      // Delete backup directory
+      await deleteDirectory(backupDir);
+      console.log(`[Installer] Deleted backup directory: ${backupDir}`);
+    } else {
+      console.warn('[Installer] No backup found, skipping file restoration');
+    }
+
+    // Delete installation info file
+    const infoPath = path.join(gamePath, INSTALLATION_INFO_FILE);
+    if (fs.existsSync(infoPath)) {
+      await unlink(infoPath);
+      console.log(`[Installer] Deleted installation info file: ${infoPath}`);
+    }
+
+    // Delete cached installation info
+    try {
+      const userDataPath = app.getPath('userData');
+      const installInfoDir = path.join(userDataPath, 'installation-cache');
+      const cacheInfoPath = path.join(installInfoDir, `${gameId}.json`);
+      if (fs.existsSync(cacheInfoPath)) {
+        await unlink(cacheInfoPath);
+        console.log(`[Installer] Deleted cached installation info: ${cacheInfoPath}`);
+      }
+    } catch (error) {
+      console.warn('[Installer] Failed to delete cached installation info:', error);
+    }
+
+    console.log(`[Installer] Translation for ${gameId} uninstalled successfully`);
+  } catch (error) {
+    console.error('[Installer] Uninstall error:', error);
+    throw new Error(
+      `Помилка видалення перекладу: ${error instanceof Error ? error.message : 'Невідома помилка'}`
+    );
   }
 }
 

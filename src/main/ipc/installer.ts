@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation } from '../installer';
 import { getMainWindow } from '../window';
 
 export function setupInstallerHandlers(): void {
@@ -60,5 +60,20 @@ export function setupInstallerHandlers(): void {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('uninstall-translation', async (_, gameId: string) => {
+    try {
+      await uninstallTranslation(gameId);
+      return { success: true };
+    } catch (error) {
+      console.error('Error uninstalling translation:', error);
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Невідома помилка',
+        },
+      };
+    }
   });
 }
