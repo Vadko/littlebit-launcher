@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Game } from '../types/game';
 import { fetchGames } from '../utils/api';
-import type { DownloadProgress } from '../../shared/types';
+import type { DownloadProgress, InstallationInfo } from '../../shared/types';
 
 type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
 
@@ -19,10 +19,11 @@ interface Store {
   searchQuery: string;
   isLoading: boolean;
   error: string | null;
-  installedGames: Map<string, { version: string }>;
+  installedGames: Map<string, InstallationInfo>;
   gamesWithUpdates: Set<string>;
   isInitialLoad: boolean;
   installationProgress: Map<string, InstallationProgress>;
+  isCheckingInstallation: Map<string, boolean>;
 
   // Actions
   fetchGames: () => Promise<void>;
@@ -32,6 +33,7 @@ interface Store {
   updateGame: (updatedGame: Game) => void;
   initRealtimeSubscription: () => void;
   loadInstalledGames: () => Promise<void>;
+  checkInstallationStatus: (gameId: string) => Promise<void>;
   checkForGameUpdate: (gameId: string, newVersion: string) => boolean;
   markGameAsUpdated: (gameId: string) => void;
   clearGameUpdate: (gameId: string) => void;
@@ -39,6 +41,8 @@ interface Store {
   setInstallationProgress: (gameId: string, progress: Partial<InstallationProgress>) => void;
   clearInstallationProgress: (gameId: string) => void;
   getInstallationProgress: (gameId: string) => InstallationProgress | undefined;
+  getInstallationInfo: (gameId: string) => InstallationInfo | undefined;
+  isCheckingInstallationStatus: (gameId: string) => boolean;
 }
 
 export const useStore = create<Store>((set, get) => ({
@@ -52,6 +56,7 @@ export const useStore = create<Store>((set, get) => ({
   gamesWithUpdates: new Set(),
   isInitialLoad: true,
   installationProgress: new Map(),
+  isCheckingInstallation: new Map(),
 
   fetchGames: async () => {
     set({ isLoading: true, error: null });
@@ -100,13 +105,13 @@ export const useStore = create<Store>((set, get) => ({
     if (!window.electronAPI) return;
 
     const games = get().games;
-    const installedGamesMap = new Map<string, { version: string }>();
+    const installedGamesMap = new Map<string, InstallationInfo>();
     const gamesWithUpdatesSet = new Set<string>();
 
     for (const game of games) {
       const installInfo = await window.electronAPI.checkInstallation(game.id);
       if (installInfo) {
-        installedGamesMap.set(game.id, { version: installInfo.version });
+        installedGamesMap.set(game.id, installInfo);
 
         // Check if installed version differs from current version in DB
         if (game.version && installInfo.version !== game.version) {
@@ -126,6 +131,44 @@ export const useStore = create<Store>((set, get) => ({
       installedGames: installedGamesMap,
       gamesWithUpdates: gamesWithUpdatesSet,
     });
+  },
+
+  checkInstallationStatus: async (gameId: string) => {
+    if (!window.electronAPI) return;
+
+    set((state) => {
+      const newMap = new Map(state.isCheckingInstallation);
+      newMap.set(gameId, true);
+      return { isCheckingInstallation: newMap };
+    });
+
+    try {
+      const info = await window.electronAPI.checkInstallation(gameId);
+
+      set((state) => {
+        const newInstalledGames = new Map(state.installedGames);
+        if (info) {
+          newInstalledGames.set(gameId, info);
+        } else {
+          newInstalledGames.delete(gameId);
+        }
+
+        const newChecking = new Map(state.isCheckingInstallation);
+        newChecking.set(gameId, false);
+
+        return {
+          installedGames: newInstalledGames,
+          isCheckingInstallation: newChecking,
+        };
+      });
+    } catch (error) {
+      console.error('Error checking installation:', error);
+      set((state) => {
+        const newChecking = new Map(state.isCheckingInstallation);
+        newChecking.set(gameId, false);
+        return { isCheckingInstallation: newChecking };
+      });
+    }
   },
 
   checkForGameUpdate: (gameId: string, newVersion: string) => {
@@ -181,6 +224,14 @@ export const useStore = create<Store>((set, get) => ({
 
   getInstallationProgress: (gameId: string) => {
     return get().installationProgress.get(gameId);
+  },
+
+  getInstallationInfo: (gameId: string) => {
+    return get().installedGames.get(gameId);
+  },
+
+  isCheckingInstallationStatus: (gameId: string) => {
+    return get().isCheckingInstallation.get(gameId) || false;
   },
 
   initRealtimeSubscription: () => {

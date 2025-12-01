@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, Heart, Gamepad2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Download, RefreshCw, Heart, Gamepad2, Trash2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useConfirmStore } from '../../store/useConfirmStore';
@@ -8,44 +8,36 @@ import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
 import { Button } from '../ui/Button';
-import type { InstallationInfo, InstallResult, DownloadProgress } from '../../../shared/types';
+import type { InstallResult, DownloadProgress } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
-  const { selectedGame, getInstallationProgress, setInstallationProgress, clearInstallationProgress } = useStore();
+  const {
+    selectedGame,
+    getInstallationProgress,
+    setInstallationProgress,
+    clearInstallationProgress,
+    checkInstallationStatus,
+    getInstallationInfo,
+    isCheckingInstallationStatus,
+  } = useStore();
   const { showModal } = useModalStore();
   const { showConfirm } = useConfirmStore();
-  const [installationInfo, setInstallationInfo] = useState<InstallationInfo | null>(null);
-  const [isCheckingInstallation, setIsCheckingInstallation] = useState(false);
 
-  // Get installation progress for selected game
+  // Get state from store
   const gameProgress = selectedGame ? getInstallationProgress(selectedGame.id) : undefined;
   const isInstalling = gameProgress?.isInstalling || false;
   const installProgress = gameProgress?.progress || 0;
   const downloadProgress = gameProgress?.downloadProgress || null;
   const statusMessage = gameProgress?.statusMessage || null;
+  const installationInfo = selectedGame ? getInstallationInfo(selectedGame.id) : undefined;
+  const isCheckingInstallation = selectedGame ? isCheckingInstallationStatus(selectedGame.id) : false;
 
   // Check installation status when game changes
   useEffect(() => {
-    const checkInstallationStatus = async () => {
-      if (!selectedGame || !window.electronAPI) {
-        setInstallationInfo(null);
-        return;
-      }
-
-      setIsCheckingInstallation(true);
-      try {
-        const info = await window.electronAPI.checkInstallation(selectedGame.id);
-        setInstallationInfo(info);
-      } catch (error) {
-        console.error('Error checking installation:', error);
-        setInstallationInfo(null);
-      } finally {
-        setIsCheckingInstallation(false);
-      }
-    };
-
-    checkInstallationStatus();
-  }, [selectedGame]);
+    if (selectedGame) {
+      checkInstallationStatus(selectedGame.id);
+    }
+  }, [selectedGame, checkInstallationStatus]);
 
   const isUpdateAvailable =
     installationInfo && selectedGame && selectedGame.version && installationInfo.version !== selectedGame.version;
@@ -151,8 +143,7 @@ export const MainContent: React.FC = () => {
       }
 
       // Refresh installation info
-      const newInfo = await window.electronAPI.checkInstallation(selectedGame.id);
-      setInstallationInfo(newInfo);
+      checkInstallationStatus(selectedGame.id);
 
       // Clear the update notification since we just installed/updated
       useStore.getState().clearGameUpdate(selectedGame.id);
@@ -209,6 +200,47 @@ export const MainContent: React.FC = () => {
     }
   };
 
+  const handleUninstall = async () => {
+    if (!selectedGame || !installationInfo) return;
+
+    showConfirm({
+      title: 'Видалення перекладу',
+      message: `Ви впевнені, що хочете видалити переклад для "${selectedGame.name}"?\n\nОригінальні файли гри будуть відновлені з резервної копії.`,
+      confirmText: 'Видалити',
+      cancelText: 'Скасувати',
+      onConfirm: async () => {
+        try {
+          const result: InstallResult = await window.electronAPI.uninstallTranslation(selectedGame.id);
+
+          if (!result.success && result.error) {
+            showModal({
+              title: 'Помилка видалення',
+              message: result.error.message,
+              type: 'error',
+            });
+            return;
+          }
+
+          // Refresh installation info
+          checkInstallationStatus(selectedGame.id);
+
+          showModal({
+            title: 'Переклад видалено',
+            message: `Переклад "${selectedGame.name}" успішно видалено!`,
+            type: 'success',
+          });
+        } catch (error) {
+          console.error('Uninstall error:', error);
+          showModal({
+            title: 'Помилка видалення',
+            message: error instanceof Error ? error.message : 'Невідома помилка',
+            type: 'error',
+          });
+        }
+      },
+    });
+  };
+
   if (!selectedGame) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
@@ -247,6 +279,15 @@ export const MainContent: React.FC = () => {
                     ? `Перевстановити (v${installationInfo.version})`
                     : 'Встановити переклад'}
           </Button>
+          {installationInfo && !isInstalling && !isUpdateAvailable && (
+            <Button
+              variant="secondary"
+              icon={<Trash2 size={20} />}
+              onClick={handleUninstall}
+            >
+              Видалити переклад
+            </Button>
+          )}
           <Button variant="secondary" icon={<Heart size={20} />} onClick={handleSupport}>
             Підтримати проєкт
           </Button>
