@@ -1,18 +1,97 @@
 import { supabase } from './supabase';
 import type { Game } from '../shared/types';
 
+interface GetGamesParams {
+  offset?: number;
+  limit?: number;
+  searchQuery?: string;
+  filter?: string;
+}
+
+interface GetGamesResult {
+  games: Game[];
+  total: number;
+  hasMore: boolean;
+}
+
 /**
- * Отримати список затверджених перекладів
+ * Отримати список затверджених перекладів з пагінацією та пошуком
  */
-export async function getApprovedGames(): Promise<Game[]> {
-  const { data, error } = await supabase
+export async function getApprovedGames(params: GetGamesParams = {}): Promise<GetGamesResult> {
+  const { offset = 0, limit = 10, searchQuery = '', filter = 'all' } = params;
+
+  let query = supabase
     .from('games')
-    .select('*')
-    .eq('approved', true)
-    .order('name', { ascending: true });
+    .select('*', { count: 'exact' })
+    .eq('approved', true);
+
+  // Apply filter by status
+  if (filter !== 'all') {
+    query = query.eq('status', filter);
+  }
+
+  // Apply search
+  if (searchQuery) {
+    query = query.ilike('name', `%${searchQuery}%`);
+  }
+
+  // Apply pagination and ordering
+  query = query
+    .order('name', { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
 
   if (error) {
     console.error('Error fetching games:', error);
+    return { games: [], total: 0, hasMore: false };
+  }
+
+  const games = (data || []).map((game): Game => ({
+    id: game.id,
+    slug: game.slug,
+    name: game.name,
+    version: game.version,
+    translation_progress: game.translation_progress,
+    editing_progress: game.editing_progress,
+    team: game.team,
+    status: game.status,
+    platforms: game.platforms,
+    install_paths: game.install_paths || [],
+    archive_path: game.archive_path || '',
+    archive_hash: game.archive_hash,
+    archive_size: game.archive_size,
+    banner_path: game.banner_path,
+    logo_path: game.logo_path,
+    thumbnail_path: game.thumbnail_path,
+    game_description: game.game_description,
+    description: game.description,
+    support_url: game.support_url,
+    video_url: game.video_url,
+    installation_file_windows_path: game.installation_file_windows_path,
+    installation_file_linux_path: game.installation_file_linux_path,
+  }));
+
+  const total = count || 0;
+  const hasMore = offset + limit < total;
+
+  return { games, total, hasMore };
+}
+
+/**
+ * Отримати ігри за списком ID (для встановлених ігор)
+ */
+export async function getGamesByIds(gameIds: string[]): Promise<Game[]> {
+  if (gameIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('games')
+    .select('*')
+    .in('id', gameIds)
+    .eq('approved', true);
+
+  if (error) {
+    console.error('Error fetching games by IDs:', error);
     return [];
   }
 
@@ -28,6 +107,7 @@ export async function getApprovedGames(): Promise<Game[]> {
     platforms: game.platforms,
     install_paths: game.install_paths || [],
     archive_path: game.archive_path || '',
+    archive_hash: game.archive_hash,
     archive_size: game.archive_size,
     banner_path: game.banner_path,
     logo_path: game.logo_path,

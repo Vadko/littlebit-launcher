@@ -2,11 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { ElectronAPI } from '../shared/types';
 
 const electronAPI: ElectronAPI = {
-  fetchGames: () => ipcRenderer.invoke('fetch-games'),
+  fetchGames: (params) => ipcRenderer.invoke('fetch-games', params),
+  fetchGamesByIds: (gameIds: string[]) => ipcRenderer.invoke('fetch-games-by-ids', gameIds),
   installTranslation: (gameId: string, platform: string, customGamePath?: string, createBackup?: boolean) =>
     ipcRenderer.invoke('install-translation', gameId, platform, customGamePath, createBackup),
   uninstallTranslation: (gameId: string) => ipcRenderer.invoke('uninstall-translation', gameId),
   checkInstallation: (gameId: string) => ipcRenderer.invoke('check-installation', gameId),
+  getAllInstalledGameIds: () => ipcRenderer.invoke('get-all-installed-game-ids'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {

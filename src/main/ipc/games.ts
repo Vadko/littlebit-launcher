@@ -1,7 +1,8 @@
 import { app, ipcMain, Notification } from 'electron';
-import { fetchGames } from '../api';
+import { fetchGames, fetchGamesByIds } from '../api';
 import { subscribeToGameUpdates } from '../../lib/api';
 import { getMainWindow } from '../window';
+import { GetGamesParams } from '../../shared/types';
 
 let unsubscribeRealtime: (() => void) | null = null;
 
@@ -11,12 +12,22 @@ export function setupGamesHandlers(): void {
     event.returnValue = app.getVersion();
   });
 
-  // Fetch games
-  ipcMain.handle('fetch-games', async () => {
+  // Fetch games with pagination
+  ipcMain.handle('fetch-games', async (_, params: GetGamesParams) => {
     try {
-      return await fetchGames();
+      return await fetchGames(params);
     } catch (error) {
       console.error('Error fetching games:', error);
+      return { games: [], total: 0, hasMore: false };
+    }
+  });
+
+  // Fetch games by IDs
+  ipcMain.handle('fetch-games-by-ids', async (_, gameIds: string[]) => {
+    try {
+      return await fetchGamesByIds(gameIds);
+    } catch (error) {
+      console.error('Error fetching games by IDs:', error);
       return [];
     }
   });

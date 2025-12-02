@@ -34,8 +34,8 @@ export async function installTranslation(
 ): Promise<void> {
   try {
     // 1. Fetch game metadata
-    const games = await fetchGames();
-    const game = games.find((g) => g.id === gameId);
+    const result = await fetchGames();
+    const game = result.games.find((g) => g.id === gameId);
 
     if (!game) {
       throw new Error(`Гру ${gameId} не знайдено`);
@@ -747,8 +747,8 @@ export async function uninstallTranslation(gameId: string): Promise<void> {
     console.log(`[Installer] Uninstalling translation for: ${gameId}`);
 
     // Fetch game metadata
-    const games = await fetchGames();
-    const game = games.find((g) => g.id === gameId);
+    const result = await fetchGames();
+    const game = result.games.find((g) => g.id === gameId);
 
     if (!game) {
       throw new Error(`Гру ${gameId} не знайдено`);
@@ -859,8 +859,8 @@ export async function checkInstallation(gameId: string): Promise<InstallationInf
     console.log(`[Installer] Checking installation for: ${gameId}`);
 
     // Fetch game metadata
-    const games = await fetchGames();
-    const game = games.find((g) => g.id === gameId);
+    const result = await fetchGames();
+    const game = result.games.find((g) => g.id === gameId);
 
     if (!game) {
       console.warn(`[Installer] Game ${gameId} not found`);
@@ -929,6 +929,35 @@ function getPreviousInstallPath(gameId: string): string | null {
     return installInfoPath;
   } catch (error) {
     return null;
+  }
+}
+
+/**
+ * Get all installed game IDs from installation cache
+ */
+export async function getAllInstalledGameIds(): Promise<string[]> {
+  try {
+    const userDataPath = app.getPath('userData');
+    const installInfoDir = path.join(userDataPath, 'installation-cache');
+
+    // Check if directory exists
+    if (!fs.existsSync(installInfoDir)) {
+      return [];
+    }
+
+    // Read all files in the directory
+    const files = await readdir(installInfoDir);
+
+    // Extract game IDs from filenames (remove .json extension)
+    const gameIds = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace('.json', ''));
+
+    console.log(`[Installer] Found ${gameIds.length} installed games:`, gameIds);
+    return gameIds;
+  } catch (error) {
+    console.error('[Installer] Error getting installed game IDs:', error);
+    return [];
   }
 }
 

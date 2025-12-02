@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Game } from '../../types/game';
 import { getGameImageUrl } from '../../utils/imageUrl';
+import { Loader } from '../ui/Loader';
 
 interface GameListItemProps {
   game: Game;
@@ -15,6 +16,9 @@ export const GameListItem: React.FC<GameListItemProps> = ({
   onClick,
   hasUpdate = false,
 }) => {
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
   const averageProgress = Math.round(
     (game.translation_progress + game.editing_progress) / 2
   );
@@ -31,13 +35,27 @@ export const GameListItem: React.FC<GameListItemProps> = ({
       }`}
     >
       <div className="relative w-12 h-12 flex-shrink-0">
-        <div className="w-full h-full rounded-lg overflow-hidden">
-          {thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt={game.name}
-              className="w-full h-full object-cover"
-            />
+        <div className="w-full h-full rounded-lg overflow-hidden bg-glass">
+          {thumbnailUrl && !imageError ? (
+            <>
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-glass">
+                  <Loader size="sm" />
+                </div>
+              )}
+              <img
+                src={thumbnailUrl}
+                alt={game.name}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  imageLoading ? 'opacity-0' : 'opacity-100'
+                }`}
+                onLoad={() => setImageLoading(false)}
+                onError={() => {
+                  setImageError(true);
+                  setImageLoading(false);
+                }}
+              />
+            </>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-white font-bold text-sm">
               {game.name.charAt(0)}

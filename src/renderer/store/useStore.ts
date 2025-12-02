@@ -14,23 +14,29 @@ interface InstallationProgress {
 }
 
 interface Store {
-  games: Game[];
+  installedGames: Map<string, InstallationInfo>;  // Installed games info
+  paginatedGames: Game[];  // Games loaded via pagination
   selectedGame: Game | null;
   filter: FilterType;
   searchQuery: string;
   isLoading: boolean;
+  isLoadingMore: boolean;
   error: string | null;
-  installedGames: Map<string, InstallationInfo>;
   gamesWithUpdates: Set<string>;
   isInitialLoad: boolean;
   installationProgress: Map<string, InstallationProgress>;
   isCheckingInstallation: Map<string, boolean>;
+  currentOffset: number;
+  itemsPerPage: number;
+  totalGames: number;
+  hasMore: boolean;
 
   // Actions
   fetchGames: () => Promise<void>;
+  loadMoreGames: () => Promise<void>;
   setSelectedGame: (game: Game | null) => void;
   setFilter: (filter: FilterType) => void;
-  setSearchQuery: (query: string) => void;
+  setSearchQuery: (query: string) => void; // Only updates state, doesn't fetch
   updateGame: (updatedGame: Game) => void;
   initRealtimeSubscription: () => void;
   loadInstalledGames: () => Promise<void>;
@@ -47,23 +53,88 @@ interface Store {
 }
 
 export const useStore = create<Store>((set, get) => ({
-  games: [],
+  installedGames: new Map(),
+  paginatedGames: [],
   selectedGame: null,
   filter: 'all',
   searchQuery: '',
   isLoading: false,
+  isLoadingMore: false,
   error: null,
-  installedGames: new Map(),
   gamesWithUpdates: new Set(),
   isInitialLoad: true,
   installationProgress: new Map(),
   isCheckingInstallation: new Map(),
+  currentOffset: 0,
+  itemsPerPage: 10,
+  totalGames: 0,
+  hasMore: false,
 
   fetchGames: async () => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, currentOffset: 0, paginatedGames: [] });
     try {
-      const games = await fetchGames();
-      set({ games, isLoading: false });
+      // Step 1: Get all installed game IDs (remove duplicates)
+      const installedGameIds = [...new Set(await window.electronAPI.getAllInstalledGameIds())];
+      console.log('[Store] Found installed game IDs:', installedGameIds);
+
+      // Step 2: Fetch installed games data (for update checks)
+      const installedGamesData = await window.electronAPI.fetchGamesByIds(installedGameIds);
+      console.log('[Store] Fetched installed games:', installedGamesData);
+
+      // Step 3: Fetch first page of paginated games
+      const { filter, searchQuery, itemsPerPage } = get();
+      const result = await fetchGames({
+        offset: 0,
+        limit: itemsPerPage,
+        searchQuery,
+        filter,
+      });
+
+      console.log('[Store] Fetched paginated games:', result);
+
+      // Filter installed games by current filter and search
+      const filteredInstalledGames = installedGamesData.filter((game) => {
+        // Filter by status
+        if (filter !== 'all' && game.status !== filter) {
+          return false;
+        }
+
+        // Filter by search query
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          return game.name.toLowerCase().includes(query);
+        }
+
+        return true;
+      });
+
+      // Merge: installed games first, then paginated (avoiding duplicates)
+      const seenIds = new Set<string>();
+      const allGames: Game[] = [];
+
+      // Add filtered installed games first
+      for (const game of filteredInstalledGames) {
+        if (!seenIds.has(game.id)) {
+          seenIds.add(game.id);
+          allGames.push(game);
+        }
+      }
+
+      // Add paginated games (excluding already added installed games)
+      for (const game of result.games) {
+        if (!seenIds.has(game.id)) {
+          seenIds.add(game.id);
+          allGames.push(game);
+        }
+      }
+
+      set({
+        paginatedGames: allGames,
+        currentOffset: itemsPerPage,
+        totalGames: result.total,
+        hasMore: result.hasMore,
+        isLoading: false,
+      });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch games',
@@ -72,19 +143,64 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
+  loadMoreGames: async () => {
+    const { isLoadingMore, hasMore, currentOffset, itemsPerPage, filter, searchQuery, paginatedGames } = get();
+
+    if (isLoadingMore || !hasMore) return;
+
+    set({ isLoadingMore: true });
+    try {
+      const result = await fetchGames({
+        offset: currentOffset,
+        limit: itemsPerPage,
+        searchQuery,
+        filter,
+      });
+
+      // Avoid duplicates when adding more games
+      const existingIds = new Set(paginatedGames.map(g => g.id));
+      const newGames = result.games.filter(g => !existingIds.has(g.id));
+
+      set((state) => ({
+        paginatedGames: [...state.paginatedGames, ...newGames],
+        currentOffset: currentOffset + itemsPerPage,
+        hasMore: result.hasMore,
+        isLoadingMore: false,
+      }));
+    } catch (error) {
+      console.error('Error loading more games:', error);
+      set({ isLoadingMore: false });
+    }
+  },
+
   setSelectedGame: (game) => set({ selectedGame: game }),
-  setFilter: (filter) => set({ filter }),
-  setSearchQuery: (searchQuery) => set({ searchQuery }),
+
+  setFilter: (filter) => {
+    set({ filter });
+    get().fetchGames(); // Reload with new filter
+  },
+
+  setSearchQuery: (searchQuery) => {
+    set({ searchQuery });
+    // Don't fetch here - component will handle debounced fetch
+  },
 
   updateGame: (updatedGame) =>
     set((state) => {
-      let games: Game[];
-      if (state.games.find((game) => game.id === updatedGame.id)) {
-        games = state.games.map((game) =>
+      let paginatedGames: Game[];
+      if (state.paginatedGames.find((game) => game.id === updatedGame.id)) {
+        paginatedGames = state.paginatedGames.map((game) =>
           game.id === updatedGame.id ? updatedGame : game
         );
       } else {
-        games = [...state.games, updatedGame].sort((gameA, gameB) => gameA.name.localeCompare(gameB.name));
+        paginatedGames = [...state.paginatedGames, updatedGame].sort((gameA, gameB) => {
+          // Sort installed games first
+          const aInstalled = state.installedGames.has(gameA.id);
+          const bInstalled = state.installedGames.has(gameB.id);
+          if (aInstalled && !bInstalled) return -1;
+          if (!aInstalled && bInstalled) return 1;
+          return gameA.name.localeCompare(gameB.name);
+        });
       }
 
       // Update selected game if it's the one that was updated
@@ -99,13 +215,13 @@ export const useStore = create<Store>((set, get) => ({
         }
       }
 
-      return { games, selectedGame };
+      return { paginatedGames, selectedGame };
     }),
 
   loadInstalledGames: async () => {
     if (!window.electronAPI) return;
 
-    const games = get().games;
+    const games = get().paginatedGames;
     const installedGamesMap = new Map<string, InstallationInfo>();
     const gamesWithUpdatesSet = new Set<string>();
 
@@ -270,22 +386,15 @@ export const useStore = create<Store>((set, get) => ({
   },
 }));
 
-// Selector for filtered games
-export const useFilteredGames = () => {
-  const { games, filter, searchQuery } = useStore();
+// Selector for paginated games (server-side pagination + installed games first)
+export const useVisibleGames = () => {
+  const { paginatedGames, totalGames, hasMore, isLoading, isLoadingMore } = useStore();
 
-  return games.filter((game) => {
-    // Filter by status
-    if (filter !== 'all' && game.status !== filter) {
-      return false;
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return game.name.toLowerCase().includes(query);
-    }
-
-    return true;
-  });
+  return {
+    games: paginatedGames,
+    totalGames,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+  };
 };

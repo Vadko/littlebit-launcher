@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { Settings, User, MessageCircle } from 'lucide-react';
 import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
-import { useStore, useFilteredGames } from '../../store/useStore';
+import { Loader } from '../ui/Loader';
+import { useStore, useVisibleGames } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import logo from '../../../../resources/icon.png';
@@ -19,10 +20,55 @@ export const Sidebar: React.FC = () => {
     setFilter,
     setSearchQuery,
     gamesWithUpdates,
+    loadMoreGames,
+    fetchGames,
   } = useStore();
-  const filteredGames = useFilteredGames();
+  const { games: visibleGames, totalGames, hasMore, isLoading, isLoadingMore } = useVisibleGames();
   const { showModal } = useModalStore();
   const { openSettingsModal } = useSettingsStore();
+
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    // Update search query immediately for input
+    setSearchQuery(value);
+
+    // Debounce the actual fetch
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchGames();
+    }, 300);
+  };
+
+  const handleLoadMore = useCallback(() => {
+    if (hasMore) {
+      loadMoreGames();
+    }
+  }, [hasMore, loadMoreGames]);
+
+  useEffect(() => {
+    const target = observerTarget.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, handleLoadMore]);
 
   const filters: { label: string; value: FilterType }[] = [
     { label: 'Усі', value: 'all' },
@@ -32,9 +78,9 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <GlassPanel className="w-[280px] h-full flex flex-col p-4 gap-4">
+    <GlassPanel className="w-[280px] h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b border-border">
+      <div className="flex items-center gap-3 pb-3 border-b p-4 border-border">
         <img
           src={logo}
           alt="Little Bit logo"
@@ -47,10 +93,12 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Search */}
-      <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      <div className="p-4">
+        <SearchBar value={searchQuery} onChange={handleSearchChange} />
+      </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 px-4 pb-0">
         {filters.map((f) => (
           <button
             key={f.value}
@@ -67,26 +115,38 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Games list */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-        {filteredGames.length === 0 ? (
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 p-4 pb-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader size="md" />
+          </div>
+        ) : totalGames === 0 ? (
           <div className="text-center text-text-muted py-8">
             <p>Ігор не знайдено</p>
           </div>
         ) : (
-          filteredGames.map((game) => (
-            <GameListItem
-              key={game.id}
-              game={game}
-              isSelected={selectedGame?.id === game.id}
-              onClick={() => setSelectedGame(game)}
-              hasUpdate={gamesWithUpdates.has(game.id)}
-            />
-          ))
+          <>
+            {visibleGames.map((game) => (
+              <GameListItem
+                key={game.id}
+                game={game}
+                isSelected={selectedGame?.id === game.id}
+                onClick={() => setSelectedGame(game)}
+                hasUpdate={gamesWithUpdates.has(game.id)}
+              />
+            ))}
+            {/* Infinite scroll sentinel */}
+            {hasMore && (
+              <div ref={observerTarget} className="py-4 flex items-center justify-center">
+                {isLoadingMore ? <Loader size="sm" /> : <div className="h-4" />}
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Footer */}
-      <div className="flex gap-2 pt-3 border-t border-border">
+      <div className="flex gap-2 pt-3 border-t border-border p-4">
         <button
           onClick={openSettingsModal}
           className="flex-1 p-3 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"

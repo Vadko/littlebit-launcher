@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation, uninstallTranslation } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds } from '../installer';
 import { getMainWindow } from '../window';
 
 export function setupInstallerHandlers(): void {
@@ -42,6 +42,15 @@ export function setupInstallerHandlers(): void {
     } catch (error) {
       console.error('Error checking installation:', error);
       return null;
+    }
+  });
+
+  ipcMain.handle('get-all-installed-game-ids', async () => {
+    try {
+      return await getAllInstalledGameIds();
+    } catch (error) {
+      console.error('Error getting installed game IDs:', error);
+      return [];
     }
   });
 

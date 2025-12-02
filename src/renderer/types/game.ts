@@ -1,1 +1,1 @@
-export type { Game } from '../../shared/types';
+export type { Game, GetGamesParams, GetGamesResult } from '../../shared/types';

@@ -13,12 +13,18 @@ export const GameHero: React.FC<GameHeroProps> = ({ game }) => {
   return (
     <div className="relative h-[300px] rounded-2xl overflow-hidden mb-6">
       {/* Background image */}
-      <div className="absolute inset-0">
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{
+          backgroundClip: 'content-box',
+          padding: 1,
+        }}
+      >
         {bannerUrl ? (
           <img
             src={bannerUrl}
             alt={game.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full rounded-2xl object-cover"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-neon-purple via-neon-blue to-neon-pink" />
