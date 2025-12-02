@@ -1,0 +1,12 @@
+export const MaximizeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+    {/* Заднє вікно */}
+    <rect x="6" y="3" width="7" height="7"
+          fill="none" stroke="#9FA3AA" strokeWidth="1.2"
+          strokeLinejoin="round" />
+    {/* Переднє вікно */}
+    <rect x="3" y="6" width="7" height="7"
+          fill="none" stroke="#9FA3AA" strokeWidth="1.2"
+          strokeLinejoin="round" />
+  </svg>
+);

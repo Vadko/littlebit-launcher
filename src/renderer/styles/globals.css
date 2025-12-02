@@ -159,6 +159,28 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Custom scrollbar with top padding */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-blue), var(--neon-purple));
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 242, 255, 0.3);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--neon-blue), var(--neon-pink));
+  box-shadow: 0 0 12px rgba(0, 242, 255, 0.5);
+}
+
 /* Text selection */
 ::selection {
   background: rgba(0, 242, 255, 0.3);

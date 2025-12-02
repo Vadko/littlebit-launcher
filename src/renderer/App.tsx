@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Minimize2, Maximize2, X } from 'lucide-react';
 import { AmbientBackground } from './components/Layout/AmbientBackground';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { MainContent } from './components/MainContent/MainContent';
@@ -8,6 +7,9 @@ import { GameUpdateNotification } from './components/GameUpdateNotification/Game
 import { GlobalModal } from './components/Modal/GlobalModal';
 import { ConfirmModal } from './components/Modal/ConfirmModal';
 import { SettingsModal } from './components/Settings/SettingsModal';
+import { MinimizeIcon } from './components/Icons/MinimizeIcon';
+import { MaximizeIcon } from './components/Icons/MaximizeIcon';
+import { CloseIcon } from './components/Icons/CloseIcon';
 import { useStore } from './store/useStore';
 import { useSettingsStore } from './store/useSettingsStore';
 
@@ -87,19 +89,19 @@ export const App: React.FC = () => {
             onClick={handleMinimize}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors"
           >
-            <Minimize2 size={14} />
+            <MinimizeIcon />
           </button>
           <button
             onClick={handleMaximize}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors"
           >
-            <Maximize2 size={14} />
+            <MaximizeIcon />
           </button>
           <button
             onClick={handleClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 transition-colors"
           >
-            <X size={14} />
+            <CloseIcon />
           </button>
         </div>
       </div>

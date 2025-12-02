@@ -272,7 +272,7 @@ export const MainContent: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-6">
+    <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
       <GameHero game={selectedGame} />
 
       <div className="glass-card mb-6">

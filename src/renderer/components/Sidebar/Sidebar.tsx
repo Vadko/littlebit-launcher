@@ -98,7 +98,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 px-4 pb-0">
+      <div className="flex flex-wrap gap-2 p-4 pt-0">
         {filters.map((f) => (
           <button
             key={f.value}
@@ -115,7 +115,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Games list */}
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 p-4 pb-4">
+      <div className="flex-1 overflow-y-auto space-y-2 p-4 pt-0 custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader size="md" />
