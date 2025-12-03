@@ -1,9 +1,9 @@
 import { app, ipcMain, Notification } from 'electron';
-import { fetchGames, fetchGamesByIds } from '../api';
+import { fetchGames, fetchGamesByIds, findGamesByInstallPaths } from '../api';
 import { subscribeToGameUpdates } from '../../lib/api';
 import { getMainWindow } from '../window';
 import { GetGamesParams, Game } from '../../shared/types';
-import { detectGamePaths, getFirstAvailableGamePath } from '../game-detector';
+import { getFirstAvailableGamePath, getAllInstalledGamePaths } from '../game-detector';
 
 let unsubscribeRealtime: (() => void) | null = null;
 
@@ -30,6 +30,26 @@ export function setupGamesHandlers(): void {
     } catch (error) {
       console.error('Error fetching games by IDs:', error);
       return [];
+    }
+  });
+
+  // Get all installed game paths from the system
+  ipcMain.handle('get-all-installed-game-paths', async () => {
+    try {
+      return getAllInstalledGamePaths();
+    } catch (error) {
+      console.error('Error getting installed game paths:', error);
+      return [];
+    }
+  });
+
+  // Find games by install paths
+  ipcMain.handle('find-games-by-install-paths', async (_, installPaths: string[], offset?: number, limit?: number) => {
+    try {
+      return await findGamesByInstallPaths(installPaths, offset, limit);
+    } catch (error) {
+      console.error('Error finding games by install paths:', error);
+      return { games: [], total: 0, hasMore: false };
     }
   });
 

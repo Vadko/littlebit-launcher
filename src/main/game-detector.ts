@@ -190,26 +190,6 @@ function getAllSteamGames(libraryFolders: string[]): Map<string, string> {
   return games;
 }
 
-/**
- * Fuzzy match game folder names
- */
-function fuzzyMatchFolder(searchName: string, availableFolders: string[]): string | null {
-  const searchLower = searchName.toLowerCase();
-
-  // Exact match
-  const exactMatch = availableFolders.find(f => f.toLowerCase() === searchLower);
-  if (exactMatch) return exactMatch;
-
-  // Contains match
-  const containsMatch = availableFolders.find(f => f.toLowerCase().includes(searchLower));
-  if (containsMatch) return containsMatch;
-
-  // Reverse contains match
-  const reverseContains = availableFolders.find(f => searchLower.includes(f.toLowerCase()));
-  if (reverseContains) return reverseContains;
-
-  return null;
-}
 
 /**
  * Find Steam game by folder name
@@ -354,4 +334,49 @@ export function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
 export function getFirstAvailableGamePath(installPaths: InstallPath[]): GamePath | null {
   const paths = detectGamePaths(installPaths);
   return paths.find(p => p.exists) || null;
+}
+
+/**
+ * Get all installed games on the system (Steam + GOG)
+ * Returns a list of install paths that can be matched against database
+ */
+export function getAllInstalledGamePaths(): string[] {
+  const installedPaths: string[] = [];
+
+  // Get all Steam games
+  try {
+    const steamPath = getSteamPath();
+    if (steamPath) {
+      const libraryFolders = getSteamLibraryFolders(steamPath);
+      const steamGames = getAllSteamGames(libraryFolders);
+
+      // Add all install directories with 'steamapps/common/' prefix
+      for (const [installdir] of steamGames.entries()) {
+        installedPaths.push(`steamapps/common/${installdir}`);
+        installedPaths.push(`common/${installdir}`);
+        installedPaths.push(installdir);
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error getting Steam games:', error);
+  }
+
+  // Get all GOG games
+  try {
+    const gogPath = getGOGPath();
+    if (gogPath && fs.existsSync(gogPath)) {
+      const gogGames = fs.readdirSync(gogPath);
+      for (const game of gogGames) {
+        const gamePath = path.join(gogPath, game);
+        if (fs.statSync(gamePath).isDirectory()) {
+          installedPaths.push(game);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error getting GOG games:', error);
+  }
+
+  console.log(`[GameDetector] Found ${installedPaths.length} installed game paths on system`);
+  return installedPaths;
 }

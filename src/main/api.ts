@@ -1,5 +1,5 @@
 import { Game, GetGamesParams, GetGamesResult } from '../shared/types';
-import { getApprovedGames, getGamesByIds } from '../lib/api';
+import { getApprovedGames, getGamesByIds, findGamesByInstallPaths as apiFindGamesByInstallPaths } from '../lib/api';
 
 export async function fetchGames(params: GetGamesParams = {}): Promise<GetGamesResult> {
   try {
@@ -22,5 +22,21 @@ export async function fetchGamesByIds(gameIds: string[]): Promise<Game[]> {
   } catch (error) {
     console.error('[API] Error fetching games by IDs:', error);
     return [];
+  }
+}
+
+export async function findGamesByInstallPaths(
+  installPaths: string[],
+  offset: number = 0,
+  limit: number = 10
+): Promise<GetGamesResult> {
+  try {
+    console.log('[API] Finding games by install paths:', installPaths.length, 'paths', `(offset: ${offset}, limit: ${limit})`);
+    const result = await apiFindGamesByInstallPaths(installPaths, offset, limit);
+    console.log(`[API] Found ${result.games.length} games matching install paths, total: ${result.total}`);
+    return result;
+  } catch (error) {
+    console.error('[API] Error finding games by install paths:', error);
+    return { games: [], total: 0, hasMore: false };
   }
 }

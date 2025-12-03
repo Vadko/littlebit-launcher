@@ -17,6 +17,7 @@ interface Store {
   installedGames: Map<string, InstallationInfo>;  // Installed games info (with translation)
   detectedGames: Map<string, DetectedGameInfo>;  // Detected games on system (actual game files)
   paginatedGames: Game[];  // Games loaded via pagination
+  installedGamePaths: string[];  // Cached list of all installed game paths
   selectedGame: Game | null;
   filter: FilterType;
   searchQuery: string;
@@ -60,6 +61,7 @@ export const useStore = create<Store>((set, get) => ({
   installedGames: new Map(),
   detectedGames: new Map(),
   paginatedGames: [],
+  installedGamePaths: [],
   selectedGame: null,
   filter: 'all',
   searchQuery: '',
@@ -78,6 +80,47 @@ export const useStore = create<Store>((set, get) => ({
   fetchGames: async () => {
     set({ isLoading: true, error: null, currentOffset: 0, paginatedGames: [] });
     try {
+      const { filter, searchQuery, itemsPerPage } = get();
+
+      // Special handling for "installed-games" filter
+      if (filter === 'installed-games') {
+        console.log('[Store] Fetching installed games from system');
+
+        try {
+          // Step 1: Get ALL installed game paths from the system (cache them)
+          const installedPaths = await window.electronAPI.getAllInstalledGamePaths();
+          console.log('[Store] Found', installedPaths.length, 'installed game paths on system');
+
+          // Step 2: Query server for games that match these paths (with pagination)
+          const result = await window.electronAPI.findGamesByInstallPaths(installedPaths, 0, itemsPerPage);
+          console.log('[Store] Found', result.games.length, 'games in database matching installed paths, total:', result.total);
+
+          set({
+            installedGamePaths: installedPaths, // Cache for loadMore
+            paginatedGames: result.games,
+            currentOffset: itemsPerPage,
+            totalGames: result.total,
+            hasMore: result.hasMore,
+            isLoading: false,
+            error: null,
+          });
+
+          // Detect which games are installed on the system
+          await get().detectInstalledGames();
+        } catch (error) {
+          console.error('[Store] Error fetching installed games:', error);
+          set({
+            paginatedGames: [],
+            totalGames: 0,
+            hasMore: false,
+            isLoading: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch installed games',
+          });
+        }
+        return;
+      }
+
+      // Normal flow for other filters
       // Step 1: Get all installed game IDs (remove duplicates)
       const installedGameIds = [...new Set(await window.electronAPI.getAllInstalledGameIds())];
       console.log('[Store] Found installed game IDs:', installedGameIds);
@@ -87,7 +130,6 @@ export const useStore = create<Store>((set, get) => ({
       console.log('[Store] Fetched installed games:', installedGamesData);
 
       // Step 3: Fetch first page of paginated games
-      const { filter, searchQuery, itemsPerPage } = get();
       const result = await fetchGames({
         offset: 0,
         limit: itemsPerPage,
@@ -152,18 +194,31 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   loadMoreGames: async () => {
-    const { isLoadingMore, hasMore, currentOffset, itemsPerPage, filter, searchQuery, paginatedGames } = get();
+    const { isLoadingMore, hasMore, currentOffset, itemsPerPage, filter, searchQuery, paginatedGames, installedGamePaths } = get();
 
     if (isLoadingMore || !hasMore) return;
 
     set({ isLoadingMore: true });
+
     try {
-      const result = await fetchGames({
-        offset: currentOffset,
-        limit: itemsPerPage,
-        searchQuery,
-        filter,
-      });
+      let result;
+
+      // Server-side pagination for installed-games filter (using cached paths)
+      if (filter === 'installed-games' && installedGamePaths.length > 0) {
+        result = await window.electronAPI.findGamesByInstallPaths(
+          installedGamePaths,
+          currentOffset,
+          itemsPerPage
+        );
+      } else {
+        // Server-side pagination for other filters
+        result = await fetchGames({
+          offset: currentOffset,
+          limit: itemsPerPage,
+          searchQuery,
+          filter,
+        });
+      }
 
       // Avoid duplicates when adding more games
       const existingIds = new Set(paginatedGames.map(g => g.id));
@@ -188,7 +243,8 @@ export const useStore = create<Store>((set, get) => ({
 
   setFilter: (filter) => {
     set({ filter });
-    get().fetchGames(); // Reload with new filter
+    // Always fetch games to ensure we have data for detection
+    get().fetchGames();
   },
 
   setSearchQuery: (searchQuery) => {
@@ -436,18 +492,12 @@ export const useStore = create<Store>((set, get) => ({
 
 // Selector for paginated games (server-side pagination + installed games first)
 export const useVisibleGames = () => {
-  const { paginatedGames, totalGames, hasMore, isLoading, isLoadingMore, filter, detectedGames } = useStore();
-
-  // Filter games if "installed-games" filter is active
-  let filteredGames = paginatedGames;
-  if (filter === 'installed-games') {
-    filteredGames = paginatedGames.filter(game => detectedGames.has(game.id));
-  }
+  const { paginatedGames, totalGames, hasMore, isLoading, isLoadingMore } = useStore();
 
   return {
-    games: filteredGames,
-    totalGames: filter === 'installed-games' ? filteredGames.length : totalGames,
-    hasMore: filter === 'installed-games' ? false : hasMore,
+    games: paginatedGames,
+    totalGames,
+    hasMore,
     isLoading,
     isLoadingMore,
   };

@@ -92,6 +92,8 @@ export interface LaunchGameResult {
 export interface ElectronAPI {
   fetchGames: (params?: GetGamesParams) => Promise<GetGamesResult>;
   fetchGamesByIds: (gameIds: string[]) => Promise<Game[]>;
+  getAllInstalledGamePaths: () => Promise<string[]>;
+  findGamesByInstallPaths: (installPaths: string[], offset?: number, limit?: number) => Promise<GetGamesResult>;
   installTranslation: (game: Game, platform: string, customGamePath?: string, createBackup?: boolean) => Promise<InstallResult>;
   uninstallTranslation: (game: Game) => Promise<InstallResult>;
   checkInstallation: (game: Game) => Promise<InstallationInfo | null>;

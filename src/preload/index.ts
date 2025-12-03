@@ -4,6 +4,9 @@ import { ElectronAPI, Game } from '../shared/types';
 const electronAPI: ElectronAPI = {
   fetchGames: (params) => ipcRenderer.invoke('fetch-games', params),
   fetchGamesByIds: (gameIds: string[]) => ipcRenderer.invoke('fetch-games-by-ids', gameIds),
+  getAllInstalledGamePaths: () => ipcRenderer.invoke('get-all-installed-game-paths'),
+  findGamesByInstallPaths: (installPaths: string[], offset?: number, limit?: number) =>
+    ipcRenderer.invoke('find-games-by-install-paths', installPaths, offset, limit),
   installTranslation: (game: Game, platform: string, customGamePath?: string, createBackup?: boolean) =>
     ipcRenderer.invoke('install-translation', game, platform, customGamePath, createBackup),
   uninstallTranslation: (game: Game) => ipcRenderer.invoke('uninstall-translation', game),
