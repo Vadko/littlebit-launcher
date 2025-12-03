@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { Game } from '../types/game';
 import { fetchGames } from '../utils/api';
-import type { DownloadProgress, InstallationInfo, DetectedGameInfo } from '../../shared/types';
+import type { DownloadProgress, InstallationInfo, DetectedGameInfo, Database } from '../../shared/types';
 
-type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded' | 'installed-games';
+type FilterType = 'all' | Database['public']['Enums']['game_status'] | 'installed-games';
 
 interface InstallationProgress {
   isInstalling: boolean;

@@ -8,8 +8,9 @@ import { useStore, useVisibleGames } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import logo from '../../../../resources/icon.png';
+import type { Database } from '../../../lib/database.types';
 
-type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded' | 'installed-games';
+type FilterType = 'all' | Database['public']['Enums']['game_status'] | 'installed-games';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -73,6 +74,7 @@ export const Sidebar: React.FC = () => {
 
   const filters: { label: string; value: FilterType }[] = [
     { label: 'Усі', value: 'all' },
+    { label: 'Заплановано', value: 'planned' },
     { label: 'Ранній доступ', value: 'in-progress' },
     { label: 'Готово', value: 'completed' },
     { label: 'Встановлені', value: 'installed-games' },

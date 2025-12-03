@@ -2,6 +2,7 @@ import type { Database } from '../lib/database.types';
 
 type GameStatus = Database['public']['Enums']['game_status'];
 
+export type { Database };
 export type InstallPath = Database['public']['CompositeTypes']['install_path_entry'];
 
 export interface Game {
