@@ -8,6 +8,7 @@ interface GameListItemProps {
   isSelected: boolean;
   onClick: () => void;
   hasUpdate?: boolean;
+  isGameDetected?: boolean;
 }
 
 export const GameListItem: React.FC<GameListItemProps> = ({
@@ -15,6 +16,7 @@ export const GameListItem: React.FC<GameListItemProps> = ({
   isSelected,
   onClick,
   hasUpdate = false,
+  isGameDetected = false,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -65,6 +67,9 @@ export const GameListItem: React.FC<GameListItemProps> = ({
         </div>
         {hasUpdate && (
           <div className="absolute -top-1 -right-1 w-4 h-4 bg-neon-blue rounded-full border-2 border-bg-dark animate-pulse z-10" />
+        )}
+        {isGameDetected && (
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-bg-dark z-10" title="Гра встановлена" />
         )}
       </div>
       <div className="flex-1 min-w-0">

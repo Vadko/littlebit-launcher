@@ -46,6 +46,11 @@ const electronAPI: ElectronAPI = {
   showGameUpdateNotification: (gameName: string, version: string, isInitialLoad: boolean) => {
     ipcRenderer.send('show-game-update-notification', gameName, version, isInitialLoad);
   },
+  // Game detection
+  detectGame: (game: Game) => ipcRenderer.invoke('detect-game', game),
+  detectGames: (games: Game[]) => ipcRenderer.invoke('detect-games', games),
+  // Game launcher
+  launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
   // Version
   getVersion: () => ipcRenderer.sendSync('get-version'),
 };

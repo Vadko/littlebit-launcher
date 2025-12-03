@@ -78,6 +78,17 @@ export interface GetGamesResult {
   hasMore: boolean;
 }
 
+export interface DetectedGameInfo {
+  platform: Database['public']['Enums']['install_source'];
+  path: string;
+  exists: boolean;
+}
+
+export interface LaunchGameResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface ElectronAPI {
   fetchGames: (params?: GetGamesParams) => Promise<GetGamesResult>;
   fetchGamesByIds: (gameIds: string[]) => Promise<Game[]>;
@@ -104,6 +115,11 @@ export interface ElectronAPI {
   onGameUpdated: (callback: (game: Game) => void) => void;
   // Game update notifications
   showGameUpdateNotification?: (gameName: string, version: string, isInitialLoad: boolean) => void;
+  // Game detection
+  detectGame: (game: Game) => Promise<DetectedGameInfo | null>;
+  detectGames: (games: Game[]) => Promise<Record<string, DetectedGameInfo>>;
+  // Game launcher
+  launchGame: (game: Game) => Promise<LaunchGameResult>;
   // Version
   getVersion: () => string;
 }

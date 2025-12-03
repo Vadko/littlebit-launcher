@@ -2,7 +2,8 @@ import { app, ipcMain, Notification } from 'electron';
 import { fetchGames, fetchGamesByIds } from '../api';
 import { subscribeToGameUpdates } from '../../lib/api';
 import { getMainWindow } from '../window';
-import { GetGamesParams } from '../../shared/types';
+import { GetGamesParams, Game } from '../../shared/types';
+import { detectGamePaths, getFirstAvailableGamePath } from '../game-detector';
 
 let unsubscribeRealtime: (() => void) | null = null;
 
@@ -72,6 +73,76 @@ export function setupGamesHandlers(): void {
       gameName,
       version,
     });
+  });
+
+  // Detect if game is installed on system
+  ipcMain.handle('detect-game', async (_, game: Game) => {
+    try {
+      const gamePath = getFirstAvailableGamePath(game.install_paths);
+      return gamePath;
+    } catch (error) {
+      console.error('Error detecting game:', error);
+      return null;
+    }
+  });
+
+  // Detect multiple games at once
+  ipcMain.handle('detect-games', async (_, games: Game[]) => {
+    try {
+      const results = new Map<string, any>();
+      for (const game of games) {
+        const gamePath = getFirstAvailableGamePath(game.install_paths);
+        if (gamePath) {
+          results.set(game.id, gamePath);
+        }
+      }
+      return Object.fromEntries(results);
+    } catch (error) {
+      console.error('Error detecting games:', error);
+      return {};
+    }
+  });
+
+  // Launch game
+  ipcMain.handle('launch-game', async (_, game: Game) => {
+    try {
+      const gamePath = getFirstAvailableGamePath(game.install_paths);
+
+      if (!gamePath || !gamePath.exists) {
+        return {
+          success: false,
+          error: 'Гру не знайдено на вашому комп\'ютері',
+        };
+      }
+
+      console.log('[LaunchGame] Launching game:', game.name, 'at', gamePath.path, 'platform:', gamePath.platform);
+
+      // For Steam games, try to launch via Steam protocol
+      if (gamePath.platform === 'steam') {
+        // Try to find Steam App ID from the game path
+        const { findSteamAppId } = await import('../game-launcher');
+        const appId = await findSteamAppId(gamePath.path);
+
+        if (appId) {
+          console.log('[LaunchGame] Launching via Steam protocol with App ID:', appId);
+          const { shell } = await import('electron');
+          await shell.openExternal(`steam://rungameid/${appId}`);
+          return { success: true };
+        }
+      }
+
+      // Fallback: launch executable directly
+      const { launchGameExecutable } = await import('../game-launcher');
+      await launchGameExecutable(gamePath.path);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[LaunchGame] Error launching game:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Не вдалося запустити гру',
+      };
+    }
   });
 }
 

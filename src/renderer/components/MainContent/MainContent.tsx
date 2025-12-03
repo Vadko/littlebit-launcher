@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Download, RefreshCw, Heart, Gamepad2, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, RefreshCw, Heart, Gamepad2, Trash2, Play } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useConfirmStore } from '../../store/useConfirmStore';
@@ -10,7 +10,7 @@ import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
 import { SocialLinksCard } from './SocialLinksCard';
 import { Button } from '../ui/Button';
-import type { InstallResult, DownloadProgress } from '../../../shared/types';
+import type { InstallResult, DownloadProgress, LaunchGameResult } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
   const {
@@ -21,10 +21,12 @@ export const MainContent: React.FC = () => {
     checkInstallationStatus,
     getInstallationInfo,
     isCheckingInstallationStatus,
+    isGameDetected,
   } = useStore();
   const { showModal } = useModalStore();
   const { showConfirm } = useConfirmStore();
   const { createBackupBeforeInstall } = useSettingsStore();
+  const [isLaunching, setIsLaunching] = useState(false);
 
   // Get state from store
   const gameProgress = selectedGame ? getInstallationProgress(selectedGame.id) : undefined;
@@ -205,6 +207,32 @@ export const MainContent: React.FC = () => {
     }
   };
 
+  const handleLaunchGame = async () => {
+    if (!selectedGame || isLaunching) return;
+
+    setIsLaunching(true);
+    try {
+      const result: LaunchGameResult = await window.electronAPI.launchGame(selectedGame);
+
+      if (!result.success && result.error) {
+        showModal({
+          title: 'Помилка запуску',
+          message: result.error,
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Launch game error:', error);
+      showModal({
+        title: 'Помилка запуску',
+        message: error instanceof Error ? error.message : 'Не вдалося запустити гру',
+        type: 'error',
+      });
+    } finally {
+      setIsLaunching(false);
+    }
+  };
+
   const handleUninstall = async () => {
     if (!selectedGame || !installationInfo) return;
 
@@ -278,8 +306,18 @@ export const MainContent: React.FC = () => {
 
       <div className="glass-card mb-6">
         <div className="flex gap-4">
+          {selectedGame && isGameDetected(selectedGame.id) && installationInfo && (
+            <Button
+              variant="primary"
+              icon={<Play size={20} />}
+              onClick={handleLaunchGame}
+              disabled={isLaunching || isInstalling || isUninstalling}
+            >
+              {isLaunching ? 'Запуск...' : 'Грати'}
+            </Button>
+          )}
           <Button
-            variant="primary"
+            variant={selectedGame && isGameDetected(selectedGame.id) && installationInfo ? "secondary" : "primary"}
             icon={isUpdateAvailable ? <RefreshCw size={20} /> : <Download size={20} />}
             onClick={() => handleInstall()}
             disabled={isInstalling || isUninstalling || isPlanned}

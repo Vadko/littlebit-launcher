@@ -9,7 +9,7 @@ import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import logo from '../../../../resources/icon.png';
 
-type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
+type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded' | 'installed-games';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -22,6 +22,7 @@ export const Sidebar: React.FC = () => {
     gamesWithUpdates,
     loadMoreGames,
     fetchGames,
+    isGameDetected,
   } = useStore();
   const { games: visibleGames, totalGames, hasMore, isLoading, isLoadingMore } = useVisibleGames();
   const { showModal } = useModalStore();
@@ -74,6 +75,7 @@ export const Sidebar: React.FC = () => {
     { label: 'Усі', value: 'all' },
     { label: 'Ранній доступ', value: 'in-progress' },
     { label: 'Готово', value: 'completed' },
+    { label: 'Встановлені', value: 'installed-games' },
   ];
 
   return (
@@ -133,6 +135,7 @@ export const Sidebar: React.FC = () => {
                 isSelected={selectedGame?.id === game.id}
                 onClick={() => setSelectedGame(game)}
                 hasUpdate={gamesWithUpdates.has(game.id)}
+                isGameDetected={isGameDetected(game.id)}
               />
             ))}
             {/* Infinite scroll sentinel */}

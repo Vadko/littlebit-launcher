@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { Game } from '../types/game';
 import { fetchGames } from '../utils/api';
-import type { DownloadProgress, InstallationInfo } from '../../shared/types';
+import type { DownloadProgress, InstallationInfo, DetectedGameInfo } from '../../shared/types';
 
-type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded';
+type FilterType = 'all' | 'in-progress' | 'completed' | 'early-access' | 'funded' | 'installed-games';
 
 interface InstallationProgress {
   isInstalling: boolean;
@@ -14,7 +14,8 @@ interface InstallationProgress {
 }
 
 interface Store {
-  installedGames: Map<string, InstallationInfo>;  // Installed games info
+  installedGames: Map<string, InstallationInfo>;  // Installed games info (with translation)
+  detectedGames: Map<string, DetectedGameInfo>;  // Detected games on system (actual game files)
   paginatedGames: Game[];  // Games loaded via pagination
   selectedGame: Game | null;
   filter: FilterType;
@@ -40,6 +41,7 @@ interface Store {
   updateGame: (updatedGame: Game) => void;
   initRealtimeSubscription: () => void;
   loadInstalledGames: () => Promise<void>;
+  detectInstalledGames: () => Promise<void>;
   checkInstallationStatus: (gameId: string) => Promise<void>;
   checkForGameUpdate: (gameId: string, newVersion: string) => boolean;
   markGameAsUpdated: (gameId: string) => void;
@@ -49,11 +51,14 @@ interface Store {
   clearInstallationProgress: (gameId: string) => void;
   getInstallationProgress: (gameId: string) => InstallationProgress | undefined;
   getInstallationInfo: (gameId: string) => InstallationInfo | undefined;
+  getDetectedGameInfo: (gameId: string) => DetectedGameInfo | undefined;
+  isGameDetected: (gameId: string) => boolean;
   isCheckingInstallationStatus: (gameId: string) => boolean;
 }
 
 export const useStore = create<Store>((set, get) => ({
   installedGames: new Map(),
+  detectedGames: new Map(),
   paginatedGames: [],
   selectedGame: null,
   filter: 'all',
@@ -135,6 +140,9 @@ export const useStore = create<Store>((set, get) => ({
         hasMore: result.hasMore,
         isLoading: false,
       });
+
+      // Detect which games are installed on the system
+      await get().detectInstalledGames();
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch games',
@@ -167,6 +175,9 @@ export const useStore = create<Store>((set, get) => ({
         hasMore: result.hasMore,
         isLoadingMore: false,
       }));
+
+      // Re-detect games after loading more
+      await get().detectInstalledGames();
     } catch (error) {
       console.error('Error loading more games:', error);
       set({ isLoadingMore: false });
@@ -361,6 +372,34 @@ export const useStore = create<Store>((set, get) => ({
     return get().isCheckingInstallation.get(gameId) || false;
   },
 
+  detectInstalledGames: async () => {
+    if (!window.electronAPI) return;
+
+    const games = get().paginatedGames;
+
+    try {
+      const detectedGamesMap = await window.electronAPI.detectGames(games);
+      const newDetectedGames = new Map<string, DetectedGameInfo>();
+
+      for (const [gameId, gameInfo] of Object.entries(detectedGamesMap)) {
+        newDetectedGames.set(gameId, gameInfo);
+      }
+
+      console.log('[Store] Detected games on system:', newDetectedGames.size);
+      set({ detectedGames: newDetectedGames });
+    } catch (error) {
+      console.error('[Store] Error detecting games:', error);
+    }
+  },
+
+  getDetectedGameInfo: (gameId: string) => {
+    return get().detectedGames.get(gameId);
+  },
+
+  isGameDetected: (gameId: string) => {
+    return get().detectedGames.has(gameId);
+  },
+
   initRealtimeSubscription: () => {
     if (!window.electronAPI) return;
 
@@ -397,12 +436,18 @@ export const useStore = create<Store>((set, get) => ({
 
 // Selector for paginated games (server-side pagination + installed games first)
 export const useVisibleGames = () => {
-  const { paginatedGames, totalGames, hasMore, isLoading, isLoadingMore } = useStore();
+  const { paginatedGames, totalGames, hasMore, isLoading, isLoadingMore, filter, detectedGames } = useStore();
+
+  // Filter games if "installed-games" filter is active
+  let filteredGames = paginatedGames;
+  if (filter === 'installed-games') {
+    filteredGames = paginatedGames.filter(game => detectedGames.has(game.id));
+  }
 
   return {
-    games: paginatedGames,
-    totalGames,
-    hasMore,
+    games: filteredGames,
+    totalGames: filter === 'installed-games' ? filteredGames.length : totalGames,
+    hasMore: filter === 'installed-games' ? false : hasMore,
     isLoading,
     isLoadingMore,
   };
