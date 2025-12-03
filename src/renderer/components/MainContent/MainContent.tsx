@@ -8,6 +8,7 @@ import { GameHero } from './GameHero';
 import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
+import { SocialLinksCard } from './SocialLinksCard';
 import { Button } from '../ui/Button';
 import type { InstallResult, DownloadProgress } from '../../../shared/types';
 
@@ -410,6 +411,10 @@ export const MainContent: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <StatusCard game={selectedGame} />
         <InfoCard game={selectedGame} />
+      </div>
+
+      <div className="mb-6">
+        <SocialLinksCard game={selectedGame} />
       </div>
 
       {selectedGame.video_url && (

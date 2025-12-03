@@ -72,9 +72,8 @@ export const Sidebar: React.FC = () => {
 
   const filters: { label: string; value: FilterType }[] = [
     { label: 'Усі', value: 'all' },
-    { label: 'В процесі', value: 'in-progress' },
+    { label: 'Ранній доступ', value: 'in-progress' },
     { label: 'Готово', value: 'completed' },
-    { label: 'Ранній доступ', value: 'early-access' },
   ];
 
   return (

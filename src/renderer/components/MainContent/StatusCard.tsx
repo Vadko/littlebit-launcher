@@ -23,6 +23,27 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => {
           value={game.editing_progress}
           color="#bd00ff"
         />
+        {game.fonts_progress !== null && game.fonts_progress !== undefined && (
+          <ProgressBar
+            label="Шрифти"
+            value={game.fonts_progress}
+            color="#ff6b35"
+          />
+        )}
+        {game.textures_progress !== null && game.textures_progress !== undefined && (
+          <ProgressBar
+            label="Текстури"
+            value={game.textures_progress}
+            color="#4ecdc4"
+          />
+        )}
+        {game.voice_progress !== null && game.voice_progress !== undefined && (
+          <ProgressBar
+            label="Озвучка"
+            value={game.voice_progress}
+            color="#ffd93d"
+          />
+        )}
       </div>
     </div>
   );

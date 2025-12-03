@@ -11,6 +11,9 @@ export interface Game {
   version: string | null;
   translation_progress: number;
   editing_progress: number;
+  fonts_progress: number | null;
+  textures_progress: number | null;
+  voice_progress: number | null;
   team: string;
   status: GameStatus;
   platforms: string[];
@@ -25,6 +28,10 @@ export interface Game {
   description: string | null;
   support_url: string | null;
   video_url: string | null;
+  website: string | null;
+  telegram: string | null;
+  twitter: string | null;
+  youtube: string | null;
   installation_file_windows_path: string | null;
   installation_file_linux_path: string | null;
 }

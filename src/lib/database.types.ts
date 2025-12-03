@@ -14,55 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      game_permissions: {
-        Row: {
-          game_id: string
-          granted_at: string
-          granted_by: string | null
-          id: string
-          permission: string
-          user_id: string
-        }
-        Insert: {
-          game_id: string
-          granted_at?: string
-          granted_by?: string | null
-          id?: string
-          permission?: string
-          user_id: string
-        }
-        Update: {
-          game_id?: string
-          granted_at?: string
-          granted_by?: string | null
-          id?: string
-          permission?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "game_permissions_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_permissions_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_permissions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       game_versions: {
         Row: {
           approved_at: string | null
@@ -75,6 +26,7 @@ export type Database = {
           created_by: string
           description: string | null
           editing_progress: number
+          fonts_progress: number | null
           game_description: string | null
           game_id: string
           id: string
@@ -90,11 +42,17 @@ export type Database = {
           status: Database["public"]["Enums"]["game_status"]
           support_url: string | null
           team: string
+          telegram: string | null
+          textures_progress: number | null
           thumbnail_path: string | null
           translation_progress: number
+          twitter: string | null
           updated_at: string
           version: string | null
           video_url: string | null
+          voice_progress: number | null
+          website: string | null
+          youtube: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -107,6 +65,7 @@ export type Database = {
           created_by: string
           description?: string | null
           editing_progress?: number
+          fonts_progress?: number | null
           game_description?: string | null
           game_id: string
           id?: string
@@ -122,11 +81,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["game_status"]
           support_url?: string | null
           team: string
+          telegram?: string | null
+          textures_progress?: number | null
           thumbnail_path?: string | null
           translation_progress?: number
+          twitter?: string | null
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_progress?: number | null
+          website?: string | null
+          youtube?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -139,6 +104,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           editing_progress?: number
+          fonts_progress?: number | null
           game_description?: string | null
           game_id?: string
           id?: string
@@ -154,11 +120,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["game_status"]
           support_url?: string | null
           team?: string
+          telegram?: string | null
+          textures_progress?: number | null
           thumbnail_path?: string | null
           translation_progress?: number
+          twitter?: string | null
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_progress?: number | null
+          website?: string | null
+          youtube?: string | null
         }
         Relationships: [
           {
@@ -197,6 +169,7 @@ export type Database = {
           created_by: string
           description: string | null
           editing_progress: number
+          fonts_progress: number | null
           game_description: string | null
           id: string
           install_paths:
@@ -212,11 +185,17 @@ export type Database = {
           status: Database["public"]["Enums"]["game_status"]
           support_url: string | null
           team: string
+          telegram: string | null
+          textures_progress: number | null
           thumbnail_path: string | null
           translation_progress: number
+          twitter: string | null
           updated_at: string
-          version: string
+          version: string | null
           video_url: string | null
+          voice_progress: number | null
+          website: string | null
+          youtube: string | null
         }
         Insert: {
           approved?: boolean
@@ -230,6 +209,7 @@ export type Database = {
           created_by: string
           description?: string | null
           editing_progress?: number
+          fonts_progress?: number | null
           game_description?: string | null
           id?: string
           install_paths?:
@@ -245,11 +225,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["game_status"]
           support_url?: string | null
           team: string
+          telegram?: string | null
+          textures_progress?: number | null
           thumbnail_path?: string | null
           translation_progress?: number
+          twitter?: string | null
           updated_at?: string
-          version: string
+          version?: string | null
           video_url?: string | null
+          voice_progress?: number | null
+          website?: string | null
+          youtube?: string | null
         }
         Update: {
           approved?: boolean
@@ -263,6 +249,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           editing_progress?: number
+          fonts_progress?: number | null
           game_description?: string | null
           id?: string
           install_paths?:
@@ -278,11 +265,17 @@ export type Database = {
           status?: Database["public"]["Enums"]["game_status"]
           support_url?: string | null
           team?: string
+          telegram?: string | null
+          textures_progress?: number | null
           thumbnail_path?: string | null
           translation_progress?: number
+          twitter?: string | null
           updated_at?: string
-          version?: string
+          version?: string | null
           video_url?: string | null
+          voice_progress?: number | null
+          website?: string | null
+          youtube?: string | null
         }
         Relationships: [
           {
@@ -295,185 +288,6 @@ export type Database = {
           {
             foreignKeyName: "games_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      install_path_entries: {
-        Row: {
-          created_at: string | null
-          game_id: string
-          id: string
-          path: string
-          platform: string
-        }
-        Insert: {
-          created_at?: string | null
-          game_id: string
-          id?: string
-          path: string
-          platform: string
-        }
-        Update: {
-          created_at?: string | null
-          game_id?: string
-          id?: string
-          path?: string
-          platform?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "install_path_entries_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      projects: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          owner_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          owner_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          owner_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      translation_keys: {
-        Row: {
-          character_limit: number | null
-          context: string | null
-          created_at: string
-          game_id: string
-          id: string
-          key: string
-          notes: string | null
-          original_language: string
-          original_text: string
-          updated_at: string
-        }
-        Insert: {
-          character_limit?: number | null
-          context?: string | null
-          created_at?: string
-          game_id: string
-          id?: string
-          key: string
-          notes?: string | null
-          original_language?: string
-          original_text: string
-          updated_at?: string
-        }
-        Update: {
-          character_limit?: number | null
-          context?: string | null
-          created_at?: string
-          game_id?: string
-          id?: string
-          key?: string
-          notes?: string | null
-          original_language?: string
-          original_text?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "translation_keys_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      translations: {
-        Row: {
-          created_at: string
-          id: string
-          key_id: string
-          language: string
-          reviewed_by: string | null
-          status: string
-          translated_by: string | null
-          updated_at: string
-          value: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          key_id: string
-          language?: string
-          reviewed_by?: string | null
-          status?: string
-          translated_by?: string | null
-          updated_at?: string
-          value: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          key_id?: string
-          language?: string
-          reviewed_by?: string | null
-          status?: string
-          translated_by?: string | null
-          updated_at?: string
-          value?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "translations_key_id_fkey"
-            columns: ["key_id"]
-            isOneToOne: false
-            referencedRelation: "translation_keys"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "translations_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "translations_translated_by_fkey"
-            columns: ["translated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -521,21 +335,7 @@ export type Database = {
       }
     }
     Views: {
-      game_install_paths: {
-        Row: {
-          game_id: string | null
-          install_paths: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "install_path_entries_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
