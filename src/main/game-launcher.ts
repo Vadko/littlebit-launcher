@@ -10,6 +10,8 @@ const execAsync = promisify(exec);
  */
 export async function findSteamAppId(gamePath: string): Promise<string | null> {
   try {
+    console.log('[GameLauncher] Finding Steam App ID for path:', gamePath);
+
     // Navigate up to find steamapps folder
     let currentPath = gamePath;
     let steamappsPath: string | null = null;
@@ -35,6 +37,7 @@ export async function findSteamAppId(gamePath: string): Promise<string | null> {
 
     // Get the game folder name
     const gameFolderName = path.basename(gamePath);
+    console.log('[GameLauncher] Looking for game folder:', gameFolderName);
 
     // Look for appmanifest files in steamapps
     const files = fs.readdirSync(steamappsPath);
@@ -51,12 +54,12 @@ export async function findSteamAppId(gamePath: string): Promise<string | null> {
       if (manifest && manifest.installdir.toLowerCase() === gameFolderName.toLowerCase()) {
         // Extract app ID from filename (appmanifest_APPID.acf)
         const appId = manifestFile.replace('appmanifest_', '').replace('.acf', '');
-        console.log(`[GameLauncher] Found Steam App ID: ${appId} for ${gameFolderName}`);
+        console.log(`[GameLauncher] ✓ Found Steam App ID: ${appId} for ${gameFolderName} (manifest: ${manifest.name})`);
         return appId;
       }
     }
 
-    console.warn('[GameLauncher] Could not find Steam App ID for game:', gameFolderName);
+    console.warn('[GameLauncher] ✗ Could not find Steam App ID for game folder:', gameFolderName);
     return null;
   } catch (error) {
     console.error('[GameLauncher] Error finding Steam App ID:', error);

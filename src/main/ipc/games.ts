@@ -106,9 +106,13 @@ export function setupGamesHandlers(): void {
   // Launch game
   ipcMain.handle('launch-game', async (_, game: Game) => {
     try {
+      console.log('[LaunchGame] Request to launch game:', game.name, '(', game.id, ')');
+      console.log('[LaunchGame] Game install paths:', JSON.stringify(game.install_paths, null, 2));
+
       const gamePath = getFirstAvailableGamePath(game.install_paths);
 
       if (!gamePath || !gamePath.exists) {
+        console.error('[LaunchGame] Game not found on system');
         return {
           success: false,
           error: 'Гру не знайдено на вашому комп\'ютері',

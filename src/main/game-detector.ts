@@ -234,7 +234,7 @@ function findSteamGame(gameFolderName: string): string | null {
 
   const libraryFolders = getSteamLibraryFolders(steamPath);
 
-  // First, try exact path matching
+  // First, try exact path matching (case-sensitive for accuracy)
   for (const folder of libraryFolders) {
     const commonPath = path.join(folder, 'common', normalizedFolderName);
     console.log(`[GameDetector] Checking path: ${commonPath}`);
@@ -249,21 +249,16 @@ function findSteamGame(gameFolderName: string): string | null {
   console.log('[GameDetector] Exact match not found, scanning appmanifest files...');
   const installedGames = getAllSteamGames(libraryFolders);
 
-  // Try to find game by installdir
+  // Try EXACT match only (no fuzzy matching to avoid confusion)
   const gamePath = installedGames.get(normalizedFolderName.toLowerCase());
   if (gamePath) {
-    console.log(`[GameDetector] ✓ Game found via appmanifest: ${gamePath}`);
-    return gamePath;
-  }
-
-  // Try fuzzy matching
-  const availableFolders = Array.from(installedGames.keys());
-  const fuzzyMatch = fuzzyMatchFolder(normalizedFolderName, availableFolders);
-  if (fuzzyMatch) {
-    const fuzzyPath = installedGames.get(fuzzyMatch);
-    if (fuzzyPath) {
-      console.log(`[GameDetector] ✓ Game found via fuzzy match: ${fuzzyPath} (matched "${fuzzyMatch}")`);
-      return fuzzyPath;
+    // Verify the path basename matches exactly (case-insensitive)
+    const actualBasename = path.basename(gamePath).toLowerCase();
+    if (actualBasename === normalizedFolderName.toLowerCase()) {
+      console.log(`[GameDetector] ✓ Game found via appmanifest: ${gamePath}`);
+      return gamePath;
+    } else {
+      console.log(`[GameDetector] Path found but basename mismatch: expected "${normalizedFolderName}", got "${actualBasename}"`);
     }
   }
 

@@ -38,6 +38,10 @@ export const MainContent: React.FC = () => {
   const installationInfo = selectedGame ? getInstallationInfo(selectedGame.id) : undefined;
   const isCheckingInstallation = selectedGame ? isCheckingInstallationStatus(selectedGame.id) : false;
 
+  // Check if both game is installed AND translation is installed for THIS specific game
+  const isGameInstalledOnSystem = selectedGame ? isGameDetected(selectedGame.id) : false;
+  const isTranslationInstalled = installationInfo && installationInfo.gameId === selectedGame?.id;
+
   // Check installation status when game changes
   useEffect(() => {
     if (selectedGame) {
@@ -208,10 +212,11 @@ export const MainContent: React.FC = () => {
   };
 
   const handleLaunchGame = async () => {
-    if (!selectedGame || isLaunching) return;
+    if (!selectedGame || isLaunching || !isGameInstalledOnSystem || !isTranslationInstalled) return;
 
     setIsLaunching(true);
     try {
+      console.log(`[UI] Launching game: ${selectedGame.name} (${selectedGame.id})`);
       const result: LaunchGameResult = await window.electronAPI.launchGame(selectedGame);
 
       if (!result.success && result.error) {
@@ -306,7 +311,7 @@ export const MainContent: React.FC = () => {
 
       <div className="glass-card mb-6">
         <div className="flex gap-4">
-          {selectedGame && isGameDetected(selectedGame.id) && installationInfo && (
+          {selectedGame && isGameInstalledOnSystem && isTranslationInstalled && (
             <Button
               variant="primary"
               icon={<Play size={20} />}
@@ -317,7 +322,7 @@ export const MainContent: React.FC = () => {
             </Button>
           )}
           <Button
-            variant={selectedGame && isGameDetected(selectedGame.id) && installationInfo ? "secondary" : "primary"}
+            variant={isGameInstalledOnSystem && isTranslationInstalled ? "secondary" : "primary"}
             icon={isUpdateAvailable ? <RefreshCw size={20} /> : <Download size={20} />}
             onClick={() => handleInstall()}
             disabled={isInstalling || isUninstalling || isPlanned}
