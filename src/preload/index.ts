@@ -1,13 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { ElectronAPI } from '../shared/types';
+import { ElectronAPI, Game } from '../shared/types';
 
 const electronAPI: ElectronAPI = {
   fetchGames: (params) => ipcRenderer.invoke('fetch-games', params),
   fetchGamesByIds: (gameIds: string[]) => ipcRenderer.invoke('fetch-games-by-ids', gameIds),
-  installTranslation: (gameId: string, platform: string, customGamePath?: string, createBackup?: boolean) =>
-    ipcRenderer.invoke('install-translation', gameId, platform, customGamePath, createBackup),
-  uninstallTranslation: (gameId: string) => ipcRenderer.invoke('uninstall-translation', gameId),
-  checkInstallation: (gameId: string) => ipcRenderer.invoke('check-installation', gameId),
+  installTranslation: (game: Game, platform: string, customGamePath?: string, createBackup?: boolean) =>
+    ipcRenderer.invoke('install-translation', game, platform, customGamePath, createBackup),
+  uninstallTranslation: (game: Game) => ipcRenderer.invoke('uninstall-translation', game),
+  checkInstallation: (game: Game) => ipcRenderer.invoke('check-installation', game),
   getAllInstalledGameIds: () => ipcRenderer.invoke('get-all-installed-game-ids'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),

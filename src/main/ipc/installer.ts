@@ -1,14 +1,15 @@
 import { ipcMain, dialog, shell } from 'electron';
 import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds } from '../installer';
 import { getMainWindow } from '../window';
+import type { Game } from '../../shared/types';
 
 export function setupInstallerHandlers(): void {
   ipcMain.handle(
     'install-translation',
-    async (_, gameId: string, platform: string, customGamePath?: string, createBackup?: boolean) => {
+    async (_, game: Game, platform: string, customGamePath?: string, createBackup?: boolean) => {
       try {
         await installTranslation(
-          gameId,
+          game,
           platform,
           customGamePath,
           createBackup,
@@ -36,9 +37,9 @@ export function setupInstallerHandlers(): void {
     }
   );
 
-  ipcMain.handle('check-installation', async (_, gameId: string) => {
+  ipcMain.handle('check-installation', async (_, game: Game) => {
     try {
-      return await checkInstallation(gameId);
+      return await checkInstallation(game);
     } catch (error) {
       console.error('Error checking installation:', error);
       return null;
@@ -72,9 +73,9 @@ export function setupInstallerHandlers(): void {
     return result.filePaths[0];
   });
 
-  ipcMain.handle('uninstall-translation', async (_, gameId: string) => {
+  ipcMain.handle('uninstall-translation', async (_, game: Game) => {
     try {
-      await uninstallTranslation(gameId);
+      await uninstallTranslation(game);
       return { success: true };
     } catch (error) {
       console.error('Error uninstalling translation:', error);

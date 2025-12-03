@@ -1,5 +1,8 @@
 import { supabase } from './supabase';
 import type { Game } from '../shared/types';
+import type { Database } from './database.types';
+
+type GameStatus = Database['public']['Enums']['game_status'];
 
 interface GetGamesParams {
   offset?: number;
@@ -27,7 +30,7 @@ export async function getApprovedGames(params: GetGamesParams = {}): Promise<Get
 
   // Apply filter by status
   if (filter !== 'all') {
-    query = query.eq('status', filter);
+    query = query.eq('status', filter as GameStatus);
   }
 
   // Apply search

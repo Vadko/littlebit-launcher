@@ -226,7 +226,7 @@ export const useStore = create<Store>((set, get) => ({
     const gamesWithUpdatesSet = new Set<string>();
 
     for (const game of games) {
-      const installInfo = await window.electronAPI.checkInstallation(game.id);
+      const installInfo = await window.electronAPI.checkInstallation(game);
       if (installInfo) {
         installedGamesMap.set(game.id, installInfo);
 
@@ -253,6 +253,15 @@ export const useStore = create<Store>((set, get) => ({
   checkInstallationStatus: async (gameId: string) => {
     if (!window.electronAPI) return;
 
+    // Find game in store
+    const state = get();
+    const game = state.paginatedGames.find(g => g.id === gameId);
+
+    if (!game) {
+      console.warn(`[Store] Game ${gameId} not found in store`);
+      return;
+    }
+
     set((state) => {
       const newMap = new Map(state.isCheckingInstallation);
       newMap.set(gameId, true);
@@ -260,7 +269,7 @@ export const useStore = create<Store>((set, get) => ({
     });
 
     try {
-      const info = await window.electronAPI.checkInstallation(gameId);
+      const info = await window.electronAPI.checkInstallation(game);
 
       set((state) => {
         const newInstalledGames = new Map(state.installedGames);

@@ -6,7 +6,6 @@ import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import StreamZip from 'node-stream-zip';
 import got from 'got';
-import { fetchGames } from './api';
 import { getFirstAvailableGamePath } from './game-detector';
 import { InstallationInfo, Game } from '../shared/types';
 
@@ -25,7 +24,7 @@ export interface InstallationStatus {
 }
 
 export async function installTranslation(
-  gameId: string,
+  game: Game,
   platform: string,
   customGamePath?: string,
   createBackup: boolean = true,
@@ -33,15 +32,7 @@ export async function installTranslation(
   onStatus?: (status: InstallationStatus) => void
 ): Promise<void> {
   try {
-    // 1. Fetch game metadata
-    const result = await fetchGames();
-    const game = result.games.find((g) => g.id === gameId);
-
-    if (!game) {
-      throw new Error(`Гру ${gameId} не знайдено`);
-    }
-
-    console.log(`[Installer] Installing translation for: ${game.name} (${gameId})`);
+    console.log(`[Installer] Installing translation for: ${game.name} (${game.id})`);
     console.log(`[Installer] Install paths config:`, JSON.stringify(game.install_paths, null, 2));
     console.log(`[Installer] Requested platform: ${platform}`);
 
@@ -95,7 +86,7 @@ export async function installTranslation(
     const downloadDir = path.join(tempDir, 'little-bit-downloads');
     await mkdir(downloadDir, { recursive: true });
 
-    const archivePath = path.join(downloadDir, `${gameId}_translation.zip`);
+    const archivePath = path.join(downloadDir, `${game.id}_translation.zip`);
 
     // Get download URL from Supabase Storage
     const { getArchiveDownloadUrl } = await import('../lib/api');
@@ -134,7 +125,7 @@ export async function installTranslation(
 
     // 4. Extract archive
     onStatus?.({ message: 'Розпакування файлів...' });
-    const extractDir = path.join(downloadDir, `${gameId}_extract`);
+    const extractDir = path.join(downloadDir, `${game.id}_extract`);
     await extractArchive(archivePath, extractDir);
 
     // 5. Check for installer file and run if present
@@ -183,7 +174,7 @@ export async function installTranslation(
       installedFiles,
     });
 
-    console.log(`[Installer] Translation for ${gameId} installed successfully at ${fullTargetPath}`);
+    console.log(`[Installer] Translation for ${game.id} installed successfully at ${fullTargetPath}`);
   } catch (error) {
     console.error('[Installer] Installation error:', error);
 
@@ -742,20 +733,12 @@ async function saveInstallationInfo(
 /**
  * Uninstall translation
  */
-export async function uninstallTranslation(gameId: string): Promise<void> {
+export async function uninstallTranslation(game: Game): Promise<void> {
   try {
-    console.log(`[Installer] Uninstalling translation for: ${gameId}`);
-
-    // Fetch game metadata
-    const result = await fetchGames();
-    const game = result.games.find((g) => g.id === gameId);
-
-    if (!game) {
-      throw new Error(`Гру ${gameId} не знайдено`);
-    }
+    console.log(`[Installer] Uninstalling translation for: ${game.id}`);
 
     // Check if translation is installed
-    const installInfo = await checkInstallation(gameId);
+    const installInfo = await checkInstallation(game);
 
     if (!installInfo) {
       throw new Error('Переклад не встановлено');
@@ -833,7 +816,7 @@ export async function uninstallTranslation(gameId: string): Promise<void> {
     try {
       const userDataPath = app.getPath('userData');
       const installInfoDir = path.join(userDataPath, 'installation-cache');
-      const cacheInfoPath = path.join(installInfoDir, `${gameId}.json`);
+      const cacheInfoPath = path.join(installInfoDir, `${game.id}.json`);
       if (fs.existsSync(cacheInfoPath)) {
         await unlink(cacheInfoPath);
         console.log(`[Installer] Deleted cached installation info: ${cacheInfoPath}`);
@@ -842,7 +825,7 @@ export async function uninstallTranslation(gameId: string): Promise<void> {
       console.warn('[Installer] Failed to delete cached installation info:', error);
     }
 
-    console.log(`[Installer] Translation for ${gameId} uninstalled successfully`);
+    console.log(`[Installer] Translation for ${game.id} uninstalled successfully`);
   } catch (error) {
     console.error('[Installer] Uninstall error:', error);
     throw new Error(
@@ -854,22 +837,13 @@ export async function uninstallTranslation(gameId: string): Promise<void> {
 /**
  * Check if translation is installed and get installation info
  */
-export async function checkInstallation(gameId: string): Promise<InstallationInfo | null> {
+export async function checkInstallation(game: Game): Promise<InstallationInfo | null> {
   try {
-    console.log(`[Installer] Checking installation for: ${gameId}`);
-
-    // Fetch game metadata
-    const result = await fetchGames();
-    const game = result.games.find((g) => g.id === gameId);
-
-    if (!game) {
-      console.warn(`[Installer] Game ${gameId} not found`);
-      return null;
-    }
+    console.log(`[Installer] Checking installation for: ${game.id}`);
 
     // First, try to find installation info from previous installations
     // This helps when game was installed via manual folder selection
-    const previousInstallInfoPath = getPreviousInstallPath(gameId);
+    const previousInstallInfoPath = getPreviousInstallPath(game.id);
     if (previousInstallInfoPath && fs.existsSync(previousInstallInfoPath)) {
       try {
         const infoContent = await fs.promises.readFile(previousInstallInfoPath, 'utf-8');

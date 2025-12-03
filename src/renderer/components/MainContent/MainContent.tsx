@@ -113,7 +113,7 @@ export const MainContent: React.FC = () => {
 
       // Start installation
       const result: InstallResult = await window.electronAPI.installTranslation(
-        selectedGame.id,
+        selectedGame,
         platform,
         customGamePath,
         createBackupBeforeInstall
@@ -224,7 +224,7 @@ export const MainContent: React.FC = () => {
             isUninstalling: true,
           });
 
-          const result: InstallResult = await window.electronAPI.uninstallTranslation(selectedGame.id);
+          const result: InstallResult = await window.electronAPI.uninstallTranslation(selectedGame);
 
           if (!result.success && result.error) {
             showModal({
