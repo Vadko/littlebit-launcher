@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useStore } from './useStore';
 
 interface SettingsStore {
   animationsEnabled: boolean;
@@ -62,17 +61,10 @@ export const useSettingsStore = create<SettingsStore>()(
 
       setAutoDetectInstalledGames: (enabled) => set({ autoDetectInstalledGames: enabled }),
 
-      toggleShowAdultGames: () => {
-        set((state) => ({ showAdultGames: !state.showAdultGames }));
-        // Refetch games with new filter
-        useStore.getState().fetchGames();
-      },
+      toggleShowAdultGames: () =>
+        set((state) => ({ showAdultGames: !state.showAdultGames })),
 
-      setShowAdultGames: (enabled) => {
-        set({ showAdultGames: enabled });
-        // Refetch games with new filter
-        useStore.getState().fetchGames();
-      },
+      setShowAdultGames: (enabled) => set({ showAdultGames: enabled }),
 
       openSettingsModal: () => set({ isSettingsModalOpen: true }),
 

@@ -12,6 +12,9 @@ import { MaximizeIcon } from './components/Icons/MaximizeIcon';
 import { CloseIcon } from './components/Icons/CloseIcon';
 import { useStore } from './store/useStore';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useRealtimeGames } from './hooks/useRealtimeGames';
+import { useQueryClient } from '@tanstack/react-query';
+import { GAMES_QUERY_KEY } from './hooks/useGamesQuery';
 
 declare global {
   interface Window {
@@ -24,34 +27,70 @@ declare global {
 }
 
 export const App: React.FC = () => {
-  const { fetchGames, initRealtimeSubscription, loadInstalledGames, setInitialLoadComplete, detectInstalledGames } = useStore();
+  const { setInitialLoadComplete, detectInstalledGames } = useStore();
   const { animationsEnabled, autoDetectInstalledGames } = useSettingsStore();
   const [online, setOnline] = useState(navigator.onLine);
+  const queryClient = useQueryClient();
+
+  // Підписка на real-time оновлення ігор
+  useRealtimeGames();
 
   useEffect(() => {
-    const init = async () => {
-      await fetchGames();
-      await loadInstalledGames();
-      initRealtimeSubscription();
+    // Mark initial load as complete after 3 seconds to allow system notifications
+    const timer = setTimeout(() => {
+      setInitialLoadComplete();
+    }, 3000);
 
-      // Mark initial load as complete after 3 seconds to allow system notifications
-      setTimeout(() => {
-        setInitialLoadComplete();
-      }, 3000);
+    return () => clearTimeout(timer);
+  }, [setInitialLoadComplete]);
 
-      // Detect installed games after app has fully loaded (non-blocking)
-      if (autoDetectInstalledGames) {
-        setTimeout(() => {
-          detectInstalledGames().catch(err =>
-            console.error('[App] Error detecting installed games:', err)
-          );
-        }, 4000);
+  // Детекція встановлених ігор на початку (якщо увімкнено)
+  useEffect(() => {
+    if (!autoDetectInstalledGames || !window.electronAPI) return;
+
+    const runDetection = async () => {
+      // Отримати всі ігри з кешу React Query
+      const cachedData = queryClient.getQueryData<{ pages: { games: any[] }[] }>([GAMES_QUERY_KEY]);
+      if (!cachedData) {
+        console.log('[App] No cached data yet, skipping initial detection');
+        return;
+      }
+
+      const allGames = cachedData.pages.flatMap(page => page.games);
+      if (allGames.length > 0) {
+        console.log('[App] Running initial game detection for', allGames.length, 'games');
+        await detectInstalledGames(allGames);
       }
     };
 
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Почекати трохи щоб перша сторінка встигла завантажитись
+    const timer = setTimeout(runDetection, 1000);
+    return () => clearTimeout(timer);
+  }, [autoDetectInstalledGames, detectInstalledGames, queryClient]);
+
+  // Слухати зміни Steam бібліотеки
+  useEffect(() => {
+    if (!autoDetectInstalledGames || !window.electronAPI) return;
+
+    const handleSteamLibraryChange = async () => {
+      console.log('[App] Steam library changed, re-running game detection');
+
+      // Отримати всі ігри з кешу React Query
+      const cachedData = queryClient.getQueryData<{ pages: { games: any[] }[] }>([GAMES_QUERY_KEY]);
+      if (!cachedData) return;
+
+      const allGames = cachedData.pages.flatMap(page => page.games);
+      if (allGames.length > 0) {
+        await detectInstalledGames(allGames);
+      }
+    };
+
+    window.electronAPI.onSteamLibraryChanged?.(handleSteamLibraryChange);
+
+    return () => {
+      // Cleanup listener якщо потрібно
+    };
+  }, [autoDetectInstalledGames, detectInstalledGames, queryClient]);
 
   const handleOnlineEvent = () => {
     setOnline(true);
@@ -64,23 +103,11 @@ export const App: React.FC = () => {
     window.addEventListener('online', handleOnlineEvent);
     window.addEventListener('offline', handleOfflineEvent);
 
-    // Listen for Steam library changes
-    if (window.electronAPI?.onSteamLibraryChanged) {
-      window.electronAPI.onSteamLibraryChanged(() => {
-        console.log('[App] Steam library changed, re-detecting games');
-        if (autoDetectInstalledGames) {
-          detectInstalledGames().catch(err =>
-            console.error('[App] Error re-detecting games after Steam library change:', err)
-          );
-        }
-      });
-    }
-
     return () => {
       window.removeEventListener('online', handleOnlineEvent);
       window.removeEventListener('offline', handleOfflineEvent);
     };
-  }, [autoDetectInstalledGames, detectInstalledGames]);
+  }, []);
 
   const handleMinimize = () => {
     window.windowControls?.minimize();

@@ -45,7 +45,7 @@ export const MainContent: React.FC = () => {
   // Check installation status when game changes
   useEffect(() => {
     if (selectedGame) {
-      checkInstallationStatus(selectedGame.id);
+      checkInstallationStatus(selectedGame.id, selectedGame);
     }
   }, [selectedGame, checkInstallationStatus]);
 
@@ -171,7 +171,7 @@ export const MainContent: React.FC = () => {
       }
 
       // Refresh installation info
-      checkInstallationStatus(selectedGame.id);
+      checkInstallationStatus(selectedGame.id, selectedGame);
 
       // Clear the update notification since we just installed/updated
       useStore.getState().clearGameUpdate(selectedGame.id);
@@ -287,7 +287,7 @@ export const MainContent: React.FC = () => {
           }
 
           // Refresh installation info
-          checkInstallationStatus(selectedGame.id);
+          checkInstallationStatus(selectedGame.id, selectedGame);
 
           showModal({
             title: 'Переклад видалено',

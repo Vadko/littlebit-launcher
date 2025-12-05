@@ -4,9 +4,11 @@ import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
 import { Loader } from '../ui/Loader';
-import { useStore, useVisibleGames } from '../../store/useStore';
+import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useGamesInfiniteQuery } from '../../hooks/useGamesQuery';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import logo from '../../../../resources/icon.png';
 import type { Database } from '../../../lib/database.types';
 
@@ -21,56 +23,92 @@ export const Sidebar: React.FC = React.memo(() => {
     setFilter,
     setSearchQuery,
     gamesWithUpdates,
-    loadMoreGames,
-    fetchGames,
     isGameDetected,
+    loadInstalledGames,
+    detectInstalledGames,
   } = useStore();
-  const { games: visibleGames, totalGames, hasMore, isLoading, isLoadingMore } = useVisibleGames();
   const { showModal } = useModalStore();
-  const { openSettingsModal } = useSettingsStore();
+  const { openSettingsModal, autoDetectInstalledGames } = useSettingsStore();
 
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const itemsPerPage = 10;
+
+  // React Query для отримання ігор
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useGamesInfiniteQuery({
+    filter,
+    searchQuery,
+    itemsPerPage,
+  });
+
+  // Flatten всі сторінки в один масив
+  const visibleGames = useMemo(
+    () => data?.pages.flatMap((page) => page.games) ?? [],
+    [data]
+  );
+
+  const totalGames = useMemo(
+    () => data?.pages[0]?.total ?? 0,
+    [data]
+  );
+
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Infinite scroll для завантаження наступної сторінки
+  const observerTarget = useInfiniteScroll({
+    onLoadMore: () => { fetchNextPage(); },
+    hasMore: hasNextPage ?? false,
+    isLoading: isFetchingNextPage,
+  });
+
+  // Завантажити metadata про встановлені переклади для нових ігор
+  const processedGamesRef = useRef<Set<string>>(new Set());
+  const lastFilterRef = useRef({ filter, searchQuery });
+
+  useEffect(() => {
+    // Очистити список оброблених ігор при зміні фільтра або пошуку
+    if (lastFilterRef.current.filter !== filter || lastFilterRef.current.searchQuery !== searchQuery) {
+      processedGamesRef.current.clear();
+      lastFilterRef.current = { filter, searchQuery };
+    }
+  }, [filter, searchQuery]);
+
+  useEffect(() => {
+    if (visibleGames.length === 0) return;
+
+    // Знайти тільки нові ігри, які ще не перевірені
+    const newGames = visibleGames.filter(game => !processedGamesRef.current.has(game.id));
+
+    if (newGames.length === 0) return;
+
+    // Додати нові ігри до списку оброблених
+    newGames.forEach(game => processedGamesRef.current.add(game.id));
+
+    // Завантажити metadata про встановлені переклади тільки для нових ігор
+    loadInstalledGames(newGames);
+
+    // NOTE: detectInstalledGames викликається в App.tsx один раз на початку + при зміні Steam бібліотеки
+    // Тут його викликати не потрібно, щоб не створювати зайве навантаження
+  }, [visibleGames, loadInstalledGames, filter, searchQuery]);
 
   const handleSearchChange = (value: string) => {
     // Update search query immediately for input
     setSearchQuery(value);
 
-    // Debounce the actual fetch
+    // Debounce the actual refetch
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      fetchGames();
+      refetch();
     }, 300);
   };
-
-  const handleLoadMore = useCallback(() => {
-    if (hasMore) {
-      loadMoreGames();
-    }
-  }, [hasMore, loadMoreGames]);
-
-  useEffect(() => {
-    const target = observerTarget.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          handleLoadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasMore, handleLoadMore]);
 
   const filters = useMemo<{ label: string; value: FilterType }[]>(() => [
     { label: 'Усі', value: 'all' },
@@ -142,20 +180,25 @@ export const Sidebar: React.FC = React.memo(() => {
           </div>
         ) : (
           <>
-            {visibleGames.map((game) => (
-              <GameListItem
-                key={game.id}
-                game={game}
-                isSelected={selectedGame?.id === game.id}
-                onClick={() => setSelectedGame(game)}
-                hasUpdate={gamesWithUpdates.has(game.id)}
-                isGameDetected={isGameDetected(game.id)}
-              />
+            {visibleGames.map((game, index) => (
+              <React.Fragment key={game.id}>
+                <GameListItem
+                  game={game}
+                  isSelected={selectedGame?.id === game.id}
+                  onClick={() => setSelectedGame(game)}
+                  hasUpdate={gamesWithUpdates.has(game.id)}
+                  isGameDetected={isGameDetected(game.id)}
+                />
+                {/* Sentinel за 5 елементів до кінця для раннього завантаження */}
+                {hasNextPage && index === visibleGames.length - 5 && (
+                  <div ref={observerTarget} className="h-0" />
+                )}
+              </React.Fragment>
             ))}
-            {/* Infinite scroll sentinel */}
-            {hasMore && (
-              <div ref={observerTarget} className="py-4 flex items-center justify-center">
-                {isLoadingMore ? <Loader size="sm" /> : <div className="h-4" />}
+            {/* Loader в кінці списку */}
+            {isFetchingNextPage && (
+              <div className="py-4 flex items-center justify-center">
+                <Loader size="sm" />
               </div>
             )}
           </>

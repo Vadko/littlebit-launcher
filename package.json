@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "2.86.0",
+    "@tanstack/react-query": "^5.90.12",
     "adm-zip": "^0.5.16",
     "electron-updater": "6.6.2",
     "got": "^14.6.5",
