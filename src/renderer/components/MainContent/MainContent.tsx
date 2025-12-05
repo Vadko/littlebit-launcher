@@ -93,6 +93,26 @@ export const MainContent: React.FC = () => {
   const performInstallation = async (customGamePath?: string) => {
     if (!selectedGame) return;
 
+    // Get the first available platform
+    const platform = selectedGame.platforms[0] || 'steam';
+
+    // For emulator, always require manual folder selection
+    if (platform === 'emulator' && !customGamePath) {
+      showConfirm({
+        title: 'Виберіть папку з грою',
+        message: 'Для емуляторів потрібно вручну вказати папку з грою.\n\nВиберіть папку з грою?',
+        confirmText: 'Вибрати папку',
+        cancelText: 'Скасувати',
+        onConfirm: async () => {
+          const selectedFolder = await window.electronAPI.selectGameFolder();
+          if (selectedFolder) {
+            await performInstallation(selectedFolder);
+          }
+        },
+      });
+      return;
+    }
+
     try {
       setInstallationProgress(selectedGame.id, {
         isInstalling: true,
@@ -114,9 +134,6 @@ export const MainContent: React.FC = () => {
           statusMessage: status.message,
         });
       });
-
-      // Get the first available platform
-      const platform = selectedGame.platforms[0] || 'steam';
 
       // Start installation
       const result: InstallResult = await window.electronAPI.installTranslation(
@@ -313,7 +330,7 @@ export const MainContent: React.FC = () => {
         <div className="flex gap-4">
           {selectedGame && isGameInstalledOnSystem && isTranslationInstalled && (
             <Button
-              variant="primary"
+              variant="green"
               icon={<Play size={20} />}
               onClick={handleLaunchGame}
               disabled={isLaunching || isInstalling || isUninstalling}
@@ -430,8 +447,18 @@ export const MainContent: React.FC = () => {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-neon-blue border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm font-medium text-white">
+                {statusMessage?.startsWith('❌') ? (
+                  <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  </div>
+                ) : statusMessage?.includes('Спроба') ? (
+                  <div className="w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 border-2 border-neon-blue border-t-transparent rounded-full animate-spin" />
+                )}
+                <span className={`text-sm font-medium ${statusMessage?.startsWith('❌') ? 'text-red-400' : statusMessage?.includes('Спроба') ? 'text-yellow-400' : 'text-white'}`}>
                   {statusMessage || (isUpdateAvailable ? 'Оновлення перекладу...' : 'Встановлення перекладу...')}
                 </span>
               </div>

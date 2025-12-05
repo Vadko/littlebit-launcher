@@ -10,9 +10,10 @@ interface SocialLinkProps {
   icon: React.ReactNode;
   label: string;
   url: string;
+  color: string;
 }
 
-const SocialLink: React.FC<SocialLinkProps> = ({ icon, label, url }) => {
+const SocialLink: React.FC<SocialLinkProps> = ({ icon, label, url, color }) => {
   const handleClick = () => {
     if (window.electronAPI) {
       window.electronAPI.openExternal(url);
@@ -24,10 +25,10 @@ const SocialLink: React.FC<SocialLinkProps> = ({ icon, label, url }) => {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-glass hover:bg-glass-hover border border-border hover:border-border-hover transition-all duration-300"
+      className="group flex items-center gap-2 px-4 py-2 rounded-lg bg-glass hover:bg-glass-hover border border-border hover:border-border-hover transition-all duration-300"
       title={label}
     >
-      <div className="text-neon-blue">{icon}</div>
+      <div className={`${color} group-hover:brightness-125 transition-all duration-300`}>{icon}</div>
       <span className="text-sm text-white font-medium">{label}</span>
     </button>
   );
@@ -35,10 +36,10 @@ const SocialLink: React.FC<SocialLinkProps> = ({ icon, label, url }) => {
 
 export const SocialLinksCard: React.FC<SocialLinksCardProps> = ({ game }) => {
   const links = [
-    game.website && { icon: <Globe size={18} />, label: 'Вебсайт', url: game.website },
-    game.telegram && { icon: <Send size={18} />, label: 'Telegram', url: game.telegram },
-    game.twitter && { icon: <Twitter size={18} />, label: 'Twitter', url: game.twitter },
-    game.youtube && { icon: <Youtube size={18} />, label: 'YouTube', url: game.youtube },
+    game.website && { icon: <Globe size={18} />, label: 'Вебсайт', url: game.website, color: 'text-neon-blue' },
+    game.telegram && { icon: <Send size={18} />, label: 'Telegram', url: game.telegram, color: 'text-[#0088cc]' },
+    game.twitter && { icon: <Twitter size={18} />, label: 'Twitter', url: game.twitter, color: 'text-[#1DA1F2]' },
+    game.youtube && { icon: <Youtube size={18} />, label: 'YouTube', url: game.youtube, color: 'text-[#FF0000]' },
   ].filter(Boolean) as SocialLinkProps[];
 
   if (links.length === 0) {

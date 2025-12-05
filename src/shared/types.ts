@@ -35,6 +35,7 @@ export interface Game {
   youtube: string | null;
   installation_file_windows_path: string | null;
   installation_file_linux_path: string | null;
+  is_adult: boolean;
 }
 
 export interface InstallationInfo {
@@ -71,6 +72,7 @@ export interface GetGamesParams {
   limit?: number;
   searchQuery?: string;
   filter?: string;
+  showAdultGames?: boolean;
 }
 
 export interface GetGamesResult {

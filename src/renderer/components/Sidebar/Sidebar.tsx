@@ -86,12 +86,12 @@ export const Sidebar: React.FC = () => {
       <div className="flex items-center gap-3 pb-3 border-b p-4 border-border select-none">
         <img
           src={logo}
-          alt="Little Bit logo"
+          alt="LB logo"
           className="w-12 h-12"
           draggable={false}
         />
         <div>
-          <h1 className="text-lg font-head font-bold text-white">Little Bit</h1>
+          <h1 className="text-lg font-head font-bold text-white">LB</h1>
           <p className="text-xs text-text-muted">Українські переклади</p>
         </div>
       </div>
@@ -172,7 +172,7 @@ export const Sidebar: React.FC = () => {
           onClick={() => {
             showModal({
               title: 'Про додаток',
-              message: `Little Bit v${window.electronAPI?.getVersion?.() || '1.0.0'}\n\nІнсталятор українських перекладів відеоігор\n\n💙 Дякуємо за підтримку!`,
+              message: `LB Launcher v${window.electronAPI?.getVersion?.() || '1.0.0'}\n\nІнсталятор українських перекладів відеоігор\n\n💙 Дякуємо за підтримку!`,
               type: 'info',
             });
           }}

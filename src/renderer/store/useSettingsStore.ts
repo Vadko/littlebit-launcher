@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useStore } from './useStore';
 
 interface SettingsStore {
   animationsEnabled: boolean;
@@ -7,6 +8,7 @@ interface SettingsStore {
   gameUpdateNotificationsEnabled: boolean;
   createBackupBeforeInstall: boolean;
   autoDetectInstalledGames: boolean;
+  showAdultGames: boolean;
   isSettingsModalOpen: boolean;
   toggleAnimations: () => void;
   setAnimationsEnabled: (enabled: boolean) => void;
@@ -18,6 +20,8 @@ interface SettingsStore {
   setCreateBackupBeforeInstall: (enabled: boolean) => void;
   toggleAutoDetectInstalledGames: () => void;
   setAutoDetectInstalledGames: (enabled: boolean) => void;
+  toggleShowAdultGames: () => void;
+  setShowAdultGames: (enabled: boolean) => void;
   openSettingsModal: () => void;
   closeSettingsModal: () => void;
 }
@@ -30,6 +34,7 @@ export const useSettingsStore = create<SettingsStore>()(
       gameUpdateNotificationsEnabled: true,
       createBackupBeforeInstall: true,
       autoDetectInstalledGames: true,
+      showAdultGames: false,
       isSettingsModalOpen: false,
 
       toggleAnimations: () =>
@@ -56,6 +61,18 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({ autoDetectInstalledGames: !state.autoDetectInstalledGames })),
 
       setAutoDetectInstalledGames: (enabled) => set({ autoDetectInstalledGames: enabled }),
+
+      toggleShowAdultGames: () => {
+        set((state) => ({ showAdultGames: !state.showAdultGames }));
+        // Refetch games with new filter
+        useStore.getState().fetchGames();
+      },
+
+      setShowAdultGames: (enabled) => {
+        set({ showAdultGames: enabled });
+        // Refetch games with new filter
+        useStore.getState().fetchGames();
+      },
 
       openSettingsModal: () => set({ isSettingsModalOpen: true }),
 

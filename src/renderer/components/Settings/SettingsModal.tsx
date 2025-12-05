@@ -16,6 +16,8 @@ export const SettingsModal: React.FC = () => {
     toggleCreateBackup,
     autoDetectInstalledGames,
     toggleAutoDetectInstalledGames,
+    showAdultGames,
+    toggleShowAdultGames,
   } = useSettingsStore();
 
   const ToggleSwitch: React.FC<{ enabled: boolean; onClick: () => void }> = ({ enabled, onClick }) => (
@@ -89,6 +91,17 @@ export const SettingsModal: React.FC = () => {
             </p>
           </div>
           <ToggleSwitch enabled={autoDetectInstalledGames} onClick={toggleAutoDetectInstalledGames} />
+        </div>
+
+        {/* Show Adult Games */}
+        <div className="flex items-center justify-between p-4 rounded-xl bg-glass border border-border">
+          <div className="flex-1 pr-4">
+            <h4 className="text-sm font-semibold text-white mb-1">Показувати 18+ ігри</h4>
+            <p className="text-xs text-text-muted">
+              Дозволити відображення ігор з контентом для дорослих
+            </p>
+          </div>
+          <ToggleSwitch enabled={showAdultGames} onClick={toggleShowAdultGames} />
         </div>
 
         {/* Close button */}

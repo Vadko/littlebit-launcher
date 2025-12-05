@@ -9,6 +9,7 @@ export function createMainWindow(): BrowserWindow {
     height: 900,
     minWidth: 1200,
     minHeight: 700,
+    resizable: true,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',

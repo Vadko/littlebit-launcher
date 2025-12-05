@@ -1,4 +1,4 @@
-import { app, shell } from 'electron';
+import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
@@ -100,9 +100,16 @@ export async function installTranslation(
     console.log(`[Installer] Downloading from Supabase: ${downloadUrl}`);
     console.log(`[Installer] Saving to: ${archivePath}`);
 
-    await downloadFile(downloadUrl, archivePath, (downloadProgress) => {
-      onDownloadProgress?.(downloadProgress);
-    });
+    await downloadFile(
+      downloadUrl,
+      archivePath,
+      (downloadProgress) => {
+        onDownloadProgress?.(downloadProgress);
+      },
+      (status) => {
+        onStatus?.(status);
+      }
+    );
 
     // Verify file hash if available
     if (game.archive_hash) {
@@ -244,6 +251,7 @@ export async function downloadFile(
   url: string,
   outputPath: string,
   onProgress?: (progress: DownloadProgress) => void,
+  onStatus?: (status: InstallationStatus) => void,
   maxRetries: number = 3
 ): Promise<void> {
   let lastError: Error | null = null;
@@ -252,11 +260,12 @@ export async function downloadFile(
     try {
       if (attempt > 1) {
         console.log(`[Downloader] Retry attempt ${attempt}/${maxRetries}`);
+        onStatus?.({ message: `Спроба ${attempt}/${maxRetries}... Перевірте підключення до Інтернету.` });
         // Wait before retry (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 10000)));
       }
 
-      await downloadFileAttempt(url, outputPath, onProgress);
+      await downloadFileAttempt(url, outputPath, onProgress, onStatus);
       return; // Success
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
@@ -304,7 +313,8 @@ export async function downloadFile(
 async function downloadFileAttempt(
   url: string,
   outputPath: string,
-  onProgress?: (progress: DownloadProgress) => void
+  onProgress?: (progress: DownloadProgress) => void,
+  onStatus?: (status: InstallationStatus) => void
 ): Promise<void> {
   console.log(`[Downloader] Starting download: ${url}`);
 
@@ -370,27 +380,32 @@ async function downloadFileAttempt(
     console.error(`[Downloader] Download error:`, error);
     writeStream.close();
 
-    // Provide more specific error messages
+    // Provide more specific error messages and notify UI
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
 
       if (message.includes('enotfound') || message.includes('getaddrinfo')) {
+        onStatus?.({ message: '❌ Відсутнє підключення до Інтернету' });
         throw new Error('Не вдалося підключитися до сервера. Перевірте підключення до Інтернету.');
       }
 
       if (message.includes('etimedout') || message.includes('timeout')) {
+        onStatus?.({ message: '❌ Час очікування вичерпано. Перевірте підключення до Інтернету.' });
         throw new Error('Час очікування вичерпано. Перевірте підключення до Інтернету.');
       }
 
       if (message.includes('econnreset') || message.includes('socket hang up')) {
+        onStatus?.({ message: '❌ З\'єднання розірвано. Перевірте підключення до Інтернету.' });
         throw new Error('З\'єднання розірвано. Перевірте підключення до Інтернету.');
       }
 
       if (message.includes('econnrefused')) {
+        onStatus?.({ message: '❌ Сервер недоступний' });
         throw new Error('Сервер недоступний. Спробуйте пізніше.');
       }
     }
 
+    onStatus?.({ message: '❌ Помилка завантаження. Перевірте підключення до Інтернету.' });
     throw new Error(`Помилка завантаження: ${error instanceof Error ? error.message : 'Невідома помилка'}`);
   }
 }
@@ -670,8 +685,20 @@ async function runInstaller(extractDir: string, installerFileName: string): Prom
     const platform = process.platform;
 
     if (platform === 'win32') {
-      // Windows - run .exe installer
-      await shell.openPath(installerPath);
+      // Windows - use child_process to run .exe installer
+      await new Promise<void>((resolve) => {
+        exec(`"${installerPath}"`, (error, stdout, stderr) => {
+          if (error) {
+            console.error('[Installer] Failed to launch installer:', error);
+            console.error('[Installer] stderr:', stderr);
+            // Don't reject - installer may have launched successfully despite error code
+            resolve();
+            return;
+          }
+          console.log('[Installer] stdout:', stdout);
+          resolve();
+        });
+      });
     } else if (platform === 'darwin' || platform === 'linux') {
       // macOS or Linux - make executable and run
       await new Promise<void>((resolve, reject) => {
@@ -682,10 +709,18 @@ async function runInstaller(extractDir: string, installerFileName: string): Prom
             return;
           }
 
-          // Open installer
-          shell.openPath(installerPath).then(() => {
+          // Run installer
+          exec(`"${installerPath}"`, (execError, stdout, stderr) => {
+            if (execError) {
+              console.error('[Installer] Failed to launch installer:', execError);
+              console.error('[Installer] stderr:', stderr);
+              // Don't reject - installer may have launched successfully despite error code
+              resolve();
+              return;
+            }
+            console.log('[Installer] stdout:', stdout);
             resolve();
-          }).catch(reject);
+          });
         });
       });
     } else {

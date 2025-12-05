@@ -36,6 +36,7 @@ export type Database = {
           installation_file_linux_path: string | null
           installation_file_windows_path: string | null
           is_active: boolean
+          is_adult: boolean
           logo_path: string | null
           name: string
           platforms: string[]
@@ -75,6 +76,7 @@ export type Database = {
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
           is_active?: boolean
+          is_adult?: boolean
           logo_path?: string | null
           name: string
           platforms?: string[]
@@ -114,6 +116,7 @@ export type Database = {
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
           is_active?: boolean
+          is_adult?: boolean
           logo_path?: string | null
           name?: string
           platforms?: string[]
@@ -177,6 +180,7 @@ export type Database = {
             | null
           installation_file_linux_path: string | null
           installation_file_windows_path: string | null
+          is_adult: boolean
           logo_path: string | null
           name: string
           platforms: string[]
@@ -217,6 +221,7 @@ export type Database = {
             | null
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
+          is_adult?: boolean
           logo_path?: string | null
           name: string
           platforms?: string[]
@@ -257,6 +262,7 @@ export type Database = {
             | null
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
+          is_adult?: boolean
           logo_path?: string | null
           name?: string
           platforms?: string[]
@@ -293,6 +299,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      steam_apps: {
+        Row: {
+          app_id: number
+          created_at: string
+          name: string
+        }
+        Insert: {
+          app_id: number
+          created_at?: string
+          name: string
+        }
+        Update: {
+          app_id?: number
+          created_at?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      steam_sync_metadata: {
+        Row: {
+          id: number
+          last_sync_at: string | null
+          sync_status: string | null
+          total_apps: number | null
+        }
+        Insert: {
+          id?: number
+          last_sync_at?: string | null
+          sync_status?: string | null
+          total_apps?: number | null
+        }
+        Update: {
+          id?: number
+          last_sync_at?: string | null
+          sync_status?: string | null
+          total_apps?: number | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -339,10 +384,21 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
+      search_steam_apps: {
+        Args: { limit_val?: number; offset_val?: number; search_query: string }
+        Returns: {
+          app_id: number
+          name: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      sync_steam_apps_cron: { Args: never; Returns: undefined }
+      validate_install_paths: { Args: { paths: Json }; Returns: boolean }
     }
     Enums: {
       game_status: "completed" | "in-progress" | "planned"
-      install_source: "steam" | "gog"
+      install_source: "steam" | "gog" | "emulator"
     }
     CompositeTypes: {
       install_path_entry: {
@@ -474,7 +530,7 @@ export const Constants = {
   public: {
     Enums: {
       game_status: ["completed", "in-progress", "planned"],
-      install_source: ["steam", "gog"],
+      install_source: ["steam", "gog", "emulator"],
     },
   },
 } as const

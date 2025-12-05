@@ -9,6 +9,7 @@ interface GetGamesParams {
   limit?: number;
   searchQuery?: string;
   filter?: string;
+  showAdultGames?: boolean;
 }
 
 interface GetGamesResult {
@@ -21,7 +22,7 @@ interface GetGamesResult {
  * Отримати список затверджених перекладів з пагінацією та пошуком
  */
 export async function getApprovedGames(params: GetGamesParams = {}): Promise<GetGamesResult> {
-  const { offset = 0, limit = 10, searchQuery = '', filter = 'all' } = params;
+  const { offset = 0, limit = 10, searchQuery = '', filter = 'all', showAdultGames = false } = params;
 
   let query = supabase
     .from('games')
@@ -36,6 +37,11 @@ export async function getApprovedGames(params: GetGamesParams = {}): Promise<Get
   // Apply search
   if (searchQuery) {
     query = query.ilike('name', `%${searchQuery}%`);
+  }
+
+  // Filter adult games if setting is disabled
+  if (!showAdultGames) {
+    query = query.eq('is_adult', false);
   }
 
   // Apply pagination and ordering
@@ -80,6 +86,7 @@ export async function getApprovedGames(params: GetGamesParams = {}): Promise<Get
     youtube: game.youtube,
     installation_file_windows_path: game.installation_file_windows_path,
     installation_file_linux_path: game.installation_file_linux_path,
+    is_adult: game.is_adult,
   }));
 
   const total = count || 0;
@@ -98,7 +105,8 @@ export async function getGamesByIds(gameIds: string[]): Promise<Game[]> {
     .from('games')
     .select('*')
     .in('id', gameIds)
-    .eq('approved', true);
+    .eq('approved', true)
+    .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching games by IDs:', error);
@@ -135,6 +143,7 @@ export async function getGamesByIds(gameIds: string[]): Promise<Game[]> {
     youtube: game.youtube,
     installation_file_windows_path: game.installation_file_windows_path,
     installation_file_linux_path: game.installation_file_linux_path,
+    is_adult: game.is_adult,
   }));
 }
 
@@ -193,6 +202,9 @@ export async function findGamesByInstallPaths(
 
     console.log(`[API] Found ${matchedGames.length} games matching installed paths`);
 
+    // Sort by name alphabetically
+    matchedGames.sort((a, b) => a.name.localeCompare(b.name));
+
     // Apply pagination
     const total = matchedGames.length;
     const paginatedGames = matchedGames.slice(offset, offset + limit);
@@ -230,6 +242,7 @@ export async function findGamesByInstallPaths(
       youtube: game.youtube,
       installation_file_windows_path: game.installation_file_windows_path,
       installation_file_linux_path: game.installation_file_linux_path,
+      is_adult: game.is_adult,
     }));
 
     return { games, total, hasMore };

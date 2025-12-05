@@ -4,8 +4,8 @@
  */
 module.exports = {
   appId: 'com.littlebit.launcher',
-  productName: 'Little Bit',
-  copyright: 'Copyright © 2025 Little Bit UA',
+  productName: 'LB Launcher',
+  copyright: 'Copyright © 2025 LB UA',
 
   directories: {
     buildResources: 'resources',
@@ -62,7 +62,7 @@ module.exports = {
   linux: {
     target: ['AppImage', 'rpm'],
     category: 'Utility',
-    maintainer: 'Little Bit UA <info@littlebit.org.ua>',
+    maintainer: 'LB UA <info@littlebit.org.ua>',
   },
 
   nsis: {

@@ -322,6 +322,14 @@ export function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
         path: foundPath || '',
         exists: !!foundPath,
       });
+    } else if (installPath.type === 'emulator') {
+      // Emulator requires manual path selection, skip auto-detection
+      // Path will be empty until user selects it manually
+      results.push({
+        platform: 'emulator',
+        path: '',
+        exists: false,
+      });
     }
   }
 

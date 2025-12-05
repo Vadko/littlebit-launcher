@@ -1,6 +1,6 @@
-# Little Bit Launcher
+# LB Launcher
 
-**Little Bit Launcher** — настільний застосунок, який збирає українські фанатські локалізації в одному місці й допомагає встановлювати їх без танців із бубном.
+**LB Launcher** — настільний застосунок, який збирає українські фанатські локалізації в одному місці й допомагає встановлювати їх без танців із бубном.
 
 > Один лаунчер. Багато команд. Ще більше ігор українською.
 
@@ -8,14 +8,15 @@
 
 ## ⬇️ Завантаження
 
-[![Windows](https://img.shields.io/badge/Windows-завантажити-0078D6.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iIzE5NzZkMiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iIzE5NzZkMiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiMxOTc2ZDIiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iIzE5NzZkMiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=)](https://github.com/Vadko/littlebit-launcher/releases/latest)
-[![Linux](https://img.shields.io/badge/Linux-завантажити-0078D6?logo=linux&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-завантажити-00f2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
+[![Linux](https://img.shields.io/badge/Linux-завантажити-10b981?logo=linux&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Vadko/littlebit-launcher/total?color=bd00ff&logo=github&logoColor=white&label=Downloads)](https://github.com/Vadko/littlebit-launcher/releases/)
 
 ---
 
 ## 🎮 Що це таке
 
-Little Bit Launcher:
+LB Launcher:
 - показує каталог доступних локалізацій;
 - вміє завантажувати й встановлювати переклади за тебе;
 - може оновлювати встановлені локалізації, коли виходять нові версії;
@@ -59,7 +60,7 @@ Little Bit Launcher:
 
 ## 🧱 Технологічний стек
 
-Little Bit Launcher — **відкритий проєкт з відкритим вихідним кодом**, побудований на сучасних інструментах:
+LB Launcher — **відкритий проєкт з відкритим вихідним кодом**, побудований на сучасних інструментах:
 
 - **Electron + electron-vite** — настільний фреймворк та інструмент збирання
 - **React + TypeScript** — інтерфейс користувача
