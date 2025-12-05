@@ -11,8 +11,8 @@ export function createMainWindow(): BrowserWindow {
     minHeight: 700,
     resizable: true,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
+    transparent: false,
+    backgroundColor: '#050b14',
     icon: join(app.getAppPath(), 'resources/icon.png'),
     webPreferences: {
       preload: join(app.getAppPath(), 'out/preload/index.mjs'),

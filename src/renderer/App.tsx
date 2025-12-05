@@ -129,7 +129,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Main layout */}
-      <div className="flex h-full pt-8">
+      <div className="flex h-full pt-8 px-2 pb-2 gap-2">
         <Sidebar />
         <MainContent />
       </div>
