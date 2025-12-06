@@ -2,6 +2,7 @@ import { ipcMain, dialog, shell } from 'electron';
 import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game } from '../../shared/types';
+import { machineIdSync } from 'node-machine-id';
 
 export function setupInstallerHandlers(): void {
   ipcMain.handle(
@@ -20,6 +21,36 @@ export function setupInstallerHandlers(): void {
             getMainWindow()?.webContents.send('installation-status', status);
           }
         );
+
+        // Track successful download
+        try {
+          const machineId = machineIdSync();
+          const apiUrl = 'https://little-bit-tr.vercel.app/api/downloads/track';
+          console.log('[Installer] Tracking download for game:', game.id);
+          console.log('[Installer] Machine ID:', machineId);
+
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              gameId: game.id,
+              userIdentifier: machineId,
+            }),
+          });
+
+          const result = await response.json();
+          console.log('[Installer] Download tracking response:', result);
+
+          if (result.success) {
+            console.log('[Installer] Download tracked successfully. Total downloads:', result.downloads);
+          } else {
+            console.warn('[Installer] Download tracking failed:', result.error);
+          }
+        } catch (error) {
+          // Не блокуємо встановлення якщо трекінг не вдався
+          console.warn('[Installer] Failed to track download:', error);
+        }
+
         return { success: true };
       } catch (error) {
         console.error('Error installing translation:', error);

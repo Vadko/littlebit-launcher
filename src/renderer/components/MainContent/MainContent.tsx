@@ -9,6 +9,7 @@ import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
 import { VideoCard } from './VideoCard';
 import { SocialLinksCard } from './SocialLinksCard';
+import { FundraisingProgressCard } from './FundraisingProgressCard';
 import { InstallationStatusBadge } from './InstallationStatusBadge';
 import { DownloadProgressCard } from './DownloadProgressCard';
 import { InstallationStatusMessage } from './InstallationStatusMessage';
@@ -432,6 +433,15 @@ export const MainContent: React.FC = () => {
       <div className="mb-6">
         <SocialLinksCard game={selectedGame} />
       </div>
+
+      {selectedGame.fundraising_goal && selectedGame.fundraising_goal > 0 && (
+        <div className="mb-6">
+          <FundraisingProgressCard
+            current={selectedGame.fundraising_current || 0}
+            goal={selectedGame.fundraising_goal}
+          />
+        </div>
+      )}
 
       {selectedGame.video_url && (
         <div className="mb-6">

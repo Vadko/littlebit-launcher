@@ -1,6 +1,6 @@
 import React from 'react';
 import { Game } from '../../types/game';
-import { Gamepad2, Calendar, Users, HardDrive } from 'lucide-react';
+import { Gamepad2, Calendar, Users, HardDrive, Download } from 'lucide-react';
 
 interface InfoCardProps {
   game: Game;
@@ -24,6 +24,8 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (
 
 export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
   const platformsText = game.platforms.join(', ').toUpperCase();
+  const downloadsText = game.downloads?.toLocaleString('uk-UA') || '0';
+  const isPlanned = game.status === 'planned';
 
   return (
     <div className="glass-card">
@@ -47,6 +49,13 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
           label="Розмір"
           value={game.archive_size || 'N/A'}
         />
+        {!isPlanned && (
+          <InfoItem
+            icon={<Download size={18} />}
+            label="Завантажень"
+            value={downloadsText}
+          />
+        )}
       </div>
     </div>
   );

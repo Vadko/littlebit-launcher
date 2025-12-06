@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_downloads: {
+        Row: {
+          downloaded_at: string | null
+          game_id: string
+          id: string
+          user_identifier: string
+        }
+        Insert: {
+          downloaded_at?: string | null
+          game_id: string
+          id?: string
+          user_identifier: string
+        }
+        Update: {
+          downloaded_at?: string | null
+          game_id?: string
+          id?: string
+          user_identifier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_downloads_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_versions: {
         Row: {
           approved_at: string | null
@@ -25,8 +54,11 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          discord: string | null
           editing_progress: number
           fonts_progress: number | null
+          fundraising_current: number | null
+          fundraising_goal: number | null
           game_description: string | null
           game_id: string
           id: string
@@ -65,8 +97,11 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          discord?: string | null
           editing_progress?: number
           fonts_progress?: number | null
+          fundraising_current?: number | null
+          fundraising_goal?: number | null
           game_description?: string | null
           game_id: string
           id?: string
@@ -105,8 +140,11 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          discord?: string | null
           editing_progress?: number
           fonts_progress?: number | null
+          fundraising_current?: number | null
+          fundraising_goal?: number | null
           game_description?: string | null
           game_id?: string
           id?: string
@@ -171,8 +209,12 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          discord: string | null
+          downloads: number | null
           editing_progress: number
           fonts_progress: number | null
+          fundraising_current: number | null
+          fundraising_goal: number | null
           game_description: string | null
           id: string
           install_paths:
@@ -212,8 +254,12 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          discord?: string | null
+          downloads?: number | null
           editing_progress?: number
           fonts_progress?: number | null
+          fundraising_current?: number | null
+          fundraising_goal?: number | null
           game_description?: string | null
           id?: string
           install_paths?:
@@ -253,8 +299,12 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          discord?: string | null
+          downloads?: number | null
           editing_progress?: number
           fonts_progress?: number | null
+          fundraising_current?: number | null
+          fundraising_goal?: number | null
           game_description?: string | null
           id?: string
           install_paths?:
@@ -383,6 +433,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_game_downloads: {
+        Args: { p_game_id: string; p_user_identifier: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       search_steam_apps: {
         Args: { limit_val?: number; offset_val?: number; search_query: string }

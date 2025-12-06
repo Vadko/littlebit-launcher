@@ -10,7 +10,7 @@ import { useStore } from '../store/useStore';
  */
 export function useRealtimeGames() {
   const queryClient = useQueryClient();
-  const { installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad } = useStore();
+  const { installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame } = useStore();
 
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -83,6 +83,12 @@ export function useRealtimeGames() {
         }
       );
 
+      // Оновити selectedGame якщо це та сама гра
+      if (selectedGame && selectedGame.id === updatedGame.id) {
+        console.log('[useRealtimeGames] Updating selectedGame in store');
+        setSelectedGame(updatedGame);
+      }
+
       // Перевірити наявність оновлення для встановленої гри
       const isInstalled = installedGames.has(updatedGame.id);
 
@@ -110,5 +116,5 @@ export function useRealtimeGames() {
       console.log('[useRealtimeGames] Unsubscribing from game updates');
       window.electronAPI.unsubscribeGameUpdates();
     };
-  }, [queryClient, installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad]);
+  }, [queryClient, installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame]);
 }

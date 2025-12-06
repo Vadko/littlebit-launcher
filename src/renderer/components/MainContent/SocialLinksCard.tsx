@@ -1,6 +1,8 @@
 import React from 'react';
 import { Game } from '../../types/game';
-import { Globe, Send, Twitter, Youtube } from 'lucide-react';
+import { Globe, Send, Youtube } from 'lucide-react';
+import { XIcon } from '../Icons/XIcon';
+import { DiscordIcon } from '../Icons/DiscordIcon';
 
 interface SocialLinksCardProps {
   game: Game;
@@ -38,7 +40,8 @@ export const SocialLinksCard: React.FC<SocialLinksCardProps> = ({ game }) => {
   const links = [
     game.website && { icon: <Globe size={18} />, label: 'Вебсайт', url: game.website, color: 'text-neon-blue' },
     game.telegram && { icon: <Send size={18} />, label: 'Telegram', url: game.telegram, color: 'text-[#0088cc]' },
-    game.twitter && { icon: <Twitter size={18} />, label: 'Twitter', url: game.twitter, color: 'text-[#1DA1F2]' },
+    game.discord && { icon: <DiscordIcon size={18} />, label: 'Discord', url: game.discord, color: 'text-[#5865F2]' },
+    game.twitter && { icon: <XIcon size={18} />, label: 'X', url: game.twitter, color: 'text-black' },
     game.youtube && { icon: <Youtube size={18} />, label: 'YouTube', url: game.youtube, color: 'text-[#FF0000]' },
   ].filter(Boolean) as SocialLinkProps[];
 

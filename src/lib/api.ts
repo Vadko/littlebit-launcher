@@ -211,13 +211,15 @@ export function subscribeToGameUpdates(callback: (game: Game) => void) {
         filter: 'approved=eq.true',
       },
       (payload) => {
+        console.log('[Realtime] Game update received:', payload.eventType, payload.new?.name || payload.new?.id);
         if (payload.new) {
+          console.log('[Realtime] Downloads count:', payload.new.downloads);
           callback(payload.new as Game);
         }
       }
     )
     .subscribe((status, err) => {
-      console.log('Channel subscription status:', status, err);
+      console.log('[Realtime] Channel subscription status:', status, err);
     });
 
   return () => channel.unsubscribe();
