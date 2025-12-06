@@ -72,6 +72,8 @@ module.exports = {
     deleteAppDataOnUninstall: false,
     differentialPackage: true,
     artifactName: "${productName}-${os}-Setup.${ext}",
+    language: "1058",
+    installerLanguages: ["1058", "1033"],
   },
 
   electronDist: 'node_modules/electron/dist',

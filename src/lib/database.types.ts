@@ -401,6 +401,7 @@ export type Database = {
           password_hash: string
           role: string
           updated_at: string
+          verified_user: boolean
         }
         Insert: {
           approved?: boolean
@@ -413,6 +414,7 @@ export type Database = {
           password_hash: string
           role?: string
           updated_at?: string
+          verified_user?: boolean
         }
         Update: {
           approved?: boolean
@@ -425,6 +427,7 @@ export type Database = {
           password_hash?: string
           role?: string
           updated_at?: string
+          verified_user?: boolean
         }
         Relationships: []
       }
@@ -438,6 +441,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      is_verified_user: { Args: never; Returns: boolean }
       search_steam_apps: {
         Args: { limit_val?: number; offset_val?: number; search_query: string }
         Returns: {
@@ -452,7 +456,7 @@ export type Database = {
     }
     Enums: {
       game_status: "completed" | "in-progress" | "planned"
-      install_source: "steam" | "gog" | "emulator"
+      install_source: "steam" | "gog" | "emulator" | "epic"
     }
     CompositeTypes: {
       install_path_entry: {
@@ -584,7 +588,7 @@ export const Constants = {
   public: {
     Enums: {
       game_status: ["completed", "in-progress", "planned"],
-      install_source: ["steam", "gog", "emulator"],
+      install_source: ["steam", "gog", "emulator", "epic"],
     },
   },
 } as const

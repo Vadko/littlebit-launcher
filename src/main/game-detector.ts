@@ -337,6 +337,33 @@ function getGOGPath(): string | null {
 }
 
 /**
+ * Detect Epic Games installation path
+ */
+function getEpicPath(): string | null {
+  try {
+    if (process.platform === 'win32') {
+      // Epic Games stores manifests in ProgramData
+      const manifestPath = 'C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests';
+      if (fs.existsSync(manifestPath)) {
+        console.log('[GameDetector] Epic Games manifests found at:', manifestPath);
+        return manifestPath;
+      }
+    } else if (process.platform === 'darwin') {
+      // macOS: Epic Games manifests
+      const manifestPath = path.join(os.homedir(), 'Library/Application Support/Epic/EpicGamesLauncher/Data/Manifests');
+      if (fs.existsSync(manifestPath)) {
+        console.log('[GameDetector] Epic Games manifests found at:', manifestPath);
+        return manifestPath;
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error detecting Epic path:', error);
+  }
+  console.warn('[GameDetector] Epic Games Launcher not found');
+  return null;
+}
+
+/**
  * Find GOG game by folder name
  */
 function findGOGGame(gameFolderName: string): string | null {
@@ -346,6 +373,66 @@ function findGOGGame(gameFolderName: string): string | null {
   const gamePath = path.join(gogPath, gameFolderName);
   if (fs.existsSync(gamePath)) {
     return gamePath;
+  }
+
+  return null;
+}
+
+/**
+ * Parse Epic Games manifest file to get installation path
+ */
+function parseEpicManifest(manifestPath: string): { installLocation: string; displayName: string } | null {
+  try {
+    const content = fs.readFileSync(manifestPath, 'utf8');
+    const manifest = JSON.parse(content);
+
+    if (manifest.InstallLocation && manifest.DisplayName) {
+      return {
+        installLocation: manifest.InstallLocation,
+        displayName: manifest.DisplayName,
+      };
+    }
+  } catch (error) {
+    console.error(`[GameDetector] Error parsing Epic manifest ${manifestPath}:`, error);
+  }
+  return null;
+}
+
+/**
+ * Find Epic game by folder name or display name
+ */
+function findEpicGame(gameFolderName: string): string | null {
+  console.log(`[GameDetector] Searching for Epic game: "${gameFolderName}"`);
+
+  const epicManifestPath = getEpicPath();
+  if (!epicManifestPath) {
+    console.warn('[GameDetector] Cannot search for game - Epic Games Launcher not found');
+    return null;
+  }
+
+  try {
+    const manifestFiles = fs.readdirSync(epicManifestPath).filter(f => f.endsWith('.item'));
+
+    for (const manifestFile of manifestFiles) {
+      const manifestFullPath = path.join(epicManifestPath, manifestFile);
+      const manifest = parseEpicManifest(manifestFullPath);
+
+      if (manifest) {
+        const installDirName = path.basename(manifest.installLocation);
+
+        // Try to match by folder name (case-insensitive)
+        if (installDirName.toLowerCase() === gameFolderName.toLowerCase()) {
+          if (fs.existsSync(manifest.installLocation)) {
+            console.log(`[GameDetector] ✓ Epic game found: ${manifest.displayName} at ${manifest.installLocation}`);
+            return manifest.installLocation;
+          }
+        }
+      }
+    }
+
+    console.warn(`[GameDetector] ✗ Epic game "${gameFolderName}" not found`);
+  } catch (error) {
+    console.error('[GameDetector] Error searching Epic games:', error);
   }
 
   return null;
@@ -373,6 +460,13 @@ export function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
       foundPath = findGOGGame(installPath.path);
       results.push({
         platform: 'gog',
+        path: foundPath || '',
+        exists: !!foundPath,
+      });
+    } else if (installPath.type === 'epic') {
+      foundPath = findEpicGame(installPath.path);
+      results.push({
+        platform: 'epic',
         path: foundPath || '',
         exists: !!foundPath,
       });
@@ -414,7 +508,7 @@ export function getAllInstalledSteamGames(): Map<string, string> {
 }
 
 /**
- * Get all installed games on the system (Steam + GOG)
+ * Get all installed games on the system (Steam + GOG + Epic)
  * Returns a list of install paths that can be matched against database
  */
 export function getAllInstalledGamePaths(): string[] {
@@ -452,6 +546,26 @@ export function getAllInstalledGamePaths(): string[] {
     }
   } catch (error) {
     console.error('[GameDetector] Error getting GOG games:', error);
+  }
+
+  // Get all Epic Games
+  try {
+    const epicManifestPath = getEpicPath();
+    if (epicManifestPath && fs.existsSync(epicManifestPath)) {
+      const manifestFiles = fs.readdirSync(epicManifestPath).filter(f => f.endsWith('.item'));
+
+      for (const manifestFile of manifestFiles) {
+        const manifestFullPath = path.join(epicManifestPath, manifestFile);
+        const manifest = parseEpicManifest(manifestFullPath);
+
+        if (manifest && fs.existsSync(manifest.installLocation)) {
+          const installDirName = path.basename(manifest.installLocation);
+          installedPaths.push(installDirName);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error getting Epic games:', error);
   }
 
   console.log(`[GameDetector] Found ${installedPaths.length} installed game paths on system`);
