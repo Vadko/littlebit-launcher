@@ -36,6 +36,7 @@ module.exports = {
       provider: 'github',
       owner: 'Vadko',
       repo: 'littlebit-launcher',
+      releaseType: 'release',
     },
   ],
 
@@ -53,6 +54,8 @@ module.exports = {
     icon: 'resources/icon.png',
     verifyUpdateCodeSignature: false,
     forceCodeSigning: false,
+    publisherName: 'LB UA',
+    legalTrademarks: '© 2025 LB UA',
   },
 
   portable: {
@@ -73,7 +76,12 @@ module.exports = {
     differentialPackage: true,
     artifactName: "${productName}-${os}-Setup.${ext}",
     language: "1058",
-    installerLanguages: ["1058", "1033"],
+    installerLanguages: ["uk_UA", "en_US"],
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: "LB Launcher",
+    runAfterFinish: true,
+    menuCategory: false,
   },
 
   electronDist: 'node_modules/electron/dist',
