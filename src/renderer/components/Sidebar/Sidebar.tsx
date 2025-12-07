@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, User, MessageCircle } from 'lucide-react';
 import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
@@ -129,30 +130,62 @@ export const Sidebar: React.FC = React.memo(() => {
       </div>
 
       {/* Games list */}
-      <div className="flex-1 overflow-y-auto space-y-2 p-4 pt-0 custom-scrollbar">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader size="md" />
-          </div>
-        ) : totalGames === 0 ? (
-          <div className="text-center text-text-muted py-8">
-            <p>Ігор не знайдено</p>
-          </div>
-        ) : (
-          <>
-            {visibleGames.map((game) => (
-              <React.Fragment key={game.id}>
-                <GameListItem
-                  game={game}
-                  isSelected={selectedGame?.id === game.id}
-                  onClick={() => setSelectedGame(game)}
-                  hasUpdate={gamesWithUpdates.has(game.id)}
-                  isGameDetected={isGameDetected(game.id)}
-                />
-              </React.Fragment>
-            ))}
-          </>
-        )}
+      <div className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar">
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="flex items-center justify-center py-12"
+            >
+              <Loader size="md" />
+            </motion.div>
+          ) : totalGames === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="text-center text-text-muted py-8"
+            >
+              <p>Ігор не знайдено</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`games-${filter}-${searchQuery}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="space-y-2"
+            >
+              {visibleGames.map((game, index) => (
+                <motion.div
+                  key={game.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: Math.min(index * 0.03, 0.5),
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
+                >
+                  <GameListItem
+                    game={game}
+                    isSelected={selectedGame?.id === game.id}
+                    onClick={() => setSelectedGame(game)}
+                    hasUpdate={gamesWithUpdates.has(game.id)}
+                    isGameDetected={isGameDetected(game.id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Footer */}

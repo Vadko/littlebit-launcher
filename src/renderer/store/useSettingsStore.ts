@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+type ThemeMode = 'light' | 'dark' | 'system';
+
 interface SettingsStore {
+  theme: ThemeMode;
   animationsEnabled: boolean;
   appUpdateNotificationsEnabled: boolean;
   gameUpdateNotificationsEnabled: boolean;
@@ -9,6 +12,7 @@ interface SettingsStore {
   autoDetectInstalledGames: boolean;
   showAdultGames: boolean;
   isSettingsModalOpen: boolean;
+  setTheme: (theme: ThemeMode) => void;
   toggleAnimations: () => void;
   setAnimationsEnabled: (enabled: boolean) => void;
   toggleAppUpdateNotifications: () => void;
@@ -28,6 +32,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set) => ({
+      theme: 'dark',
       animationsEnabled: true,
       appUpdateNotificationsEnabled: true,
       gameUpdateNotificationsEnabled: true,
@@ -35,6 +40,8 @@ export const useSettingsStore = create<SettingsStore>()(
       autoDetectInstalledGames: true,
       showAdultGames: false,
       isSettingsModalOpen: false,
+
+      setTheme: (theme) => set({ theme }),
 
       toggleAnimations: () =>
         set((state) => ({ animationsEnabled: !state.animationsEnabled })),

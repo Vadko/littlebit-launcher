@@ -6,19 +6,25 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundColor: {
+        'bg-dark': 'var(--bg-dark)',
+        'glass': 'var(--glass)',
+        'glass-hover': 'var(--glass-hover)',
+      },
+      textColor: {
+        'text-main': 'var(--text-main)',
+        'text-muted': 'var(--text-muted)',
+      },
+      borderColor: {
+        'border': 'var(--border)',
+        'border-hover': 'var(--border-hover)',
+      },
       colors: {
-        'bg-dark': '#050b14',
-        'glass': 'rgba(255, 255, 255, 0.03)',
-        'glass-hover': 'rgba(255, 255, 255, 0.1)',
-        'border': 'rgba(255, 255, 255, 0.1)',
-        'border-hover': 'rgba(255, 255, 255, 0.3)',
-        'neon-blue': '#00f2ff',
-        'neon-purple': '#bd00ff',
-        'neon-pink': '#ff0055',
-        'neon-orange': '#ff9e00',
-        'neon-green': '#10b981',
-        'text-main': '#ffffff',
-        'text-muted': '#94a3b8',
+        'neon-blue': 'var(--neon-blue)',
+        'neon-purple': 'var(--neon-purple)',
+        'neon-pink': 'var(--neon-pink)',
+        'neon-orange': 'var(--neon-orange)',
+        'neon-green': 'var(--neon-green)',
       },
       fontFamily: {
         head: ['Space Grotesk', 'Segoe UI', 'sans-serif'],
@@ -37,6 +43,9 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.8' },
         },
+      },
+      transitionTimingFunction: {
+        'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
     },
   },

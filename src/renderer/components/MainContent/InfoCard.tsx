@@ -38,17 +38,23 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
           label="Платформи"
           value={platformsText}
         />
-        <InfoItem
-          icon={<Calendar size={18} />}
-          label="Версія"
-          value={game.version || 'N/A'}
-        />
-        <InfoItem icon={<Users size={18} />} label="Команда" value={game.team} />
-        <InfoItem
-          icon={<HardDrive size={18} />}
-          label="Розмір"
-          value={game.archive_size || 'N/A'}
-        />
+        {game.version && (
+          <InfoItem
+            icon={<Calendar size={18} />}
+            label="Версія"
+            value={game.version}
+          />
+        )}
+        {game.team && (
+          <InfoItem icon={<Users size={18} />} label="Команда" value={game.team} />
+        )}
+        {game.archive_size && (
+          <InfoItem
+            icon={<HardDrive size={18} />}
+            label="Розмір"
+            value={game.archive_size}
+          />
+        )}
         {!isPlanned && (
           <InfoItem
             icon={<Download size={18} />}

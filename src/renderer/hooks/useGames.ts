@@ -29,8 +29,6 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
    * Завантажити ігри
    */
   const loadGames = useCallback(async () => {
-    setIsLoading(true);
-
     try {
       // Спеціальна обробка для встановлених ігор
       if (filter === 'installed-games') {

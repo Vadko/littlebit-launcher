@@ -17,6 +17,14 @@ img {
 }
 
 :root {
+  /* Fonts */
+  --font-head: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+/* Dark theme (default) */
+:root,
+:root[data-theme='dark'] {
   /* Colors */
   --bg-dark: #050b14;
   --glass: rgba(255, 255, 255, 0.03);
@@ -34,10 +42,27 @@ img {
   /* Text */
   --text-main: #ffffff;
   --text-muted: #94a3b8;
+}
 
-  /* Fonts */
-  --font-head: 'Space Grotesk', 'Segoe UI', sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+/* Light theme */
+:root[data-theme='light'] {
+  /* Colors */
+  --bg-dark: #f1f5f9;
+  --glass: rgba(255, 255, 255, 0.8);
+  --glass-hover: rgba(255, 255, 255, 0.95);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.2);
+
+  /* Neon accents - lighter versions for light theme */
+  --neon-blue: #38bdf8;
+  --neon-purple: #c084fc;
+  --neon-pink: #f472b6;
+  --neon-orange: #fbbf24;
+  --neon-green: #34d399;
+
+  /* Text */
+  --text-main: #0f172a;
+  --text-muted: #334155;
 }
 
 body {
@@ -47,6 +72,11 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Make text-white use CSS variable for theming */
+.text-white {
+  color: var(--text-main) !important;
 }
 
 #root {
@@ -84,6 +114,66 @@ html.maximized #root {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
+}
+
+/* Light theme specific styles for cards */
+:root[data-theme='light'] .glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme='light'] .glass-card:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme='light'] .glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Fix border-transparent in light theme for game list items */
+:root[data-theme='light'] .border-transparent {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Progress bars in light theme */
+:root[data-theme='light'] .progress-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .bg-glass-hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+:root[data-theme='light'] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Buttons in light theme */
+:root[data-theme='light'] .glass-button {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--text-main);
+}
+
+:root[data-theme='light'] .glass-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal backdrop and content in light theme */
+:root[data-theme='light'] .bg-black\/60 {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+:root[data-theme='light'] .bg-\[rgba\(10\2c 20\2c 30\2c 0\.95\)\] {
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .glass-button {
@@ -192,6 +282,40 @@ html.maximized #root {
 ::selection {
   background: rgba(0, 242, 255, 0.3);
   color: white;
+}
+
+/* Light theme text selection */
+:root[data-theme='light'] ::selection {
+  background: rgba(14, 165, 233, 0.25);
+  color: var(--text-main);
+}
+
+/* White text on colored buttons in light theme */
+:root[data-theme='light'] .bg-neon-blue,
+:root[data-theme='light'] .bg-neon-purple,
+:root[data-theme='light'] .bg-neon-pink,
+:root[data-theme='light'] .bg-neon-orange,
+:root[data-theme='light'] .bg-neon-green,
+:root[data-theme='light'] .bg-gradient-to-r {
+  color: white !important;
+}
+
+:root[data-theme='light'] .bg-neon-blue *,
+:root[data-theme='light'] .bg-neon-purple *,
+:root[data-theme='light'] .bg-neon-pink *,
+:root[data-theme='light'] .bg-neon-orange *,
+:root[data-theme='light'] .bg-neon-green *,
+:root[data-theme='light'] .bg-gradient-to-r * {
+  color: white !important;
+}
+
+/* Fix hover effects in light theme for filters */
+:root[data-theme='light'] .hover\:text-white:hover {
+  color: var(--text-main) !important;
+}
+
+:root[data-theme='light'] .hover\:bg-glass-hover:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Utility classes */

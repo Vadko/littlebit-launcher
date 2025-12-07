@@ -13,7 +13,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange }) => {
       value={value}
       onChange={onChange}
       placeholder="Пошук гри..."
-      icon={<Search size={18} />}
+      icon={<Search size={18} className="text-text-muted" />}
     />
   );
 };

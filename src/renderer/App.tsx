@@ -25,11 +25,38 @@ declare global {
 
 export const App: React.FC = () => {
   const { setInitialLoadComplete, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearInstalledGamesCache, clearDetectedGamesCache } = useStore();
-  const { animationsEnabled, autoDetectInstalledGames } = useSettingsStore();
+  const { animationsEnabled, autoDetectInstalledGames, theme } = useSettingsStore();
   const [online, setOnline] = useState(navigator.onLine);
 
   // Підписка на real-time оновлення ігор
   useRealtimeGames();
+
+  // Apply theme
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (theme === 'system') {
+      // Detect system preference
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const appliedTheme = isDark ? 'dark' : 'light';
+      root.setAttribute('data-theme', appliedTheme);
+      console.log('[Theme] Applied system theme:', appliedTheme);
+
+      // Listen for changes in system theme
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        const newTheme = e.matches ? 'dark' : 'light';
+        root.setAttribute('data-theme', newTheme);
+        console.log('[Theme] System theme changed to:', newTheme);
+      };
+
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      root.setAttribute('data-theme', theme);
+      console.log('[Theme] Applied theme:', theme);
+    }
+  }, [theme]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
