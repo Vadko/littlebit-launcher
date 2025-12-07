@@ -82,7 +82,4 @@ module.exports = {
     runAfterFinish: true,
     menuCategory: false,
   },
-
-  electronDist: 'node_modules/electron/dist',
-  electronVersion: '28.0.0',
 };
