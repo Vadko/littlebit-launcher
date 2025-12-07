@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, User, MessageCircle } from 'lucide-react';
+import { Settings, User, MessageCircle, ListFilter, Check } from 'lucide-react';
 import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
@@ -12,7 +12,7 @@ import { useGames } from '../../hooks/useGames';
 import logo from '../../../../resources/icon.png';
 import type { Database } from '../../../lib/database.types';
 
-type FilterType = 'all' | Database['public']['Enums']['game_status'] | 'installed-games';
+type FilterType = 'all' | Database['public']['Enums']['game_status'] | 'installed-translations' | 'installed-games';
 
 export const Sidebar: React.FC = React.memo(() => {
   const {
@@ -71,13 +71,38 @@ export const Sidebar: React.FC = React.memo(() => {
     }, 300);
   };
 
-  const filters = useMemo<{ label: string; value: FilterType }[]>(() => [
-    { label: 'Усі', value: 'all' },
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  const allFilters = useMemo<{ label: string; value: FilterType; group?: string }[]>(() => [
+    { label: 'Усі ігри', value: 'all' },
     { label: 'Заплановано', value: 'planned' },
     { label: 'Ранній доступ', value: 'in-progress' },
     { label: 'Готово', value: 'completed' },
-    { label: 'Встановлені', value: 'installed-games' },
+    { label: 'Встановлені переклади', value: 'installed-translations', group: 'installed' },
+    { label: 'Встановлені ігри', value: 'installed-games', group: 'installed' },
   ], []);
+
+  const currentFilterLabel = useMemo(() => {
+    return allFilters.find(f => f.value === filter)?.label || 'Усі ігри';
+  }, [filter, allFilters]);
+
+  // Закрити меню при кліку поза ним
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setIsFilterMenuOpen(false);
+      }
+    };
+
+    if (isFilterMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isFilterMenuOpen]);
 
   const handleOpenTelegram = useCallback(() => {
     window.electronAPI?.openExternal('https://t.me/lb_launcher_bot');
@@ -92,7 +117,7 @@ export const Sidebar: React.FC = React.memo(() => {
   }, [showModal]);
 
   return (
-    <GlassPanel className="w-[280px] h-full flex flex-col">
+    <GlassPanel className="w-[320px] h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b p-4 border-border select-none">
         <img
@@ -112,21 +137,63 @@ export const Sidebar: React.FC = React.memo(() => {
         <SearchBar value={searchQuery} onChange={handleSearchChange} />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 p-4 pt-0">
-        {filters.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 ${
-              filter === f.value
-                ? 'bg-glass-hover text-white border border-border-hover'
-                : 'bg-glass text-text-muted border border-transparent hover:bg-glass-hover hover:text-white'
-            }`}
+      {/* Filter Dropdown */}
+      <div className="relative px-4 pb-4" ref={filterMenuRef}>
+        <button
+          onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+            filter !== 'all'
+              ? 'bg-glass-hover text-white border border-border-hover'
+              : 'bg-glass text-text-muted border border-transparent hover:bg-glass-hover hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <ListFilter size={14} />
+            {currentFilterLabel}
+          </span>
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${isFilterMenuOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            {f.label}
-          </button>
-        ))}
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <AnimatePresence>
+          {isFilterMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full left-4 right-4 mt-1 py-1 bg-[#0a141e] border border-border rounded-lg shadow-xl z-50 overflow-hidden"
+            >
+              {allFilters.map((f, index) => (
+                <React.Fragment key={f.value}>
+                  {f.group === 'installed' && index > 0 && allFilters[index - 1]?.group !== 'installed' && (
+                    <div className="border-t border-border my-1" />
+                  )}
+                  <button
+                    onClick={() => {
+                      setFilter(f.value);
+                      setIsFilterMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
+                      filter === f.value
+                        ? 'bg-glass-hover text-white'
+                        : 'text-text-muted hover:bg-glass hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                    {filter === f.value && <Check size={14} />}
+                  </button>
+                </React.Fragment>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Games list */}

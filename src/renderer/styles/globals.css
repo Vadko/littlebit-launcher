@@ -318,6 +318,16 @@ html.maximized #root {
   background-color: rgba(0, 0, 0, 0.08) !important;
 }
 
+/* Title bar buttons in light theme */
+:root[data-theme='light'] .titlebar-btn:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  color: var(--text-main) !important;
+}
+
+:root[data-theme='light'] .titlebar-close-btn:hover {
+  color: white !important;
+}
+
 /* Utility classes */
 .text-gradient {
   background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));

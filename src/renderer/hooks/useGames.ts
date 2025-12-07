@@ -30,8 +30,8 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
    */
   const loadGames = useCallback(async () => {
     try {
-      // Спеціальна обробка для встановлених ігор
-      if (filter === 'installed-games') {
+      // Спеціальна обробка для встановлених перекладів
+      if (filter === 'installed-translations') {
         const installedGameIds = [...new Set(await window.electronAPI.getAllInstalledGameIds())];
 
         if (installedGameIds.length === 0) {
@@ -40,7 +40,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
           return;
         }
 
-        // Отримати всі встановлені ігри
+        // Отримати всі ігри зі встановленими перекладами
         const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
 
         // Застосувати пошук
@@ -48,6 +48,33 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           filteredGames = installedGames.filter((game) =>
+            game.name.toLowerCase().includes(query)
+          );
+        }
+
+        setGames(filteredGames);
+        setTotal(filteredGames.length);
+        return;
+      }
+
+      // Спеціальна обробка для встановлених ігор (на комп'ютері)
+      if (filter === 'installed-games') {
+        const installPaths = await window.electronAPI.getAllInstalledGamePaths();
+
+        if (installPaths.length === 0) {
+          setGames([]);
+          setTotal(0);
+          return;
+        }
+
+        // Знайти ігри за шляхами встановлення
+        const result = await window.electronAPI.findGamesByInstallPaths(installPaths);
+
+        // Застосувати пошук
+        let filteredGames = result.games;
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filteredGames = result.games.filter((game) =>
             game.name.toLowerCase().includes(query)
           );
         }
@@ -128,6 +155,19 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
 
     window.electronAPI.onGameRemoved(handleGameRemoved);
   }, []);
+
+  // Слухати зміни у встановлених перекладах (install/uninstall)
+  useEffect(() => {
+    if (!window.electronAPI?.onInstalledGamesChanged) return;
+    if (filter !== 'installed-translations') return;
+
+    const handleInstalledGamesChanged = () => {
+      console.log('[useGames] Installed translations changed, reloading list');
+      loadGames();
+    };
+
+    window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
+  }, [filter, loadGames]);
 
   return {
     games,

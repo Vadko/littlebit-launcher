@@ -112,6 +112,9 @@ export function setupInstallerHandlers(): void {
       // Invalidate cache after successful uninstallation
       invalidateInstalledGameIdsCache();
 
+      // Notify renderer about installed games change
+      getMainWindow()?.webContents.send('installed-games-changed');
+
       return { success: true };
     } catch (error) {
       console.error('Error uninstalling translation:', error);

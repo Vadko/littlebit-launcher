@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MinimizeIcon } from '../Icons/MinimizeIcon';
 import { MaximizeIcon } from '../Icons/MaximizeIcon';
+import { RestoreIcon } from '../Icons/RestoreIcon';
 import { CloseIcon } from '../Icons/CloseIcon';
 
 interface TitleBarProps {
@@ -9,6 +10,14 @@ interface TitleBarProps {
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({ online, version }) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    window.windowControls?.onMaximizedChange((maximized) => {
+      setIsMaximized(maximized);
+    });
+  }, []);
+
   const handleMinimize = () => window.windowControls?.minimize();
   const handleMaximize = () => window.windowControls?.maximize();
   const handleClose = () => window.windowControls?.close();
@@ -26,19 +35,19 @@ export const TitleBar: React.FC<TitleBarProps> = ({ online, version }) => {
       <div className="no-drag flex gap-1">
         <button
           onClick={handleMinimize}
-          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors titlebar-btn"
         >
           <MinimizeIcon />
         </button>
         <button
           onClick={handleMaximize}
-          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors titlebar-btn"
         >
-          <MaximizeIcon />
+          {isMaximized ? <MaximizeIcon /> : <RestoreIcon />}
         </button>
         <button
           onClick={handleClose}
-          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-red-600 hover:text-white transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-red-600 hover:text-white transition-colors titlebar-close-btn"
         >
           <CloseIcon />
         </button>
