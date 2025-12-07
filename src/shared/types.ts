@@ -95,6 +95,10 @@ export interface ElectronAPI {
   launchGame: (game: Game) => Promise<LaunchGameResult>;
   // Version
   getVersion: () => string;
+  // Query cache persistence
+  saveQueryCache?: (cache: string) => Promise<void>;
+  loadQueryCache?: () => Promise<string | null>;
+  removeQueryCache?: () => Promise<void>;
 }
 
 declare global {

@@ -51,17 +51,9 @@ export function useRealtimeGames() {
             return { ...oldData, pages: updatedPages };
           }
 
-          // Якщо гра не знайдена, додати її до першої сторінки (нова гра)
-          if (updatedPages.length > 0) {
-            const firstPage = { ...updatedPages[0] };
-            firstPage.games = [updatedGame, ...firstPage.games].sort((a, b) =>
-              a.name.localeCompare(b.name)
-            );
-            firstPage.total = (firstPage.total || 0) + 1;
-            updatedPages[0] = firstPage;
-          }
-
-          return { ...oldData, pages: updatedPages };
+          // Якщо гра НЕ знайдена в жодній сторінці, НЕ додавати її автоматично
+          // Причина: гра може бути на непрогрузжених сторінках, або не відповідати поточному фільтру
+          return oldData;
         }
       );
 

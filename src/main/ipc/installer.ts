@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, invalidateInstalledGameIdsCache } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game } from '../../shared/types';
 import { machineIdSync } from 'node-machine-id';
@@ -21,6 +21,9 @@ export function setupInstallerHandlers(): void {
             getMainWindow()?.webContents.send('installation-status', status);
           }
         );
+
+        // Invalidate cache after successful installation
+        invalidateInstalledGameIdsCache();
 
         // Track successful download
         try {
@@ -93,8 +96,8 @@ export function setupInstallerHandlers(): void {
   ipcMain.handle('select-game-folder', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
-      title: 'Оберіть папку з грою',
-      buttonLabel: 'Обрати',
+      title: 'Виберіть папку з грою',
+      buttonLabel: 'Вибрати',
     });
 
     if (result.canceled || result.filePaths.length === 0) {
@@ -107,6 +110,10 @@ export function setupInstallerHandlers(): void {
   ipcMain.handle('uninstall-translation', async (_, game: Game) => {
     try {
       await uninstallTranslation(game);
+
+      // Invalidate cache after successful uninstallation
+      invalidateInstalledGameIdsCache();
+
       return { success: true };
     } catch (error) {
       console.error('Error uninstalling translation:', error);

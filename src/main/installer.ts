@@ -64,7 +64,7 @@ export async function installTranslation(
       const error: any = new Error(
         `Гру не знайдено автоматично.\n\n` +
         `Шукали папку: ${platformPath || 'не вказано'}\n\n` +
-        `Оберіть папку з грою вручну.`
+        `Виберіть папку з грою вручну.`
       );
       error.needsManualSelection = true;
       throw error;

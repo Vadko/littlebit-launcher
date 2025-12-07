@@ -18,6 +18,8 @@ export function useGamesInfiniteQuery({ filter, searchQuery, itemsPerPage }: Use
 
   return useInfiniteQuery({
     queryKey: [GAMES_QUERY_KEY, { filter, searchQuery, showAdultGames }],
+    // Offline-first: спробувати завантажити з мережі, але не failити якщо offline
+    networkMode: 'offlineFirst',
     queryFn: async ({ pageParam }: { pageParam: number }) => {
       const params: GetGamesParams = {
         offset: pageParam,
@@ -36,7 +38,7 @@ export function useGamesInfiniteQuery({ filter, searchQuery, itemsPerPage }: Use
           return { games: [], total: 0, hasMore: false };
         }
 
-        // Отримати всі встановлені ігри (вже відсортовані алфавітно)
+        // Отримати всі встановлені ігри один раз (вже відсортовані алфавітно)
         const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
         console.log('[useGamesQuery] Fetched', installedGames.length, 'installed games');
 
@@ -51,9 +53,10 @@ export function useGamesInfiniteQuery({ filter, searchQuery, itemsPerPage }: Use
 
         // Клієнтська пагінація
         const total = filteredGames.length;
-        const offset = pageParam;
-        const paginatedGames = filteredGames.slice(offset, offset + itemsPerPage);
-        const hasMore = offset + itemsPerPage < total;
+        const start = pageParam;
+        const end = start + itemsPerPage;
+        const paginatedGames = filteredGames.slice(start, end);
+        const hasMore = end < total;
 
         return { games: paginatedGames, total, hasMore };
       }
@@ -118,53 +121,3 @@ export function useUpdateGameInCache() {
   };
 }
 
-/**
- * Хук для додавання нової гри в кеш (якщо її раніше не було)
- */
-export function useAddGameToCache() {
-  const queryClient = useQueryClient();
-
-  return (newGame: Game) => {
-    queryClient.setQueriesData<{ pages: GetGamesResult[] }>(
-      { queryKey: [GAMES_QUERY_KEY], exact: false },
-      (oldData) => {
-        if (!oldData) return oldData;
-
-        // Перевірити, чи гра вже є
-        const gameExists = oldData.pages.some((page) =>
-          page.games.some((game) => game.id === newGame.id)
-        );
-
-        if (gameExists) {
-          // Якщо гра вже є, просто оновити її
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) => ({
-              ...page,
-              games: page.games.map((game) =>
-                game.id === newGame.id ? newGame : game
-              ),
-            })),
-          };
-        }
-
-        // Якщо гри немає, додати її до першої сторінки
-        const updatedPages = [...oldData.pages];
-        if (updatedPages.length > 0) {
-          updatedPages[0] = {
-            ...updatedPages[0],
-            games: [newGame, ...updatedPages[0].games].sort((a, b) =>
-              a.name.localeCompare(b.name)
-            ),
-            total: updatedPages[0].total + 1,
-          };
-        }
-
-        return {
-          ...oldData,
-          pages: updatedPages,
-        };
-      }
-    );
-  };
-}

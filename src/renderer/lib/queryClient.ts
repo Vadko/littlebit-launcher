@@ -1,4 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { createElectronPersister } from './queryPersister';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,3 +18,14 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Налаштувати персистентність кешу
+if (window.electronAPI) {
+  persistQueryClient({
+    queryClient,
+    persister: createElectronPersister(),
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 днів
+    buster: '', // Можна використати version для інвалідації старого кешу
+  });
+  console.log('[QueryClient] Persistence enabled');
+}

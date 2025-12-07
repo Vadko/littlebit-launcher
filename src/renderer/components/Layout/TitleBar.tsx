@@ -23,22 +23,22 @@ export const TitleBar: React.FC<TitleBarProps> = ({ online, version }) => {
       <div className="text-[10px] text-text-muted/50 absolute left-1/2 -translate-x-1/2">
         {`v${version}${online ? '' : ' · ви оффлайн'}`}
       </div>
-      <div className="no-drag flex gap-2">
+      <div className="no-drag flex gap-1">
         <button
           onClick={handleMinimize}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors"
         >
           <MinimizeIcon />
         </button>
         <button
           onClick={handleMaximize}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-white/10 hover:text-white transition-colors"
         >
           <MaximizeIcon />
         </button>
         <button
           onClick={handleClose}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-500/20 transition-colors"
+          className="w-12 h-8 flex items-center justify-center text-text-muted hover:bg-red-600 hover:text-white transition-colors"
         >
           <CloseIcon />
         </button>

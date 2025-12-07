@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Download, RefreshCw, Heart, Gamepad2, Trash2, Play } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useConfirmStore } from '../../store/useConfirmStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { GAMES_QUERY_KEY } from '../../hooks/useGamesQuery';
 import { GameHero } from './GameHero';
 import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
@@ -17,6 +19,7 @@ import { Button } from '../ui/Button';
 import type { InstallResult, DownloadProgress, LaunchGameResult } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
+  const queryClient = useQueryClient();
   const {
     selectedGame,
     getInstallationProgress,
@@ -167,6 +170,9 @@ export const MainContent: React.FC = () => {
       checkInstallationStatus(selectedGame.id, selectedGame);
       useStore.getState().clearGameUpdate(selectedGame.id);
 
+      // Invalidate "installed-games" query to refresh the list
+      queryClient.invalidateQueries({ queryKey: [GAMES_QUERY_KEY, { filter: 'installed-games' }] });
+
       const message = isUpdateAvailable
         ? `Переклад ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
         : `Переклад ${selectedGame.name} успішно встановлено!`;
@@ -300,6 +306,9 @@ export const MainContent: React.FC = () => {
 
           checkInstallationStatus(selectedGame.id, selectedGame);
 
+          // Invalidate "installed-games" query to refresh the list
+          queryClient.invalidateQueries({ queryKey: [GAMES_QUERY_KEY, { filter: 'installed-games' }] });
+
           showModal({
             title: 'Переклад видалено',
             message: `Переклад "${selectedGame.name}" успішно видалено!`,
@@ -339,7 +348,7 @@ export const MainContent: React.FC = () => {
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
         <Gamepad2 size={64} className="text-text-muted mb-4 opacity-50" />
         <h2 className="text-2xl font-head font-semibold text-white mb-2">
-          Оберіть гру зі списку
+          Виберіть гру зі списку
         </h2>
         <p className="text-text-muted max-w-md">
           Виберіть гру, щоб побачити деталі та встановити переклад

@@ -62,6 +62,10 @@ const electronAPI: ElectronAPI = {
   launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
   // Version
   getVersion: () => ipcRenderer.sendSync('get-version'),
+  // Query cache persistence
+  saveQueryCache: (cache: string) => ipcRenderer.invoke('save-query-cache', cache),
+  loadQueryCache: () => ipcRenderer.invoke('load-query-cache'),
+  removeQueryCache: () => ipcRenderer.invoke('remove-query-cache'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

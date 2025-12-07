@@ -3,6 +3,7 @@ import { createMainWindow, getMainWindow } from './window';
 import { setupWindowControls, initTray } from './ipc/window-controls';
 import { setupGamesHandlers, cleanupGamesHandlers } from './ipc/games';
 import { setupInstallerHandlers } from './ipc/installer';
+import { setupQueryCacheHandlers } from './ipc/query-cache';
 import { setupAutoUpdater, checkForUpdates } from './auto-updater';
 import { startSteamWatcher, stopSteamWatcher } from './steam-watcher';
 import { startInstallationWatcher, stopInstallationWatcher } from './installation-watcher';
@@ -31,6 +32,7 @@ if (!gotTheLock) {
   setupWindowControls();
   setupGamesHandlers();
   setupInstallerHandlers();
+  setupQueryCacheHandlers();
   setupAutoUpdater();
 
   // App lifecycle
