@@ -1,11 +1,8 @@
 import { app, ipcMain, Notification } from 'electron';
 import { fetchGames, fetchGamesByIds, findGamesByInstallPaths } from '../api';
-import { subscribeToGameUpdates } from '../../lib/api';
 import { getMainWindow } from '../window';
 import { GetGamesParams, Game } from '../../shared/types';
 import { getFirstAvailableGamePath, getAllInstalledGamePaths, getAllInstalledSteamGames } from '../game-detector';
-
-let unsubscribeRealtime: (() => void) | null = null;
 
 export function setupGamesHandlers(): void {
   // Version
@@ -13,20 +10,20 @@ export function setupGamesHandlers(): void {
     event.returnValue = app.getVersion();
   });
 
-  // Fetch games with pagination
-  ipcMain.handle('fetch-games', async (_, params: GetGamesParams) => {
+  // Fetch games with pagination - SYNC тепер, тому що локальна БД
+  ipcMain.handle('fetch-games', (_, params: GetGamesParams) => {
     try {
-      return await fetchGames(params);
+      return fetchGames(params);
     } catch (error) {
       console.error('Error fetching games:', error);
       return { games: [], total: 0, hasMore: false };
     }
   });
 
-  // Fetch games by IDs
-  ipcMain.handle('fetch-games-by-ids', async (_, gameIds: string[]) => {
+  // Fetch games by IDs - SYNC
+  ipcMain.handle('fetch-games-by-ids', (_, gameIds: string[]) => {
     try {
-      return await fetchGamesByIds(gameIds);
+      return fetchGamesByIds(gameIds);
     } catch (error) {
       console.error('Error fetching games by IDs:', error);
       return [];
@@ -55,36 +52,14 @@ export function setupGamesHandlers(): void {
     }
   });
 
-  // Find games by install paths
-  ipcMain.handle('find-games-by-install-paths', async (_, installPaths: string[], offset?: number, limit?: number) => {
+  // Find games by install paths - SYNC
+  ipcMain.handle('find-games-by-install-paths', (_, installPaths: string[]) => {
     try {
-      return await findGamesByInstallPaths(installPaths, offset, limit);
+      return findGamesByInstallPaths(installPaths);
     } catch (error) {
       console.error('Error finding games by install paths:', error);
-      return { games: [], total: 0, hasMore: false };
+      return { games: [], total: 0 };
     }
-  });
-
-  // Subscribe to real-time updates
-  ipcMain.handle('subscribe-game-updates', () => {
-    if (unsubscribeRealtime) {
-      unsubscribeRealtime();
-    }
-
-    unsubscribeRealtime = subscribeToGameUpdates((updatedGame) => {
-      getMainWindow()?.webContents.send('game-updated', updatedGame);
-    });
-
-    return { success: true };
-  });
-
-  // Unsubscribe from real-time updates
-  ipcMain.handle('unsubscribe-game-updates', () => {
-    if (unsubscribeRealtime) {
-      unsubscribeRealtime();
-      unsubscribeRealtime = null;
-    }
-    return { success: true };
   });
 
   // Show game update notification
@@ -154,9 +129,3 @@ export function setupGamesHandlers(): void {
   });
 }
 
-export function cleanupGamesHandlers(): void {
-  if (unsubscribeRealtime) {
-    unsubscribeRealtime();
-    unsubscribeRealtime = null;
-  }
-}

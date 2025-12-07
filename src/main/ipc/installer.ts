@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, invalidateInstalledGameIdsCache } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, invalidateInstalledGameIdsCache, ManualSelectionError, abortCurrentDownload, removeOrphanedInstallationMetadata } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game } from '../../shared/types';
 import { machineIdSync } from 'node-machine-id';
@@ -62,9 +62,7 @@ export function setupInstallerHandlers(): void {
           success: false,
           error: {
             message: error instanceof Error ? error.message : 'Невідома помилка',
-            needsManualSelection: error && typeof error === 'object' && 'needsManualSelection' in error
-              ? (error as any).needsManualSelection
-              : false,
+            needsManualSelection: error instanceof ManualSelectionError,
           }
         };
       }
@@ -128,11 +126,20 @@ export function setupInstallerHandlers(): void {
 
   ipcMain.handle('abort-download', async () => {
     try {
-      const { abortCurrentDownload } = await import('../installer');
       abortCurrentDownload();
       return { success: true };
     } catch (error) {
       console.error('Error aborting download:', error);
+      return { success: false };
+    }
+  });
+
+  ipcMain.handle('remove-orphaned-metadata', async (_, gameIds: string[]) => {
+    try {
+      await removeOrphanedInstallationMetadata(gameIds);
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing orphaned metadata:', error);
       return { success: false };
     }
   });

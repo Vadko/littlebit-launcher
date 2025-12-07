@@ -41,6 +41,7 @@ interface Store {
 
   // Installation Actions
   loadInstalledGames: (games: Game[]) => Promise<void>;
+  loadInstalledGamesFromSystem: () => Promise<void>; // Новий reverse підхід
   clearInstalledGamesCache: () => void;
   checkInstallationStatus: (gameId: string, game: Game) => Promise<void>;
   checkForGameUpdate: (gameId: string, newVersion: string) => boolean;
@@ -59,19 +60,8 @@ interface Store {
   isGameDetected: (gameId: string) => boolean;
 }
 
-// Load cached detected games from localStorage
-const loadCachedDetectedGames = (): Map<string, DetectedGameInfo> => {
-  try {
-    const cached = localStorage.getItem('lb-detected-games');
-    if (cached) {
-      const obj = JSON.parse(cached);
-      return new Map(Object.entries(obj));
-    }
-  } catch (err) {
-    console.error('[Store] Error loading cached detected games:', err);
-  }
-  return new Map();
-};
+// detectedGames більше не персіститься - має перевірятися при кожному запуску
+// бо користувач може встановити/видалити ігри через Steam/GOG/Epic
 
 export const useStore = create<Store>((set, get) => ({
   // UI State
@@ -85,7 +75,7 @@ export const useStore = create<Store>((set, get) => ({
 
   // Installation State
   installedGames: new Map(),
-  detectedGames: loadCachedDetectedGames(),
+  detectedGames: new Map(), // Більше не кешується в localStorage
   gamesWithUpdates: new Set(),
   installationProgress: new Map(),
   isCheckingInstallation: new Map(),
@@ -134,8 +124,16 @@ export const useStore = create<Store>((set, get) => ({
 
     console.log(`[Store] Checking installation for ${gamesToCheck.length} new games`);
 
-    for (const game of gamesToCheck) {
-      const installInfo = await window.electronAPI.checkInstallation(game);
+    // Виконуємо перевірки паралельно для швидкості
+    const checkResults = await Promise.all(
+      gamesToCheck.map(async (game) => {
+        const installInfo = await window.electronAPI.checkInstallation(game);
+        return { game, installInfo };
+      })
+    );
+
+    // Обробляємо результати
+    for (const { game, installInfo } of checkResults) {
       if (installInfo) {
         installedGamesMap.set(game.id, installInfo);
 
@@ -157,6 +155,85 @@ export const useStore = create<Store>((set, get) => ({
       installedGames: installedGamesMap,
       gamesWithUpdates: gamesWithUpdatesSet,
     });
+  },
+
+  // Новий підхід: завантажуємо встановлені переклади з installation-cache
+  loadInstalledGamesFromSystem: async () => {
+    if (!window.electronAPI) return;
+
+    console.log('[Store] Loading installed translations from installation-cache');
+
+    const state = get();
+    const installedGamesMap = new Map(state.installedGames);
+    const gamesWithUpdatesSet = new Set(state.gamesWithUpdates);
+
+    try {
+      // 1. Отримати ID всіх ігор з встановленими перекладами з installation-cache/
+      const installedGameIds = await window.electronAPI.getAllInstalledGameIds();
+      console.log(`[Store] Found ${installedGameIds.length} games with installed translations`);
+
+      if (installedGameIds.length === 0) {
+        console.log('[Store] No installed translations found');
+        set({
+          installedGames: new Map(),
+          gamesWithUpdates: new Set(),
+        });
+        return;
+      }
+
+      // 2. Отримати інфо про ці ігри з бази даних
+      const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
+      console.log(`[Store] Fetched ${installedGames.length} game records from database`);
+
+      // 3. Перевірити installation info для кожної гри (паралельно)
+      const checkResults = await Promise.all(
+        installedGames.map(async (game) => {
+          const installInfo = await window.electronAPI.checkInstallation(game);
+          return { game, installInfo };
+        })
+      );
+
+      // Обробляємо результати
+      const orphanedGameIds: string[] = []; // Ігри які вже не існують на диску
+
+      for (const { game, installInfo } of checkResults) {
+        if (installInfo) {
+          installedGamesMap.set(game.id, installInfo);
+
+          // Check if installed version differs from current version in DB
+          if (game.version && installInfo.version !== game.version) {
+            gamesWithUpdatesSet.add(game.id);
+
+            // Show in-app notification for this game
+            window.electronAPI.showGameUpdateNotification?.(
+              game.name,
+              game.version,
+              true // isInitialLoad - skip system notification
+            );
+          }
+        } else {
+          // Гра була встановлена раніше але зараз не існує (видалена через Steam/GOG/Epic)
+          // Треба видалити метадані з installation-cache/
+          orphanedGameIds.push(game.id);
+          console.log(`[Store] Game ${game.name} no longer exists on disk, will clean up metadata`);
+        }
+      }
+
+      // Видалити orphaned метадані
+      if (orphanedGameIds.length > 0) {
+        console.log(`[Store] Cleaning up ${orphanedGameIds.length} orphaned game metadata`);
+        await window.electronAPI.removeOrphanedMetadata(orphanedGameIds);
+      }
+
+      set({
+        installedGames: installedGamesMap,
+        gamesWithUpdates: gamesWithUpdatesSet,
+      });
+
+      console.log(`[Store] Loaded ${installedGamesMap.size} installed translations`);
+    } catch (error) {
+      console.error('[Store] Error loading installed translations:', error);
+    }
   },
 
   clearInstalledGamesCache: () => {
@@ -268,7 +345,6 @@ export const useStore = create<Store>((set, get) => ({
   clearDetectedGamesCache: () => {
     console.log('[Store] Clearing detected games cache');
     set({ detectedGames: new Map() });
-    localStorage.removeItem('lb-detected-games');
   },
 
   detectInstalledGames: async (games: Game[]) => {
@@ -315,14 +391,6 @@ export const useStore = create<Store>((set, get) => ({
 
       console.log('[Store] Detected games on system:', newDetectedGames.size);
       set({ detectedGames: newDetectedGames });
-
-      // Cache detected games to localStorage
-      try {
-        const detectedGamesObj = Object.fromEntries(newDetectedGames);
-        localStorage.setItem('lb-detected-games', JSON.stringify(detectedGamesObj));
-      } catch (err) {
-        console.error('[Store] Error caching detected games:', err);
-      }
     } catch (error) {
       console.error('[Store] Error detecting games:', error);
     }

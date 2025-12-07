@@ -15,7 +15,7 @@ export function createMainWindow(): BrowserWindow {
     backgroundColor: '#050b14',
     icon: join(app.getAppPath(), 'resources/icon.png'),
     webPreferences: {
-      preload: join(app.getAppPath(), 'out/preload/index.mjs'),
+      preload: join(app.getAppPath(), 'out/preload/index.js'),
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,

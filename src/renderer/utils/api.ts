@@ -9,10 +9,10 @@ export async function fetchGames(params?: GetGamesParams): Promise<GetGamesResul
 
     // In web context (shouldn't happen in Electron app)
     console.error('electronAPI not available');
-    return { games: [], total: 0, hasMore: false };
+    return { games: [], total: 0 };
   } catch (error) {
     console.error('Error fetching games:', error);
-    return { games: [], total: 0, hasMore: false };
+    return { games: [], total: 0 };
   }
 }
 

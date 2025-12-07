@@ -1,22 +1,25 @@
 import { Game, GetGamesParams, GetGamesResult } from '../shared/types';
-import { getApprovedGames, getGamesByIds, findGamesByInstallPaths as apiFindGamesByInstallPaths } from '../lib/api';
+import { GamesRepository } from './db/games-repository';
 
-export async function fetchGames(params: GetGamesParams = {}): Promise<GetGamesResult> {
+// Використовуємо локальну базу даних замість Supabase
+const gamesRepo = new GamesRepository();
+
+export function fetchGames(params: GetGamesParams = {}): GetGamesResult {
   try {
-    console.log('[API] Fetching games from Supabase with params:', params);
-    const result = await getApprovedGames(params);
-    console.log(`[API] Fetched ${result.games.length} games, total: ${result.total}, hasMore: ${result.hasMore}`);
+    console.log('[API] Fetching games from local database with params:', params);
+    const result = gamesRepo.getGames(params);
+    console.log(`[API] Fetched ${result.games.length} games, total: ${result.total}`);
     return result;
   } catch (error) {
-    console.error('[API] Error fetching games from Supabase:', error);
-    return { games: [], total: 0, hasMore: false };
+    console.error('[API] Error fetching games from local database:', error);
+    return { games: [], total: 0 };
   }
 }
 
-export async function fetchGamesByIds(gameIds: string[]): Promise<Game[]> {
+export function fetchGamesByIds(gameIds: string[]): Game[] {
   try {
     console.log('[API] Fetching games by IDs:', gameIds);
-    const games = await getGamesByIds(gameIds);
+    const games = gamesRepo.getGamesByIds(gameIds);
     console.log(`[API] Fetched ${games.length} games by IDs`);
     return games;
   } catch (error) {
@@ -25,18 +28,14 @@ export async function fetchGamesByIds(gameIds: string[]): Promise<Game[]> {
   }
 }
 
-export async function findGamesByInstallPaths(
-  installPaths: string[],
-  offset: number = 0,
-  limit: number = 10
-): Promise<GetGamesResult> {
+export function findGamesByInstallPaths(installPaths: string[]): GetGamesResult {
   try {
-    console.log('[API] Finding games by install paths:', installPaths.length, 'paths', `(offset: ${offset}, limit: ${limit})`);
-    const result = await apiFindGamesByInstallPaths(installPaths, offset, limit);
+    console.log('[API] Finding games by install paths:', installPaths.length, 'paths');
+    const result = gamesRepo.findGamesByInstallPaths(installPaths);
     console.log(`[API] Found ${result.games.length} games matching install paths, total: ${result.total}`);
     return result;
   } catch (error) {
     console.error('[API] Error finding games by install paths:', error);
-    return { games: [], total: 0, hasMore: false };
+    return { games: [], total: 0 };
   }
 }

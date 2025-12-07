@@ -7,8 +7,7 @@ import { Loader } from '../ui/Loader';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useGamesInfiniteQuery } from '../../hooks/useGamesQuery';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { useGames } from '../../hooks/useGames';
 import logo from '../../../../resources/icon.png';
 import type { Database } from '../../../lib/database.types';
 
@@ -24,88 +23,50 @@ export const Sidebar: React.FC = React.memo(() => {
     setSearchQuery,
     gamesWithUpdates,
     isGameDetected,
-    loadInstalledGames,
+    loadInstalledGamesFromSystem,
   } = useStore();
   const { showModal } = useModalStore();
   const { openSettingsModal } = useSettingsStore();
 
-  const itemsPerPage = 10;
-
-  // React Query для отримання ігор
+  // Локальна база даних через IPC (завантажуємо всі ігри одразу)
   const {
-    data,
+    games: visibleGames,
+    total: totalGames,
     isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-  } = useGamesInfiniteQuery({
+    reload,
+  } = useGames({
     filter,
     searchQuery,
-    itemsPerPage,
   });
-
-  // Flatten всі сторінки в один масив
-  const visibleGames = useMemo(
-    () => data?.pages.flatMap((page) => page.games) ?? [],
-    [data]
-  );
-
-  const totalGames = useMemo(
-    () => data?.pages[0]?.total ?? 0,
-    [data]
-  );
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedRef = useRef(false);
 
-  // Infinite scroll для завантаження наступної сторінки
-  const observerTarget = useInfiniteScroll({
-    onLoadMore: () => { fetchNextPage(); },
-    hasMore: hasNextPage ?? false,
-    isLoading: isFetchingNextPage,
-  });
-
-  // Завантажити metadata про встановлені переклади для нових ігор
-  const processedGamesRef = useRef<Set<string>>(new Set());
-  const lastFilterRef = useRef({ filter, searchQuery });
-
+  // Новий підхід: один раз перевіряємо всі встановлені ігри на системі
   useEffect(() => {
-    // Очистити список оброблених ігор при зміні фільтра або пошуку
-    if (lastFilterRef.current.filter !== filter || lastFilterRef.current.searchQuery !== searchQuery) {
-      processedGamesRef.current.clear();
-      lastFilterRef.current = { filter, searchQuery };
-    }
-  }, [filter, searchQuery]);
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
 
-  useEffect(() => {
-    if (visibleGames.length === 0) return;
+    // Відкладаємо сканування на 500мс для швидшого старту додатка
+    const timer = setTimeout(() => {
+      // Викликаємо reverse підхід: сканування системи → matching з БД → перевірка
+      loadInstalledGamesFromSystem();
+    }, 500);
 
-    // Знайти тільки нові ігри, які ще не перевірені
-    const newGames = visibleGames.filter(game => !processedGamesRef.current.has(game.id));
-
-    if (newGames.length === 0) return;
-
-    // Додати нові ігри до списку оброблених
-    newGames.forEach(game => processedGamesRef.current.add(game.id));
-
-    // Завантажити metadata про встановлені переклади тільки для нових ігор
-    loadInstalledGames(newGames);
-
-    // NOTE: detectInstalledGames викликається в App.tsx один раз на початку + при зміні Steam бібліотеки
-    // Тут його викликати не потрібно, щоб не створювати зайве навантаження
-  }, [visibleGames, loadInstalledGames, filter, searchQuery]);
+    return () => clearTimeout(timer);
+  }, [loadInstalledGamesFromSystem]);
 
   const handleSearchChange = (value: string) => {
     // Update search query immediately for input
     setSearchQuery(value);
 
-    // Debounce the actual refetch
+    // Debounce the actual reload
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      refetch();
+      reload();
     }, 300);
   };
 
@@ -179,7 +140,7 @@ export const Sidebar: React.FC = React.memo(() => {
           </div>
         ) : (
           <>
-            {visibleGames.map((game, index) => (
+            {visibleGames.map((game) => (
               <React.Fragment key={game.id}>
                 <GameListItem
                   game={game}
@@ -188,18 +149,8 @@ export const Sidebar: React.FC = React.memo(() => {
                   hasUpdate={gamesWithUpdates.has(game.id)}
                   isGameDetected={isGameDetected(game.id)}
                 />
-                {/* Sentinel за 5 елементів до кінця для раннього завантаження */}
-                {hasNextPage && index === visibleGames.length - 5 && (
-                  <div ref={observerTarget} className="h-0" />
-                )}
               </React.Fragment>
             ))}
-            {/* Loader в кінці списку */}
-            {isFetchingNextPage && (
-              <div className="py-4 flex items-center justify-center">
-                <Loader size="sm" />
-              </div>
-            )}
           </>
         )}
       </div>

@@ -34,8 +34,6 @@ export interface InstallResult {
 }
 
 export interface GetGamesParams {
-  offset?: number;
-  limit?: number;
   searchQuery?: string;
   filter?: string;
   showAdultGames?: boolean;
@@ -44,7 +42,6 @@ export interface GetGamesParams {
 export interface GetGamesResult {
   games: Game[];
   total: number;
-  hasMore: boolean;
 }
 
 export interface DetectedGameInfo {
@@ -69,6 +66,7 @@ export interface ElectronAPI {
   abortDownload: () => Promise<{ success: boolean }>;
   checkInstallation: (game: Game) => Promise<InstallationInfo | null>;
   getAllInstalledGameIds: () => Promise<string[]>;
+  removeOrphanedMetadata: (gameIds: string[]) => Promise<{ success: boolean }>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => void;
@@ -82,10 +80,9 @@ export interface ElectronAPI {
   onUpdateDownloaded: (callback: (info: unknown) => void) => void;
   onUpdateProgress: (callback: (progress: { percent?: number; bytesPerSecond?: number; total?: number; transferred?: number }) => void) => void;
   onUpdateError: (callback: (error: Error) => void) => void;
-  // Real-time updates
-  subscribeGameUpdates: () => Promise<{ success: boolean }>;
-  unsubscribeGameUpdates: () => Promise<{ success: boolean }>;
+  // Real-time updates (автоматично керуються в main process)
   onGameUpdated: (callback: (game: Game) => void) => void;
+  onGameRemoved: (callback: (gameId: string) => void) => void;
   // Game update notifications
   showGameUpdateNotification?: (gameName: string, version: string, isInitialLoad: boolean) => void;
   // Game detection
@@ -95,10 +92,6 @@ export interface ElectronAPI {
   launchGame: (game: Game) => Promise<LaunchGameResult>;
   // Version
   getVersion: () => string;
-  // Query cache persistence
-  saveQueryCache?: (cache: string) => Promise<void>;
-  loadQueryCache?: () => Promise<string | null>;
-  removeQueryCache?: () => Promise<void>;
 }
 
 declare global {

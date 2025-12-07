@@ -14,6 +14,7 @@ const electronAPI: ElectronAPI = {
   abortDownload: () => ipcRenderer.invoke('abort-download'),
   checkInstallation: (game: Game) => ipcRenderer.invoke('check-installation', game),
   getAllInstalledGameIds: () => ipcRenderer.invoke('get-all-installed-game-ids'),
+  removeOrphanedMetadata: (gameIds: string[]) => ipcRenderer.invoke('remove-orphaned-metadata', gameIds),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {
@@ -41,11 +42,12 @@ const electronAPI: ElectronAPI = {
   onUpdateError: (callback) => {
     ipcRenderer.on('update-error', (_, error) => callback(error));
   },
-  // Real-time updates
-  subscribeGameUpdates: () => ipcRenderer.invoke('subscribe-game-updates'),
-  unsubscribeGameUpdates: () => ipcRenderer.invoke('unsubscribe-game-updates'),
+  // Real-time updates (автоматично керуються в main process)
   onGameUpdated: (callback) => {
     ipcRenderer.on('game-updated', (_, game) => callback(game));
+  },
+  onGameRemoved: (callback: (gameId: string) => void) => {
+    ipcRenderer.on('game-removed', (_, gameId) => callback(gameId));
   },
   // Game update notifications
   showGameUpdateNotification: (gameName: string, version: string, isInitialLoad: boolean) => {
@@ -62,10 +64,6 @@ const electronAPI: ElectronAPI = {
   launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
   // Version
   getVersion: () => ipcRenderer.sendSync('get-version'),
-  // Query cache persistence
-  saveQueryCache: (cache: string) => ipcRenderer.invoke('save-query-cache', cache),
-  loadQueryCache: () => ipcRenderer.invoke('load-query-cache'),
-  removeQueryCache: () => ipcRenderer.invoke('remove-query-cache'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

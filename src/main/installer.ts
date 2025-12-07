@@ -17,6 +17,18 @@ const unlink = promisify(fs.unlink);
 const INSTALLATION_INFO_FILE = '.littlebit-translation.json';
 const BACKUP_DIR_NAME = '.littlebit-backup';
 
+/**
+ * Помилка яка потребує ручного вибору папки
+ */
+export class ManualSelectionError extends Error {
+  public readonly needsManualSelection = true;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'ManualSelectionError';
+  }
+}
+
 // Глобальний AbortController для скасування поточного завантаження
 let currentDownloadAbortController: AbortController | null = null;
 
@@ -61,13 +73,11 @@ export async function installTranslation(
       const platformPath = (game.install_paths || []).find(p => p.type === platform)?.path;
 
       // Special error to indicate manual folder selection needed
-      const error: any = new Error(
+      throw new ManualSelectionError(
         `Гру не знайдено автоматично.\n\n` +
         `Шукали папку: ${platformPath || 'не вказано'}\n\n` +
         `Виберіть папку з грою вручну.`
       );
-      error.needsManualSelection = true;
-      throw error;
     }
 
     console.log(`[Installer] ✓ Game found at: ${gamePath.path} (${gamePath.platform})`);
@@ -213,7 +223,7 @@ export async function installTranslation(
     // Provide more helpful error messages
     if (error instanceof Error) {
       // Check if it's already a user-friendly error (e.g., from needsManualSelection)
-      if ((error as any).needsManualSelection) {
+      if (error instanceof ManualSelectionError) {
         throw error;
       }
 
@@ -1030,6 +1040,34 @@ function getPreviousInstallPath(gameId: string): string | null {
 export function invalidateInstalledGameIdsCache(): void {
   console.log('[Installer] Invalidating installed game IDs cache');
   installedGameIdsCache = null;
+}
+
+/**
+ * Remove orphaned installation metadata (games that no longer exist on disk)
+ */
+export async function removeOrphanedInstallationMetadata(gameIds: string[]): Promise<void> {
+  if (gameIds.length === 0) return;
+
+  console.log(`[Installer] Removing ${gameIds.length} orphaned installation metadata files`);
+
+  const userDataPath = app.getPath('userData');
+  const installInfoDir = path.join(userDataPath, 'installation-cache');
+
+  for (const gameId of gameIds) {
+    try {
+      const metadataPath = path.join(installInfoDir, `${gameId}.json`);
+
+      if (fs.existsSync(metadataPath)) {
+        await unlink(metadataPath);
+        console.log(`[Installer] Removed metadata for game: ${gameId}`);
+      }
+    } catch (error) {
+      console.error(`[Installer] Error removing metadata for game ${gameId}:`, error);
+    }
+  }
+
+  // Invalidate cache after cleanup
+  invalidateInstalledGameIdsCache();
 }
 
 /**

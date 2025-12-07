@@ -1,12 +1,19 @@
 import { app, session } from 'electron';
 import { createMainWindow, getMainWindow } from './window';
 import { setupWindowControls, initTray } from './ipc/window-controls';
-import { setupGamesHandlers, cleanupGamesHandlers } from './ipc/games';
+import { setupGamesHandlers } from './ipc/games';
 import { setupInstallerHandlers } from './ipc/installer';
-import { setupQueryCacheHandlers } from './ipc/query-cache';
 import { setupAutoUpdater, checkForUpdates } from './auto-updater';
 import { startSteamWatcher, stopSteamWatcher } from './steam-watcher';
 import { startInstallationWatcher, stopInstallationWatcher } from './installation-watcher';
+import { initDatabase, closeDatabase } from './db/database';
+import { SyncManager } from './db/sync-manager';
+import { fetchAllGamesFromSupabase, fetchUpdatedGamesFromSupabase } from './db/supabase-sync-api';
+import { SupabaseRealtimeManager } from './db/supabase-realtime';
+
+// Глобальні менеджери
+let syncManager: SyncManager | null = null;
+let realtimeManager: SupabaseRealtimeManager | null = null;
 
 // Single instance lock - prevent multiple instances of the app
 const gotTheLock = app.requestSingleInstanceLock();
@@ -32,11 +39,42 @@ if (!gotTheLock) {
   setupWindowControls();
   setupGamesHandlers();
   setupInstallerHandlers();
-  setupQueryCacheHandlers();
   setupAutoUpdater();
 
   // App lifecycle
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    // Ініціалізувати локальну базу даних
+    console.log('[Main] Initializing local database...');
+    initDatabase();
+
+    // Запустити синхронізацію
+    console.log('[Main] Starting sync with Supabase...');
+    syncManager = new SyncManager();
+
+    try {
+      await syncManager.sync(
+        fetchAllGamesFromSupabase,
+        fetchUpdatedGamesFromSupabase
+      );
+      console.log('[Main] Initial sync completed');
+    } catch (error) {
+      console.error('[Main] Error during initial sync:', error);
+    }
+
+    // Підписатися на realtime оновлення з Supabase
+    console.log('[Main] Setting up realtime subscription...');
+    realtimeManager = new SupabaseRealtimeManager();
+    realtimeManager.subscribe(
+      (game) => {
+        // Оновити локальну БД через SyncManager
+        syncManager?.handleRealtimeUpdate(game);
+      },
+      (gameId) => {
+        // Видалити з локальної БД через SyncManager
+        syncManager?.handleRealtimeDelete(gameId);
+      }
+    );
+
     // Fix YouTube error 153 by setting Referer header for YouTube requests
     session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
       if (details.url.includes('youtube.com') || details.url.includes('youtube-nocookie.com')) {
@@ -70,9 +108,15 @@ if (!gotTheLock) {
   });
 
   app.on('window-all-closed', () => {
-    cleanupGamesHandlers();
+    // Cleanup
     stopSteamWatcher();
     stopInstallationWatcher();
+
+    // Відписатися від realtime оновлень
+    realtimeManager?.unsubscribe();
+
+    // Закрити базу даних
+    closeDatabase();
 
     if (process.platform !== 'darwin') {
       app.quit();

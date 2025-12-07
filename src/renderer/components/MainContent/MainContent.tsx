@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Download, RefreshCw, Heart, Gamepad2, Trash2, Play } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useConfirmStore } from '../../store/useConfirmStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { GAMES_QUERY_KEY } from '../../hooks/useGamesQuery';
 import { GameHero } from './GameHero';
 import { StatusCard } from './StatusCard';
 import { InfoCard } from './InfoCard';
@@ -19,7 +17,6 @@ import { Button } from '../ui/Button';
 import type { InstallResult, DownloadProgress, LaunchGameResult } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
-  const queryClient = useQueryClient();
   const {
     selectedGame,
     getInstallationProgress,
@@ -170,9 +167,6 @@ export const MainContent: React.FC = () => {
       checkInstallationStatus(selectedGame.id, selectedGame);
       useStore.getState().clearGameUpdate(selectedGame.id);
 
-      // Invalidate "installed-games" query to refresh the list
-      queryClient.invalidateQueries({ queryKey: [GAMES_QUERY_KEY, { filter: 'installed-games' }] });
-
       const message = isUpdateAvailable
         ? `Переклад ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
         : `Переклад ${selectedGame.name} успішно встановлено!`;
@@ -305,9 +299,6 @@ export const MainContent: React.FC = () => {
           }
 
           checkInstallationStatus(selectedGame.id, selectedGame);
-
-          // Invalidate "installed-games" query to refresh the list
-          queryClient.invalidateQueries({ queryKey: [GAMES_QUERY_KEY, { filter: 'installed-games' }] });
 
           showModal({
             title: 'Переклад видалено',

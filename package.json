@@ -7,7 +7,6 @@
     "email": "info@vadko.dev"
   },
   "license": "MIT",
-  "type": "module",
   "main": "out/main/index.js",
   "engines": {
     "node": ">=22.20.0"
@@ -23,13 +22,13 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "types:generate": "npx --yes supabase gen types typescript --project-id qgylrzebvqayqswhewyz > src/lib/database.types.ts"
+    "types:generate": "npx --yes supabase gen types typescript --project-id qgylrzebvqayqswhewyz > src/lib/database.types.ts",
+    "postinstall": "electron-rebuild"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.86.0",
-    "@tanstack/react-query": "^5.90.12",
-    "@tanstack/react-query-persist-client": "^5.90.14",
     "adm-zip": "^0.5.16",
+    "better-sqlite3": "^12.5.0",
     "electron-updater": "6.6.2",
     "got": "^14.6.5",
     "lucide-react": "^0.294.0",
@@ -40,13 +39,15 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
     "@types/adm-zip": "^0.5.7",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
-    "@vitejs/plugin-react": "^4.2.1",
+    "@vitejs/plugin-react-swc": "^4.2.2",
     "autoprefixer": "^10.4.16",
     "electron": "39.2.4",
     "electron-builder": "26.0.12",
@@ -59,6 +60,7 @@
     "prettier": "^3.1.1",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-node-polyfills": "^0.24.0"
   }
 }

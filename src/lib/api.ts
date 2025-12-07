@@ -120,7 +120,7 @@ export async function findGamesByInstallPaths(
     const matchedGames = data.filter((game) => {
       if (!game.install_paths || !Array.isArray(game.install_paths)) return false;
 
-      return game.install_paths.some((installPath: any) => {
+      return game.install_paths.some((installPath) => {
         if (!installPath || !installPath.path) return false;
 
         const dbPath = installPath.path.toLowerCase();

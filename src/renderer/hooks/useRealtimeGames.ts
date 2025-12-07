@@ -1,79 +1,21 @@
 import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import type { Game, GetGamesResult } from '../types/game';
-import { GAMES_QUERY_KEY } from './useGamesQuery';
+import type { Game } from '../types/game';
 import { useStore } from '../store/useStore';
 
 /**
  * Хук для підписки на real-time оновлення ігор
- * Оновлює кеш React Query коли приходять оновлення з Supabase
+ * Оновлює selectedGame та перевіряє наявність оновлень для встановлених ігор
+ * Підписка на Supabase керується автоматично в main process
  */
 export function useRealtimeGames() {
-  const queryClient = useQueryClient();
   const { installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame } = useStore();
 
   useEffect(() => {
     if (!window.electronAPI) return;
 
-    console.log('[useRealtimeGames] Subscribing to game updates');
-
-    // Підписатися на оновлення через Electron API
-    window.electronAPI.subscribeGameUpdates();
-
     // Обробник оновлень гри
     const handleGameUpdate = (updatedGame: Game) => {
-      console.log('[useRealtimeGames] Game updated via real-time:', updatedGame);
-
-      // Оновити всі infinite query кеші
-      queryClient.setQueriesData<{ pages: GetGamesResult[]; pageParams: unknown[] }>(
-        { queryKey: [GAMES_QUERY_KEY], exact: false },
-        (oldData) => {
-          if (!oldData?.pages) return oldData;
-
-          let gameFound = false;
-
-          const updatedPages = oldData.pages.map((page) => {
-            const gameIndex = page.games.findIndex((game) => game.id === updatedGame.id);
-
-            if (gameIndex !== -1) {
-              gameFound = true;
-              // Оновити існуючу гру
-              const updatedGames = [...page.games];
-              updatedGames[gameIndex] = updatedGame;
-              return { ...page, games: updatedGames };
-            }
-
-            return page;
-          });
-
-          // Якщо гра знайдена, просто оновити
-          if (gameFound) {
-            return { ...oldData, pages: updatedPages };
-          }
-
-          // Якщо гра НЕ знайдена в жодній сторінці, НЕ додавати її автоматично
-          // Причина: гра може бути на непрогрузжених сторінках, або не відповідати поточному фільтру
-          return oldData;
-        }
-      );
-
-      // Оновити query для конкретних ID (якщо такі є)
-      queryClient.setQueriesData<Game[]>(
-        { queryKey: [GAMES_QUERY_KEY, 'by-ids'], exact: false },
-        (oldData) => {
-          if (!oldData) return oldData;
-
-          const gameIndex = oldData.findIndex((game) => game.id === updatedGame.id);
-
-          if (gameIndex !== -1) {
-            const updated = [...oldData];
-            updated[gameIndex] = updatedGame;
-            return updated;
-          }
-
-          return oldData;
-        }
-      );
+      console.log('[useRealtimeGames] Game updated via real-time:', updatedGame.name);
 
       // Оновити selectedGame якщо це та сама гра
       if (selectedGame && selectedGame.id === updatedGame.id) {
@@ -101,12 +43,7 @@ export function useRealtimeGames() {
     };
 
     // Підписатися на оновлення
+    console.log('[useRealtimeGames] Subscribing to game updates');
     window.electronAPI.onGameUpdated(handleGameUpdate);
-
-    // Cleanup: відписатися при демонтажі
-    return () => {
-      console.log('[useRealtimeGames] Unsubscribing from game updates');
-      window.electronAPI.unsubscribeGameUpdates();
-    };
-  }, [queryClient, installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame]);
+  }, [installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame]);
 }
