@@ -5,6 +5,7 @@ import * as os from 'os';
 import type { InstallPath } from '../shared/types';
 import type { Database } from '../lib/database.types';
 import { parseLibraryFolders, parseAppManifest } from './utils/vdf-parser';
+import { isWindows, isMacOS, isLinux, getPlatform } from './utils/platform';
 
 export interface GamePath {
   platform: Database['public']['Enums']['install_source'];
@@ -36,9 +37,9 @@ export function getSteamPath(): string | null {
     return steamPathCache;
   }
 
-  console.log('[GameDetector] Platform:', process.platform);
+  console.log('[GameDetector] Platform:', getPlatform());
   try {
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       // Windows: Read from registry using full path to reg.exe
       const regPath = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
       console.log('[GameDetector] Using reg.exe at:', regPath);
@@ -94,7 +95,7 @@ export function getSteamPath(): string | null {
           return defaultPath;
         }
       }
-    } else if (process.platform === 'darwin') {
+    } else if (isMacOS()) {
       // macOS
       const macPaths = [
         path.join(os.homedir(), 'Library/Application Support/Steam'),
@@ -108,7 +109,7 @@ export function getSteamPath(): string | null {
           return macPath;
         }
       }
-    } else if (process.platform === 'linux') {
+    } else if (isLinux()) {
       // Linux - multiple installation methods
       const linuxPaths = [
         path.join(os.homedir(), '.steam/steam'),
@@ -307,7 +308,7 @@ function findSteamGame(gameFolderName: string): string | null {
  */
 function getGOGPath(): string | null {
   try {
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       try {
         const output = execSync(
           'reg query "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\GalaxyClient\\paths" /v client',
@@ -324,7 +325,7 @@ function getGOGPath(): string | null {
           return defaultPath;
         }
       }
-    } else if (process.platform === 'darwin') {
+    } else if (isMacOS()) {
       // Check for GOG Galaxy app
       const gogAppPath = '/Applications/GOG Galaxy.app';
       if (fs.existsSync(gogAppPath)) {
@@ -351,14 +352,14 @@ function getGOGPath(): string | null {
  */
 function getEpicPath(): string | null {
   try {
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       // Epic Games stores manifests in ProgramData
       const manifestPath = 'C:\\ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests';
       if (fs.existsSync(manifestPath)) {
         console.log('[GameDetector] Epic Games manifests found at:', manifestPath);
         return manifestPath;
       }
-    } else if (process.platform === 'darwin') {
+    } else if (isMacOS()) {
       // macOS: Epic Games manifests
       const manifestPath = path.join(os.homedir(), 'Library/Application Support/Epic/EpicGamesLauncher/Data/Manifests');
       if (fs.existsSync(manifestPath)) {

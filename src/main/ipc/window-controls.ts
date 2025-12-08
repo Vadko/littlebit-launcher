@@ -1,6 +1,7 @@
 import { ipcMain, Tray, Menu, app, nativeImage } from 'electron';
 import { getMainWindow } from '../window';
 import { join } from 'path';
+import { isLinux } from '../utils/platform';
 
 let tray: Tray | null = null;
 
@@ -35,7 +36,7 @@ function createTray() {
   tray.setContextMenu(contextMenu);
 
   // Linux (including Steam Deck) uses single click, others use double-click
-  if (process.platform === 'linux') {
+  if (isLinux()) {
     tray.on('click', showAndFocusWindow);
   } else {
     tray.on('double-click', showAndFocusWindow);

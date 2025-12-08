@@ -11,6 +11,7 @@ interface SettingsStore {
   createBackupBeforeInstall: boolean;
   autoDetectInstalledGames: boolean;
   showAdultGames: boolean;
+  liquidGlassEnabled: boolean;
   isSettingsModalOpen: boolean;
   setTheme: (theme: ThemeMode) => void;
   toggleAnimations: () => void;
@@ -25,6 +26,8 @@ interface SettingsStore {
   setAutoDetectInstalledGames: (enabled: boolean) => void;
   toggleShowAdultGames: () => void;
   setShowAdultGames: (enabled: boolean) => void;
+  toggleLiquidGlass: () => void;
+  setLiquidGlassEnabled: (enabled: boolean) => void;
   openSettingsModal: () => void;
   closeSettingsModal: () => void;
 }
@@ -39,6 +42,7 @@ export const useSettingsStore = create<SettingsStore>()(
       createBackupBeforeInstall: true,
       autoDetectInstalledGames: true,
       showAdultGames: false,
+      liquidGlassEnabled: true,
       isSettingsModalOpen: false,
 
       setTheme: (theme) => set({ theme }),
@@ -72,6 +76,11 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({ showAdultGames: !state.showAdultGames })),
 
       setShowAdultGames: (enabled) => set({ showAdultGames: enabled }),
+
+      toggleLiquidGlass: () =>
+        set((state) => ({ liquidGlassEnabled: !state.liquidGlassEnabled })),
+
+      setLiquidGlassEnabled: (enabled) => set({ liquidGlassEnabled: enabled }),
 
       openSettingsModal: () => set({ isSettingsModalOpen: true }),
 

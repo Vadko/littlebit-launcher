@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../Modal/Modal';
 import { Switch } from '../ui/Switch';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -38,6 +38,25 @@ export const SettingsModal: React.FC = () => {
   const toggleAutoDetectInstalledGames = useSettingsStore((state) => state.toggleAutoDetectInstalledGames);
   const showAdultGames = useSettingsStore((state) => state.showAdultGames);
   const toggleShowAdultGames = useSettingsStore((state) => state.toggleShowAdultGames);
+  const liquidGlassEnabled = useSettingsStore((state) => state.liquidGlassEnabled);
+  const toggleLiquidGlass = useSettingsStore((state) => state.toggleLiquidGlass);
+
+  // Check if liquid glass is supported
+  const [isLiquidGlassSupported, setIsLiquidGlassSupported] = useState(false);
+
+  useEffect(() => {
+    // Check if liquid glass is supported on this system
+    window.liquidGlassAPI?.isSupported().then((supported) => {
+      setIsLiquidGlassSupported(supported);
+    });
+  }, []);
+
+  const handleToggleLiquidGlass = async () => {
+    const newValue = !liquidGlassEnabled;
+    toggleLiquidGlass();
+    // Apply the change immediately
+    await window.liquidGlassAPI?.toggle(newValue);
+  };
 
   return (
     <Modal
@@ -98,6 +117,17 @@ export const SettingsModal: React.FC = () => {
           enabled={animationsEnabled}
           onChange={toggleAnimations}
         />
+
+        {/* Liquid Glass setting - only show on macOS 26+ */}
+        {isLiquidGlassSupported && (
+          <SettingItem
+            id="liquid-glass"
+            title="Liquid Glass тема"
+            description="Увімкнути ефект прозорості та розмиття для вікон (macOS 26+)"
+            enabled={liquidGlassEnabled}
+            onChange={handleToggleLiquidGlass}
+          />
+        )}
         <SettingItem
           id="app-updates"
           title="Сповіщення про оновлення додатку"

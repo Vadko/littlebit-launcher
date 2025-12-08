@@ -9,6 +9,7 @@ import got from 'got';
 import { getFirstAvailableGamePath } from './game-detector';
 import { InstallationInfo, Game } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
+import { isWindows, isLinux, getPlatform } from './utils/platform';
 
 const mkdir = promisify(fs.mkdir);
 const readdir = promisify(fs.readdir);
@@ -696,7 +697,7 @@ async function backupFiles(sourceDir: string, targetDir: string): Promise<void> 
     await mkdir(backupDir, { recursive: true });
 
     // Make backup directory hidden on Windows
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       try {
         await new Promise<void>((resolve) => {
           exec(`attrib +h "${backupDir}"`, (error) => {
@@ -846,14 +847,14 @@ async function deleteDirectory(dirPath: string): Promise<void> {
  * Get installer file name based on platform
  */
 function getInstallerFileName(game: Game): string | null {
-  const isWindows = process.platform === 'win32';
-  const isLinux = process.platform === 'linux';
+  const isWindowsOS = isWindows();
+  const isLinuxOS = isLinux();
 
-  if (isWindows && game.installation_file_windows_path) {
+  if (isWindowsOS && game.installation_file_windows_path) {
     return game.installation_file_windows_path;
   }
 
-  if (isLinux && game.installation_file_linux_path) {
+  if (isLinuxOS && game.installation_file_linux_path) {
     return game.installation_file_linux_path;
   }
 
@@ -875,9 +876,9 @@ async function runInstaller(extractDir: string, installerFileName: string): Prom
     console.log(`[Installer] Running installer: ${installerPath}`);
 
     // Determine platform and run installer
-    const platform = process.platform;
+    const platform = getPlatform();
 
-    if (platform === 'darwin' || platform === 'linux') {
+    if (platform === 'macos' || platform === 'linux') {
       // macOS or Linux - make executable first
       await new Promise<void>((resolve, reject) => {
         exec(`chmod +x "${installerPath}"`, (error) => {

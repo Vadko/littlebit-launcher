@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
+import { isWindows, isMacOS } from './utils/platform';
 
 const execAsync = promisify(exec);
 
@@ -92,7 +93,7 @@ export async function launchGameExecutable(gamePath: string): Promise<void> {
 
       if (stats.isFile()) {
         // Windows: check by extension
-        if (process.platform === 'win32') {
+        if (isWindows()) {
           for (const pattern of windowsExecutablePatterns) {
             if (pattern.test(file)) {
               executables.push(filePath);
@@ -103,7 +104,7 @@ export async function launchGameExecutable(gamePath: string): Promise<void> {
         // macOS/Linux: check executable permission or .app bundle
         else {
           // Check for .app bundles on macOS
-          if (process.platform === 'darwin' && macAppPattern.test(file)) {
+          if (isMacOS() && macAppPattern.test(file)) {
             executables.push(filePath);
           }
           // Check for executable permission on Unix-like systems
@@ -121,7 +122,7 @@ export async function launchGameExecutable(gamePath: string): Promise<void> {
         }
       }
       // Also check directories for .app bundles on macOS
-      else if (stats.isDirectory() && process.platform === 'darwin' && macAppPattern.test(file)) {
+      else if (stats.isDirectory() && isMacOS() && macAppPattern.test(file)) {
         executables.push(filePath);
       }
     }
@@ -145,14 +146,14 @@ export async function launchGameExecutable(gamePath: string): Promise<void> {
     console.log('[GameLauncher] Launching executable:', selectedExecutable);
 
     // Launch the game
-    if (process.platform === 'win32') {
+    if (isWindows()) {
       // On Windows, use spawn with detached option
       spawn(selectedExecutable, [], {
         detached: true,
         stdio: 'ignore',
         cwd: path.dirname(selectedExecutable),
       }).unref();
-    } else if (process.platform === 'darwin') {
+    } else if (isMacOS()) {
       // On macOS, use 'open' command
       if (selectedExecutable.endsWith('.app')) {
         await execAsync(`open "${selectedExecutable}"`);

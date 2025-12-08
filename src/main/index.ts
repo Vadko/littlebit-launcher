@@ -1,8 +1,9 @@
 import { app, session } from 'electron';
+import { isLinux, isMacOS } from './utils/platform';
 
 // Steam Deck / Gaming Mode support
 // Disable GPU sandbox to prevent issues with Gamescope
-if (process.platform === 'linux') {
+if (isLinux()) {
   app.commandLine.appendSwitch('disable-gpu-sandbox');
   app.commandLine.appendSwitch('no-sandbox');
   // Enable gamepad support
@@ -92,7 +93,7 @@ if (!gotTheLock) {
       callback({ requestHeaders: details.requestHeaders });
     });
 
-    createMainWindow();
+    await createMainWindow();
     initTray(); // Створити tray одразу при запуску
     checkForUpdates();
 
@@ -102,7 +103,7 @@ if (!gotTheLock) {
       startInstallationWatcher(getMainWindow());
     }, 1000);
 
-    app.on('activate', () => {
+    app.on('activate', async () => {
       // macOS: показати вікно якщо воно заховане або створити нове якщо немає
       const mainWindow = getMainWindow();
       if (mainWindow) {
@@ -111,7 +112,7 @@ if (!gotTheLock) {
         }
         mainWindow.focus();
       } else {
-        createMainWindow();
+        await createMainWindow();
       }
     });
   });
@@ -127,7 +128,7 @@ if (!gotTheLock) {
     // Закрити базу даних
     closeDatabase();
 
-    if (process.platform !== 'darwin') {
+    if (!isMacOS()) {
       app.quit();
     }
   });

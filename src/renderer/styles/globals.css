@@ -74,6 +74,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Liquid Glass mode - transparent background for macOS 26+ */
+body.liquid-glass-enabled {
+  background: transparent;
+}
+
+body.liquid-glass-enabled #root {
+  background: rgba(5, 11, 20, 0.85); /* Semi-transparent dark background */
+}
+
 /* Make text-white use CSS variable for theming */
 .text-white {
   color: var(--text-main) !important;

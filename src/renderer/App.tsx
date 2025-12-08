@@ -13,20 +13,10 @@ import { useSettingsStore } from './store/useSettingsStore';
 import { useRealtimeGames } from './hooks/useRealtimeGames';
 import { useGamepadNavigation } from './hooks/useGamepadNavigation';
 
-declare global {
-  interface Window {
-    windowControls?: {
-      minimize: () => void;
-      maximize: () => void;
-      close: () => void;
-      onMaximizedChange: (callback: (isMaximized: boolean) => void) => void;
-    };
-  }
-}
 
 export const App: React.FC = () => {
   const { setInitialLoadComplete, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearInstalledGamesCache, clearDetectedGamesCache } = useStore();
-  const { animationsEnabled, autoDetectInstalledGames, theme } = useSettingsStore();
+  const { animationsEnabled, autoDetectInstalledGames, theme, liquidGlassEnabled } = useSettingsStore();
   const [online, setOnline] = useState(navigator.onLine);
 
   // Підписка на real-time оновлення ігор
@@ -34,6 +24,22 @@ export const App: React.FC = () => {
 
   // Підтримка навігації геймпадом (для Steam Deck та інших контролерів)
   useGamepadNavigation(true);
+
+  // Apply liquid glass effect
+  useEffect(() => {
+    const checkAndApplyLiquidGlass = async () => {
+      if (window.liquidGlassAPI) {
+        const isSupported = await window.liquidGlassAPI.isSupported();
+        if (isSupported && liquidGlassEnabled) {
+          document.body.classList.add('liquid-glass-enabled');
+        } else {
+          document.body.classList.remove('liquid-glass-enabled');
+        }
+      }
+    };
+
+    checkAndApplyLiquidGlass();
+  }, [liquidGlassEnabled]);
 
   // Apply theme
   useEffect(() => {

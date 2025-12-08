@@ -82,3 +82,27 @@ contextBridge.exposeInMainWorld('windowControls', {
 ipcRenderer.on('game-update-available', (_, updateInfo) => {
   window.dispatchEvent(new CustomEvent('game-update-available', { detail: updateInfo }));
 });
+
+// Liquid Glass API
+contextBridge.exposeInMainWorld('liquidGlassAPI', {
+  isSupported: () => ipcRenderer.invoke('liquid-glass:is-supported'),
+  toggle: (enabled: boolean) => ipcRenderer.invoke('liquid-glass:toggle', enabled),
+});
+
+// Handle liquid glass preference request from main process
+ipcRenderer.on('liquid-glass:get-preference', () => {
+  // Get the preference from localStorage (settings store)
+  const settings = localStorage.getItem('littlebit-settings');
+  let enabled = true; // Default to true
+
+  if (settings) {
+    try {
+      const parsed = JSON.parse(settings);
+      enabled = parsed.state?.liquidGlassEnabled ?? true;
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  ipcRenderer.send('liquid-glass:get-preference-response', enabled);
+});
