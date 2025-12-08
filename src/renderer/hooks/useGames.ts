@@ -122,19 +122,52 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
     const handleGameUpdate = (updatedGame: Game) => {
       console.log('[useGames] Game updated via realtime:', updatedGame.name);
 
-      // Оновити гру в списку, якщо вона там є
+      // Перевірити чи гра відповідає поточному фільтру пошуку
+      const matchesSearch = !searchQuery ||
+        updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Перевірити чи гра відповідає поточному фільтру статусу
+      const matchesFilter = filter === 'all' ||
+        (filter === 'completed' && updatedGame.status === 'completed') ||
+        (filter === 'in-progress' && updatedGame.status === 'in-progress') ||
+        (filter === 'planned' && updatedGame.status === 'planned');
+
+      // Перевірити adult фільтр
+      const matchesAdult = showAdultGames || !updatedGame.is_adult;
+
+      const shouldBeInList = matchesSearch && matchesFilter && matchesAdult && updatedGame.approved;
+
       setGames((prevGames) => {
         const index = prevGames.findIndex(g => g.id === updatedGame.id);
-        if (index === -1) return prevGames; // Гра не в списку, нічого не робимо
 
-        const newGames = [...prevGames];
-        newGames[index] = updatedGame;
-        return newGames;
+        if (index === -1) {
+          // Гра не в списку
+          if (!shouldBeInList) return prevGames;
+
+          // Додати гру і відсортувати за алфавітом
+          const newGames = [...prevGames, updatedGame];
+          newGames.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+          setTotal(prev => prev + 1);
+          return newGames;
+        } else {
+          // Гра є в списку
+          if (!shouldBeInList) {
+            // Видалити гру, якщо вона більше не відповідає фільтрам
+            setTotal(prev => prev - 1);
+            return prevGames.filter(g => g.id !== updatedGame.id);
+          }
+
+          // Оновити гру і пересортувати
+          const newGames = [...prevGames];
+          newGames[index] = updatedGame;
+          newGames.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
+          return newGames;
+        }
       });
     };
 
     window.electronAPI.onGameUpdated(handleGameUpdate);
-  }, []);
+  }, [searchQuery, filter, showAdultGames]);
 
   // Слухати realtime видалення ігор
   useEffect(() => {

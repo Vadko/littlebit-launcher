@@ -27,11 +27,11 @@ function playNavigateSound(): void {
     oscillator.frequency.value = 800;
     oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    gainNode.gain.setValueAtTime(0.25, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
 
     oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.05);
+    oscillator.stop(ctx.currentTime + 0.06);
   } catch {
     // Audio not available
   }
@@ -50,14 +50,14 @@ function playConfirmSound(): void {
     gainNode.connect(ctx.destination);
 
     oscillator.frequency.setValueAtTime(600, ctx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.08);
+    oscillator.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
     oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(0.08, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    gainNode.gain.setValueAtTime(0.35, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
 
     oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.1);
+    oscillator.stop(ctx.currentTime + 0.12);
   } catch {
     // Audio not available
   }
@@ -75,15 +75,15 @@ function playBackSound(): void {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    oscillator.frequency.setValueAtTime(400, ctx.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(500, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.12);
     oscillator.type = 'sine';
 
-    gainNode.gain.setValueAtTime(0.06, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
 
     oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.12);
+    oscillator.stop(ctx.currentTime + 0.15);
   } catch {
     // Audio not available
   }
@@ -140,6 +140,25 @@ function createFocusIndicator(): HTMLDivElement {
 }
 
 /**
+ * Check if element is inside a popup/dropdown
+ */
+function isInsidePopup(element: HTMLElement): boolean {
+  let parent: HTMLElement | null = element;
+  while (parent) {
+    // Check for common popup indicators
+    if (parent.classList.contains('filter-dropdown') ||
+        parent.getAttribute('role') === 'menu' ||
+        parent.getAttribute('role') === 'dialog' ||
+        parent.classList.contains('modal') ||
+        parent.hasAttribute('data-popup')) {
+      return true;
+    }
+    parent = parent.parentElement;
+  }
+  return false;
+}
+
+/**
  * Update focus indicator position and size
  */
 function updateFocusIndicator(element: HTMLElement | null): void {
@@ -147,6 +166,13 @@ function updateFocusIndicator(element: HTMLElement | null): void {
   if (!indicator) return;
 
   if (!element) {
+    indicator.style.opacity = '0';
+    return;
+  }
+
+  // If element is inside a popup, don't show the external indicator
+  // The element will have its own focus styles
+  if (isInsidePopup(element)) {
     indicator.style.opacity = '0';
     return;
   }
@@ -162,8 +188,7 @@ function updateFocusIndicator(element: HTMLElement | null): void {
 
   // Match border radius of element
   const computedStyle = window.getComputedStyle(element);
-  const borderRadius = computedStyle.borderRadius || '12px';
-  indicator.style.borderRadius = borderRadius;
+  indicator.style.borderRadius = computedStyle.borderRadius || '12px';
 }
 
 /**
@@ -212,8 +237,8 @@ function getDirectionalScore(
   const dx = toCx - fromCx;
   const dy = toCy - fromCy;
 
-  // Check if element is in the correct direction
-  const threshold = 10;
+  // Check if element is in the correct direction with smaller threshold
+  const threshold = 5;
   let isValid = false;
   let primaryDistance = 0;
   let secondaryDistance = 0;
@@ -243,8 +268,43 @@ function getDirectionalScore(
 
   if (!isValid) return null;
 
+  // For horizontal navigation (left/right), be more lenient with vertical offset
+  // This helps navigate between sidebar and main content
+  const secondaryWeight = (direction === 'left' || direction === 'right') ? 1.5 : 2.5;
+
   // Weighted score: primary direction matters more
-  return primaryDistance + secondaryDistance * 2.5;
+  return primaryDistance + secondaryDistance * secondaryWeight;
+}
+
+/**
+ * Find the main scrollable container for an element
+ */
+function findScrollableContainer(element: HTMLElement): HTMLElement | null {
+  let parent: HTMLElement | null = element.parentElement;
+  while (parent) {
+    const style = window.getComputedStyle(parent);
+    const overflowY = style.overflowY;
+    const hasScroll = parent.scrollHeight > parent.clientHeight;
+
+    if ((overflowY === 'auto' || overflowY === 'scroll' ||
+        parent.classList.contains('custom-scrollbar') ||
+        parent.classList.contains('overflow-y-auto')) && hasScroll) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Check if element can scroll in the given direction
+ */
+function canScrollInDirection(container: HTMLElement, direction: 'up' | 'down'): boolean {
+  if (direction === 'down') {
+    return container.scrollTop < container.scrollHeight - container.clientHeight - 10;
+  } else {
+    return container.scrollTop > 10;
+  }
 }
 
 /**
@@ -266,8 +326,15 @@ function navigateDirection(direction: Direction): void {
   }
 
   const currentRect = current.getBoundingClientRect();
+
+  // Find the scrollable container of current element
+  const currentContainer = findScrollableContainer(current);
+
+  // Find elements in the same container first (for up/down navigation)
   let bestElement: HTMLElement | null = null;
   let bestScore = Infinity;
+  let bestSameContainer: HTMLElement | null = null;
+  let bestSameContainerScore = Infinity;
 
   for (const el of elements) {
     if (el === current) continue;
@@ -275,15 +342,90 @@ function navigateDirection(direction: Direction): void {
     const rect = el.getBoundingClientRect();
     const score = getDirectionalScore(currentRect, rect, direction);
 
-    if (score !== null && score < bestScore) {
-      bestScore = score;
-      bestElement = el;
+    if (score !== null) {
+      // Check if element is in the same scrollable container
+      const elContainer = findScrollableContainer(el);
+      const sameContainer = currentContainer && elContainer === currentContainer;
+
+      if (sameContainer && score < bestSameContainerScore) {
+        bestSameContainerScore = score;
+        bestSameContainer = el;
+      }
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestElement = el;
+      }
     }
   }
 
+  // For vertical navigation (up/down), prefer elements in the same container
+  if (direction === 'up' || direction === 'down') {
+    if (bestSameContainer) {
+      focusElement(bestSameContainer);
+      return;
+    }
+
+    // If no element in same container but we can scroll, do scroll instead
+    if (currentContainer && canScrollInDirection(currentContainer, direction)) {
+      currentContainer.scrollBy({
+        top: direction === 'up' ? -150 : 150,
+        behavior: 'smooth'
+      });
+      // Update indicator position after scroll
+      setTimeout(() => updateFocusIndicator(current), 250);
+      playNavigateSound();
+      return;
+    }
+  }
+
+  // For horizontal or when no same-container element found, use best overall
   if (bestElement) {
     focusElement(bestElement);
   }
+}
+
+/**
+ * Scroll element into view within its scrollable parent
+ */
+function scrollIntoViewIfNeeded(element: HTMLElement): void {
+  // Find the scrollable parent
+  let scrollParent: HTMLElement | null = element.parentElement;
+  while (scrollParent) {
+    const style = window.getComputedStyle(scrollParent);
+    const overflowY = style.overflowY;
+    const hasScroll = scrollParent.scrollHeight > scrollParent.clientHeight;
+
+    if ((overflowY === 'auto' || overflowY === 'scroll' ||
+        scrollParent.classList.contains('custom-scrollbar') ||
+        scrollParent.classList.contains('overflow-y-auto')) && hasScroll) {
+      break;
+    }
+    scrollParent = scrollParent.parentElement;
+  }
+
+  if (!scrollParent) return;
+
+  const parentRect = scrollParent.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+
+  // Calculate visible area with padding
+  const topThreshold = parentRect.top + 80;
+  const bottomThreshold = parentRect.bottom - 80;
+
+  // Check if element is above visible area
+  if (elementRect.top < topThreshold) {
+    const scrollAmount = elementRect.top - topThreshold;
+    scrollParent.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+  }
+  // Check if element is below visible area
+  else if (elementRect.bottom > bottomThreshold) {
+    const scrollAmount = elementRect.bottom - bottomThreshold;
+    scrollParent.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+  }
+
+  // Update focus indicator position after scroll
+  setTimeout(() => updateFocusIndicator(element), 250);
 }
 
 /**
@@ -303,12 +445,8 @@ function focusElement(element: HTMLElement): void {
   // Update focus indicator position
   updateFocusIndicator(element);
 
-  // Smooth scroll into view
-  element.scrollIntoView({
-    behavior: 'smooth',
-    block: 'nearest',
-    inline: 'nearest',
-  });
+  // Scroll into view if needed (custom implementation for better control)
+  scrollIntoViewIfNeeded(element);
 
   // Play navigation sound
   playNavigateSound();
@@ -382,7 +520,28 @@ export function useGamepadNavigation(enabled: boolean = true): void {
   }, []);
 
   const handleScroll = useCallback((direction: 'up' | 'down') => {
-    const scrollable = document.querySelector('.custom-scrollbar');
+    // Find the scrollable container that contains the focused element
+    const focused = document.activeElement as HTMLElement | null;
+    let scrollable: Element | null = null;
+
+    if (focused) {
+      // Walk up the DOM tree to find the nearest scrollable parent
+      let parent = focused.parentElement;
+      while (parent) {
+        if (parent.classList.contains('custom-scrollbar') ||
+            parent.classList.contains('overflow-y-auto')) {
+          scrollable = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    // Fallback to first scrollable container
+    if (!scrollable) {
+      scrollable = document.querySelector('.custom-scrollbar');
+    }
+
     if (scrollable) {
       scrollable.scrollBy({
         top: direction === 'up' ? -200 : 200,

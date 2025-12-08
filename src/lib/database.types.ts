@@ -83,6 +83,9 @@ export type Database = {
           updated_at: string
           version: string | null
           video_url: string | null
+          voice_archive_hash: string | null
+          voice_archive_path: string | null
+          voice_archive_size: string | null
           voice_progress: number | null
           website: string | null
           youtube: string | null
@@ -126,6 +129,9 @@ export type Database = {
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_archive_hash?: string | null
+          voice_archive_path?: string | null
+          voice_archive_size?: string | null
           voice_progress?: number | null
           website?: string | null
           youtube?: string | null
@@ -169,6 +175,9 @@ export type Database = {
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_archive_hash?: string | null
+          voice_archive_path?: string | null
+          voice_archive_size?: string | null
           voice_progress?: number | null
           website?: string | null
           youtube?: string | null
@@ -239,6 +248,9 @@ export type Database = {
           updated_at: string
           version: string | null
           video_url: string | null
+          voice_archive_hash: string | null
+          voice_archive_path: string | null
+          voice_archive_size: string | null
           voice_progress: number | null
           website: string | null
           youtube: string | null
@@ -284,6 +296,9 @@ export type Database = {
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_archive_hash?: string | null
+          voice_archive_path?: string | null
+          voice_archive_size?: string | null
           voice_progress?: number | null
           website?: string | null
           youtube?: string | null
@@ -329,6 +344,9 @@ export type Database = {
           updated_at?: string
           version?: string | null
           video_url?: string | null
+          voice_archive_hash?: string | null
+          voice_archive_path?: string | null
+          voice_archive_size?: string | null
           voice_progress?: number | null
           website?: string | null
           youtube?: string | null

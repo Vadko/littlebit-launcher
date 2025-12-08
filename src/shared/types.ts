@@ -4,13 +4,22 @@ export type { Database };
 export type InstallPath = Database['public']['CompositeTypes']['install_path_entry'];
 export type Game = Database['public']['Tables']['games']['Row'];
 
+export interface InstallationComponent {
+  installed: boolean;
+  files: string[]; // Relative paths of installed files for this component
+}
+
 export interface InstallationInfo {
   gameId: string;
   version: string;
   installedAt: string;
   gamePath: string;
   hasBackup?: boolean;
-  installedFiles?: string[]; // Relative paths of all installed files
+  installedFiles?: string[]; // Legacy: Relative paths of all installed files (kept for migration)
+  components?: {
+    text: InstallationComponent;
+    voice?: InstallationComponent;
+  };
 }
 
 export interface DownloadProgress {
@@ -61,7 +70,7 @@ export interface ElectronAPI {
   getAllInstalledGamePaths: () => Promise<string[]>;
   getAllInstalledSteamGames: () => Promise<Record<string, string>>;
   findGamesByInstallPaths: (installPaths: string[], offset?: number, limit?: number) => Promise<GetGamesResult>;
-  installTranslation: (game: Game, platform: string, customGamePath?: string, createBackup?: boolean) => Promise<InstallResult>;
+  installTranslation: (game: Game, platform: string, customGamePath?: string, createBackup?: boolean, installVoice?: boolean) => Promise<InstallResult>;
   uninstallTranslation: (game: Game) => Promise<InstallResult>;
   abortDownload: () => Promise<{ success: boolean }>;
   checkInstallation: (game: Game) => Promise<InstallationInfo | null>;

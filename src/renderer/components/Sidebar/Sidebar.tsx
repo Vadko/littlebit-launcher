@@ -9,6 +9,7 @@ import { useStore } from '../../store/useStore';
 import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useGames } from '../../hooks/useGames';
+import { useDebounce } from '../../hooks/useDebounce';
 import logo from '../../../../resources/icon.png';
 import type { Database } from '../../../lib/database.types';
 
@@ -29,18 +30,19 @@ export const Sidebar: React.FC = React.memo(() => {
   const { showModal } = useModalStore();
   const { openSettingsModal } = useSettingsStore();
 
+  // Debounce search query - 500ms delay
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   // Локальна база даних через IPC (завантажуємо всі ігри одразу)
   const {
     games: visibleGames,
     total: totalGames,
     isLoading,
-    reload,
   } = useGames({
     filter,
-    searchQuery,
+    searchQuery: debouncedSearchQuery,
   });
 
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedRef = useRef(false);
 
   // Новий підхід: один раз перевіряємо всі встановлені ігри на системі
@@ -58,17 +60,7 @@ export const Sidebar: React.FC = React.memo(() => {
   }, [loadInstalledGamesFromSystem]);
 
   const handleSearchChange = (value: string) => {
-    // Update search query immediately for input
     setSearchQuery(value);
-
-    // Debounce the actual reload
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      reload();
-    }, 300);
   };
 
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);

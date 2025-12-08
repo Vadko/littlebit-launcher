@@ -197,6 +197,20 @@ html.maximized #root {
   color: var(--text-main);
 }
 
+/* Gamepad focus styles for dropdown items */
+.filter-dropdown button:focus-visible,
+.filter-dropdown button.gamepad-focus {
+  background: rgba(0, 242, 255, 0.15);
+  outline: 2px solid var(--neon-blue);
+  outline-offset: -2px;
+}
+
+:root[data-theme='light'] .filter-dropdown button:focus-visible,
+:root[data-theme='light'] .filter-dropdown button.gamepad-focus {
+  background: rgba(2, 132, 199, 0.1);
+  outline: 2px solid #0284c7;
+}
+
 .glass-button {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);

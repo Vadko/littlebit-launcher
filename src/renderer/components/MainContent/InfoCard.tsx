@@ -1,6 +1,6 @@
 import React from 'react';
 import { Game } from '../../types/game';
-import { Gamepad2, Calendar, Users, HardDrive, Download } from 'lucide-react';
+import { Gamepad2, Calendar, Users, HardDrive, Download, Volume2 } from 'lucide-react';
 
 interface InfoCardProps {
   game: Game;
@@ -53,6 +53,13 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
             icon={<HardDrive size={18} />}
             label="Розмір"
             value={game.archive_size}
+          />
+        )}
+        {game.voice_archive_size && (
+          <InfoItem
+            icon={<Volume2 size={18} />}
+            label="Озвучка"
+            value={game.voice_archive_size}
           />
         )}
         {!isPlanned && (

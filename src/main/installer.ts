@@ -55,11 +55,16 @@ export async function installTranslation(
   platform: string,
   customGamePath?: string,
   createBackup: boolean = true,
+  installVoice: boolean = false,
   onDownloadProgress?: (progress: DownloadProgress) => void,
   onStatus?: (status: InstallationStatus) => void
 ): Promise<void> {
   try {
+    console.log(`[Installer] ========== INSTALLATION START ==========`);
     console.log(`[Installer] Installing translation for: ${game.name} (${game.id})`);
+    console.log(`[Installer] Parameters: createBackup=${createBackup}, installVoice=${installVoice}`);
+    console.log(`[Installer] Game voice_archive_path: ${game.voice_archive_path}`);
+    console.log(`[Installer] Game archive_path: ${game.archive_path}`);
     console.log(`[Installer] Install paths config:`, JSON.stringify(game.install_paths, null, 2));
     console.log(`[Installer] Requested platform: ${platform}`);
 
@@ -82,28 +87,31 @@ export async function installTranslation(
 
     console.log(`[Installer] ✓ Game found at: ${gamePath.path} (${gamePath.platform})`);
 
-    // 3. Check available disk space
+    // 3. Check available disk space (for text + voice if installing voice)
+    let requiredSpace = 0;
     if (game.archive_size) {
-      // Parse size string like "150 MB" to bytes
-      const requiredSpace = parseSizeToBytes(game.archive_size);
+      requiredSpace += parseSizeToBytes(game.archive_size);
+    }
+    if (installVoice && game.voice_archive_size) {
+      requiredSpace += parseSizeToBytes(game.voice_archive_size);
+    }
 
-      if (requiredSpace > 0) {
-        // We need 3x space: for archive + extracted files + final copy
-        const neededSpace = requiredSpace * 3;
+    if (requiredSpace > 0) {
+      // We need 3x space: for archive + extracted files + final copy
+      const neededSpace = requiredSpace * 3;
 
-        const diskSpace = await checkDiskSpace(gamePath.path);
+      const diskSpace = await checkDiskSpace(gamePath.path);
 
-        if (diskSpace < neededSpace) {
-          throw new Error(
-            `Недостатньо місця на диску.\n\n` +
-            `Необхідно: ${formatBytes(neededSpace)}\n` +
-            `Доступно: ${formatBytes(diskSpace)}\n\n` +
-            `Звільніть місце та спробуйте знову.`
-          );
-        }
-
-        console.log(`[Installer] ✓ Disk space check passed (available: ${formatBytes(diskSpace)}, needed: ${formatBytes(neededSpace)})`);
+      if (diskSpace < neededSpace) {
+        throw new Error(
+          `Недостатньо місця на диску.\n\n` +
+          `Необхідно: ${formatBytes(neededSpace)}\n` +
+          `Доступно: ${formatBytes(diskSpace)}\n\n` +
+          `Звільніть місце та спробуйте знову.`
+        );
       }
+
+      console.log(`[Installer] ✓ Disk space check passed (available: ${formatBytes(diskSpace)}, needed: ${formatBytes(neededSpace)})`);
     }
 
     // 4. Download translation archive from Supabase Storage
@@ -170,6 +178,74 @@ export async function installTranslation(
     const extractDir = path.join(downloadDir, `${game.id}_extract`);
     await extractArchive(archivePath, extractDir);
 
+    // Get list of text archive files
+    const textFiles = await getAllFiles(extractDir);
+    console.log(`[Installer] Text archive has ${textFiles.length} files`);
+
+    // 4.5 Download and extract voice archive if requested
+    let voiceFiles: string[] = [];
+    console.log(`[Installer] Voice install requested: ${installVoice}, voice_archive_path: ${game.voice_archive_path}`);
+    if (installVoice && game.voice_archive_path) {
+      const voiceArchivePath = path.join(downloadDir, `${game.id}_voice.zip`);
+      const voiceDownloadUrl = getArchiveDownloadUrl(game.voice_archive_path);
+
+      console.log(`[Installer] Downloading voice archive from Supabase: ${voiceDownloadUrl}`);
+      onStatus?.({ message: 'Завантаження озвучки...' });
+
+      // Create new AbortController for voice download
+      currentDownloadAbortController = new AbortController();
+
+      try {
+        await downloadFile(
+          voiceDownloadUrl,
+          voiceArchivePath,
+          (downloadProgress) => {
+            onDownloadProgress?.(downloadProgress);
+          },
+          (status) => {
+            onStatus?.(status);
+          },
+          3,
+          currentDownloadAbortController.signal
+        );
+      } finally {
+        currentDownloadAbortController = null;
+      }
+
+      // Verify voice file hash if available
+      if (game.voice_archive_hash) {
+        onStatus?.({ message: 'Перевірка цілісності озвучки...' });
+        console.log(`[Installer] Verifying voice file hash...`);
+        const isValid = await verifyFileHash(voiceArchivePath, game.voice_archive_hash);
+
+        if (!isValid) {
+          if (fs.existsSync(voiceArchivePath)) {
+            await unlink(voiceArchivePath);
+          }
+          throw new Error(
+            'Файл озвучки пошкоджено або змінено.\n\n' +
+            'Спробуйте завантажити ще раз або зверніться до підтримки.'
+          );
+        }
+        console.log(`[Installer] ✓ Voice file hash verified successfully`);
+      }
+
+      // Extract voice archive to the same directory
+      onStatus?.({ message: 'Розпакування озвучки...' });
+      const voiceExtractDir = path.join(downloadDir, `${game.id}_voice_extract`);
+      await extractArchive(voiceArchivePath, voiceExtractDir);
+
+      // Get list of voice files
+      voiceFiles = await getAllFiles(voiceExtractDir);
+      console.log(`[Installer] Voice archive has ${voiceFiles.length} files`);
+
+      // Copy voice files to main extract directory (they will be installed together)
+      await copyDirectory(voiceExtractDir, extractDir);
+
+      // Cleanup voice temp files
+      await cleanup(voiceArchivePath, voiceExtractDir);
+    }
+
     // 5. Check for installer file and run if present
     const installerFileName = getInstallerFileName(game);
     if (installerFileName) {
@@ -206,15 +282,28 @@ export async function installTranslation(
     onStatus?.({ message: 'Очищення тимчасових файлів...' });
     await cleanup(archivePath, extractDir);
 
-    // 8. Save installation info
-    await saveInstallationInfo(gamePath.path, {
+    // 8. Save installation info with components structure
+    const installationInfo: InstallationInfo = {
       gameId: game.id,
       version: game.version || '1.0.0',
       installedAt: new Date().toISOString(),
       gamePath: gamePath.path,
       hasBackup: createBackup,
-      installedFiles,
-    });
+      installedFiles, // Legacy field for backward compatibility
+      components: {
+        text: {
+          installed: true,
+          files: textFiles,
+        },
+        ...(installVoice && voiceFiles.length > 0 ? {
+          voice: {
+            installed: true,
+            files: voiceFiles,
+          },
+        } : {}),
+      },
+    };
+    await saveInstallationInfo(gamePath.path, installationInfo);
 
     console.log(`[Installer] Translation for ${game.id} installed successfully at ${fullTargetPath}`);
   } catch (error) {
@@ -866,12 +955,31 @@ export async function uninstallTranslation(game: Game): Promise<void> {
     const gamePath = installInfo.gamePath;
     const backupDir = path.join(gamePath, BACKUP_DIR_NAME);
 
-    // Step 1: Delete all installed files (including new files that weren't backed up)
-    if (installInfo.installedFiles && installInfo.installedFiles.length > 0) {
-      console.log(`[Installer] Deleting ${installInfo.installedFiles.length} installed files...`);
+    // Step 1: Collect all files to delete (from components or legacy installedFiles)
+    let allFilesToDelete: string[] = [];
+
+    if (installInfo.components) {
+      // New format: use components structure
+      if (installInfo.components.text?.installed) {
+        allFilesToDelete.push(...installInfo.components.text.files);
+        console.log(`[Installer] Text component: ${installInfo.components.text.files.length} files`);
+      }
+      if (installInfo.components.voice?.installed) {
+        allFilesToDelete.push(...installInfo.components.voice.files);
+        console.log(`[Installer] Voice component: ${installInfo.components.voice.files.length} files`);
+      }
+    } else if (installInfo.installedFiles && installInfo.installedFiles.length > 0) {
+      // Legacy format: use installedFiles
+      allFilesToDelete = installInfo.installedFiles;
+      console.log(`[Installer] Legacy format: ${installInfo.installedFiles.length} files`);
+    }
+
+    // Delete all files
+    if (allFilesToDelete.length > 0) {
+      console.log(`[Installer] Deleting ${allFilesToDelete.length} installed files...`);
       const directoriesDeleted = new Set<string>();
 
-      for (const relativePath of installInfo.installedFiles) {
+      for (const relativePath of allFilesToDelete) {
         const filePath = path.join(gamePath, relativePath);
         try {
           if (fs.existsSync(filePath)) {

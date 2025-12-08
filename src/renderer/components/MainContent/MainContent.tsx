@@ -13,6 +13,7 @@ import { FundraisingProgressCard } from './FundraisingProgressCard';
 import { InstallationStatusBadge } from './InstallationStatusBadge';
 import { DownloadProgressCard } from './DownloadProgressCard';
 import { InstallationStatusMessage } from './InstallationStatusMessage';
+import { InstallOptionsDialog } from '../Modal/InstallOptionsDialog';
 import { Button } from '../ui/Button';
 import type { InstallResult, DownloadProgress, LaunchGameResult } from '../../../shared/types';
 
@@ -32,6 +33,9 @@ export const MainContent: React.FC = () => {
   const { createBackupBeforeInstall } = useSettingsStore();
   const [isLaunching, setIsLaunching] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [showInstallOptions, setShowInstallOptions] = useState(false);
+  const [pendingInstallPath, setPendingInstallPath] = useState<string | undefined>(undefined);
+  const [pendingInstallOptions, setPendingInstallOptions] = useState<{ createBackup: boolean; installVoice: boolean } | undefined>(undefined);
 
   const gameProgress = selectedGame ? getInstallationProgress(selectedGame.id) : undefined;
   const isInstalling = gameProgress?.isInstalling || false;
@@ -90,13 +94,31 @@ export const MainContent: React.FC = () => {
     };
   }, [selectedGame, isInstalling, setInstallationProgress]);
 
-  const performInstallation = useCallback(async (customGamePath?: string) => {
+  const performInstallation = useCallback(async (
+    customGamePath?: string,
+    options?: { createBackup: boolean; installVoice: boolean }
+  ) => {
     if (!selectedGame) return;
 
     const platform = selectedGame.platforms[0] || 'steam';
+    // Use provided options, or pending options (from dialog), or defaults
+    const effectiveOptions = options ?? pendingInstallOptions;
+    const createBackup = effectiveOptions?.createBackup ?? createBackupBeforeInstall;
+    const installVoice = effectiveOptions?.installVoice ?? false;
+
+    // Save options BEFORE API call for potential retry with manual folder selection
+    // This ensures options are preserved even if game detection fails
+    if (options) {
+      setPendingInstallOptions(options);
+    }
+
+    // Store current options in ref for closure safety
+    const currentOptions = { createBackup, installVoice };
 
     // For emulator, always require manual folder selection
     if (platform === 'emulator' && !customGamePath) {
+      // Capture current options for the callback closure
+      const optionsForEmulator = currentOptions;
       showConfirm({
         title: 'Виберіть папку з грою',
         message: 'Для емуляторів потрібно вручну вказати папку з грою.\n\nВиберіть папку з грою?',
@@ -105,7 +127,7 @@ export const MainContent: React.FC = () => {
         onConfirm: async () => {
           const selectedFolder = await window.electronAPI.selectGameFolder();
           if (selectedFolder) {
-            await performInstallation(selectedFolder);
+            await performInstallation(selectedFolder, optionsForEmulator);
           }
         },
       });
@@ -137,11 +159,14 @@ export const MainContent: React.FC = () => {
         selectedGame,
         platform,
         customGamePath,
-        createBackupBeforeInstall
+        createBackup,
+        installVoice
       );
 
       if (!result.success && result.error) {
         if (result.error.needsManualSelection) {
+          // Capture current options for the callback closure
+          const optionsForRetry = currentOptions;
           showConfirm({
             title: 'Гру не знайдено',
             message: `${result.error.message}\n\nБажаєте вибрати папку з грою вручну?`,
@@ -150,7 +175,8 @@ export const MainContent: React.FC = () => {
             onConfirm: async () => {
               const selectedFolder = await window.electronAPI.selectGameFolder();
               if (selectedFolder) {
-                await performInstallation(selectedFolder);
+                // Pass captured options directly to avoid closure issues
+                await performInstallation(selectedFolder, optionsForRetry);
               }
             },
           });
@@ -163,6 +189,9 @@ export const MainContent: React.FC = () => {
         }
         return;
       }
+
+      // Clear pending options on success
+      setPendingInstallOptions(undefined);
 
       checkInstallationStatus(selectedGame.id, selectedGame);
       useStore.getState().clearGameUpdate(selectedGame.id);
@@ -186,7 +215,7 @@ export const MainContent: React.FC = () => {
     } finally {
       clearInstallationProgress(selectedGame.id);
     }
-  }, [selectedGame, isUpdateAvailable, createBackupBeforeInstall, setInstallationProgress, checkInstallationStatus, clearInstallationProgress, showModal, showConfirm]);
+  }, [selectedGame, isUpdateAvailable, createBackupBeforeInstall, pendingInstallOptions, setInstallationProgress, checkInstallationStatus, clearInstallationProgress, showModal, showConfirm]);
 
   const handleInstall = useCallback(async (customGamePath?: string) => {
     if (!selectedGame || isInstalling || isCheckingInstallation) return;
@@ -213,6 +242,13 @@ export const MainContent: React.FC = () => {
       selectedGame.installation_file_windows_path ||
       selectedGame.installation_file_linux_path;
 
+    // Show install options dialog if game has voice archive
+    if (selectedGame.voice_archive_path) {
+      setPendingInstallPath(customGamePath);
+      setShowInstallOptions(true);
+      return;
+    }
+
     if (hasInstaller) {
       showConfirm({
         title: 'Запуск інсталятора',
@@ -228,6 +264,29 @@ export const MainContent: React.FC = () => {
 
     await performInstallation(customGamePath);
   }, [selectedGame, isInstalling, isCheckingInstallation, isOnline, performInstallation, showModal, showConfirm]);
+
+  const handleInstallOptionsConfirm = useCallback(async (options: { createBackup: boolean; installVoice: boolean }) => {
+    if (!selectedGame) return;
+
+    const hasInstaller =
+      selectedGame.installation_file_windows_path ||
+      selectedGame.installation_file_linux_path;
+
+    if (hasInstaller) {
+      showConfirm({
+        title: 'Запуск інсталятора',
+        message: 'Після завантаження та розпакування перекладу буде запущено інсталятор.\n\nПродовжити встановлення?',
+        confirmText: 'Продовжити',
+        cancelText: 'Скасувати',
+        onConfirm: async () => {
+          await performInstallation(pendingInstallPath, options);
+        },
+      });
+      return;
+    }
+
+    await performInstallation(pendingInstallPath, options);
+  }, [selectedGame, pendingInstallPath, performInstallation, showConfirm]);
 
   const handleSupport = useCallback(() => {
     if (!selectedGame) return;
@@ -349,8 +408,20 @@ export const MainContent: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
-      <GameHero game={selectedGame} />
+    <>
+      {/* Install Options Dialog for games with voice archive */}
+      {selectedGame && (
+        <InstallOptionsDialog
+          isOpen={showInstallOptions}
+          onClose={() => setShowInstallOptions(false)}
+          onConfirm={handleInstallOptionsConfirm}
+          game={selectedGame}
+          defaultCreateBackup={createBackupBeforeInstall}
+        />
+      )}
+
+      <div className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
+        <GameHero game={selectedGame} />
 
       <div className="glass-card mb-6">
         <div className="flex gap-4">
@@ -464,6 +535,7 @@ export const MainContent: React.FC = () => {
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
