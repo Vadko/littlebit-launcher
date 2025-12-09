@@ -10,11 +10,11 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => {
   return (
     <div className="glass-card">
       <h3 className="text-lg font-head font-semibold text-white mb-4">
-        Прогрес українізації
+        Прогрес перекладу
       </h3>
       <div>
         <ProgressBar
-          label="Українізація"
+          label="Переклад"
           value={game.translation_progress}
           color="#00f2ff"
         />
