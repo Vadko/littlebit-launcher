@@ -9,6 +9,7 @@
 ## ⬇️ Завантаження
 
 [![Windows](https://img.shields.io/badge/Windows-завантажити-00f2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
+[![macOS](https://img.shields.io/badge/macOS-завантажити-a855f7?logo=apple&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
 [![Linux](https://img.shields.io/badge/Linux-завантажити-10b981?logo=linux&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Vadko/littlebit-launcher/total?color=bd00ff&logo=github&logoColor=white&label=Downloads)](https://github.com/Vadko/littlebit-launcher/releases/)
 
@@ -86,13 +87,15 @@ LB Launcher:
 
 LB Launcher — **відкритий проєкт з відкритим вихідним кодом**, побудований на сучасних інструментах:
 
-- **Electron + electron-vite** — настільний фреймворк та інструмент збирання
-- **React + TypeScript** — інтерфейс користувача
+- **Electron 39 + Vite** — настільний фреймворк та швидке збирання
+- **React 18 + TypeScript** — інтерфейс користувача
 - **Tailwind CSS** — стилі та дизайн
+- **Framer Motion** — плавні анімації інтерфейсу
 - **Zustand** — керування станом застосунку
 - **better-sqlite3** — локальна база даних для швидкої роботи офлайн
 - **Supabase** — синхронізація даних та realtime оновлення
-- **electron-builder** — білд та оновлення
+- **electron-builder** — білд та автооновлення
+- **Lucide React** — іконки
 
 ### 🔄 Local-First архітектура
 
@@ -103,12 +106,19 @@ LB Launcher — **відкритий проєкт з відкритим вихі
 - **Realtime оновлення** — зміни в каталозі ігор миттєво відображаються через WebSocket підписку
 - **Працює офлайн** — можна переглядати каталог навіть без інтернету (після першого запуску)
 
+### 🍎 Особливості для macOS
+
+- **Apple Silicon та Intel** — нативна підтримка обох архітектур (arm64, x64)
+- **Liquid Glass** — сучасний ефект прозорості для macOS Tahoe 26+ (можна вимкнути в налаштуваннях)
+- **Dark Mode** — автоматична підтримка темної теми системи
+- **DMG-інсталятор** — простий drag & drop для встановлення
+
 ---
 
 ## 🚀 Як розпочати (користувачам)
 
 1. Перейди до розділу **Releases** цього репозиторію.
-2. Завантаж збірку для своєї платформи (Windows / інша, якщо доступна).
+2. Завантаж збірку для своєї платформи (Windows / macOS / Linux).
 3. Встанови або запусти лаунчер.
 4. Обери гру, локалізацію та натисни «Встановити».
 5. Запускай гру — і насолоджуйся українською. 💛

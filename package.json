@@ -6,7 +6,7 @@
     "name": "LB UA",
     "email": "info@vadko.dev"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "main": "out/main/index.js",
   "engines": {
     "node": ">=22.20.0"
