@@ -198,11 +198,11 @@ export const MainContent: React.FC = () => {
       useStore.getState().clearGameUpdate(selectedGame.id);
 
       const message = isUpdateAvailable
-        ? `Переклад ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
-        : `Переклад ${selectedGame.name} успішно встановлено!`;
+        ? `Українізатор ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
+        : `Українізатор ${selectedGame.name} успішно встановлено!`;
 
       showModal({
-        title: isUpdateAvailable ? 'Переклад оновлено' : 'Переклад встановлено',
+        title: isUpdateAvailable ? 'Українізатор оновлено' : 'Українізатор встановлено',
         message,
         type: 'success',
       });
@@ -253,7 +253,7 @@ export const MainContent: React.FC = () => {
     if (hasInstaller) {
       showConfirm({
         title: 'Запуск інсталятора',
-        message: 'Після завантаження та розпакування перекладу буде запущено інсталятор.\n\nПродовжити встановлення?',
+        message: 'Після завантаження та розпакування українізатора буде запущено інсталятор.\n\nПродовжити встановлення?',
         confirmText: 'Продовжити',
         cancelText: 'Скасувати',
         onConfirm: async () => {
@@ -276,7 +276,7 @@ export const MainContent: React.FC = () => {
     if (hasInstaller) {
       showConfirm({
         title: 'Запуск інсталятора',
-        message: 'Після завантаження та розпакування перекладу буде запущено інсталятор.\n\nПродовжити встановлення?',
+        message: 'Після завантаження та розпакування українізатора буде запущено інсталятор.\n\nПродовжити встановлення?',
         confirmText: 'Продовжити',
         cancelText: 'Скасувати',
         onConfirm: async () => {
@@ -337,8 +337,8 @@ export const MainContent: React.FC = () => {
       : '\n\nОригінальні файли гри будуть відновлені з резервної копії.';
 
     showConfirm({
-      title: 'Видалення перекладу',
-      message: `Ви впевнені, що хочете видалити переклад для "${selectedGame.name}"?${backupWarning}`,
+      title: 'Видалення українізатора',
+      message: `Ви впевнені, що хочете видалити українізатор для "${selectedGame.name}"?${backupWarning}`,
       confirmText: 'Видалити',
       cancelText: 'Скасувати',
       onConfirm: async () => {
@@ -361,8 +361,8 @@ export const MainContent: React.FC = () => {
           checkInstallationStatus(selectedGame.id, selectedGame);
 
           showModal({
-            title: 'Переклад видалено',
-            message: `Переклад "${selectedGame.name}" успішно видалено!`,
+            title: 'Українізатор видалено',
+            message: `Українізатор "${selectedGame.name}" успішно видалено!`,
             type: 'success',
           });
         } catch (error) {
@@ -391,7 +391,7 @@ export const MainContent: React.FC = () => {
     if (installationInfo) {
       return `Перевстановити (v${installationInfo.version})`;
     }
-    return 'Встановити переклад';
+    return 'Встановити українізатор';
   };
 
   if (!selectedGame) {
@@ -402,7 +402,7 @@ export const MainContent: React.FC = () => {
           Виберіть гру зі списку
         </h2>
         <p className="text-text-muted max-w-md">
-          Виберіть гру, щоб побачити деталі та встановити переклад
+          Виберіть гру, щоб побачити деталі та встановити українізатор
         </p>
       </div>
     );
@@ -449,6 +449,7 @@ export const MainContent: React.FC = () => {
             <SubscribeButton
               gameId={selectedGame.id}
               gameName={selectedGame.name}
+              gameStatus={selectedGame.status}
               variant="secondary"
             />
           )}
@@ -459,7 +460,7 @@ export const MainContent: React.FC = () => {
               onClick={handleUninstall}
               disabled={isUninstalling}
             >
-              {isUninstalling ? 'Видалення...' : 'Видалити переклад'}
+              {isUninstalling ? 'Видалення...' : 'Видалити українізатор'}
             </Button>
           )}
           <Button variant="secondary" icon={<Heart size={20} />} onClick={handleSupport}>
@@ -497,7 +498,7 @@ export const MainContent: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
               <span className="text-sm font-medium text-white">
-                Видалення перекладу та відновлення оригінальних файлів...
+                Видалення українізатора та відновлення оригінальних файлів...
               </span>
             </div>
           </div>
@@ -529,7 +530,7 @@ export const MainContent: React.FC = () => {
       )}
 
       <div className="glass-card mb-6">
-        <h3 className="text-lg font-head font-semibold text-white mb-3">Про переклад</h3>
+        <h3 className="text-lg font-head font-semibold text-white mb-3">Про українізатор</h3>
         <p className="text-text-muted leading-relaxed whitespace-pre-line">
           {selectedGame.description}
         </p>

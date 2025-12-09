@@ -6,6 +6,7 @@ import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
 interface SubscribeButtonProps {
   gameId: string;
   gameName: string;
+  gameStatus: string;
   variant?: 'primary' | 'secondary' | 'glass';
   className?: string;
 }
@@ -13,6 +14,7 @@ interface SubscribeButtonProps {
 export const SubscribeButton: React.FC<SubscribeButtonProps> = ({
   gameId,
   gameName,
+  gameStatus,
   variant = 'secondary',
   className = '',
 }) => {
@@ -23,7 +25,7 @@ export const SubscribeButton: React.FC<SubscribeButtonProps> = ({
     if (subscribed) {
       unsubscribe(gameId);
     } else {
-      subscribe(gameId);
+      subscribe(gameId, gameStatus);
     }
   };
 

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Game } from '../types/game';
 import type { DownloadProgress, InstallationInfo, DetectedGameInfo, Database } from '../../shared/types';
+import { useSubscriptionsStore } from './useSubscriptionsStore';
+import { useSettingsStore } from './useSettingsStore';
 
 type FilterType = 'all' | Database['public']['Enums']['game_status'] | 'installed-translations' | 'installed-games';
 
@@ -23,7 +25,7 @@ interface Store {
   steamGames: Map<string, string>; // installdir (lowercase) -> full path
 
   // Installation State
-  installedGames: Map<string, InstallationInfo>; // Metadata про встановлені переклади
+  installedGames: Map<string, InstallationInfo>; // Metadata про встановлені українізатори
   detectedGames: Map<string, DetectedGameInfo>; // Ігри знайдені на системі
   gamesWithUpdates: Set<string>; // Ігри з доступними оновленнями
   installationProgress: Map<string, InstallationProgress>;
@@ -40,12 +42,9 @@ interface Store {
   clearSteamGamesCache: () => void;
 
   // Installation Actions
-  loadInstalledGames: (games: Game[]) => Promise<void>;
-  loadInstalledGamesFromSystem: () => Promise<void>; // Новий reverse підхід
+  loadInstalledGamesFromSystem: () => Promise<void>;
   clearInstalledGamesCache: () => void;
   checkInstallationStatus: (gameId: string, game: Game) => Promise<void>;
-  checkForGameUpdate: (gameId: string, newVersion: string) => boolean;
-  markGameAsUpdated: (gameId: string) => void;
   clearGameUpdate: (gameId: string) => void;
   setInstallationProgress: (gameId: string, progress: Partial<InstallationProgress>) => void;
   clearInstallationProgress: (gameId: string) => void;
@@ -56,8 +55,10 @@ interface Store {
   // Game Detection Actions
   clearDetectedGamesCache: () => void;
   detectInstalledGames: (games: Game[]) => Promise<void>;
-  getDetectedGameInfo: (gameId: string) => DetectedGameInfo | undefined;
   isGameDetected: (gameId: string) => boolean;
+
+  // Subscription Status Check
+  checkSubscribedGamesStatus: (games: Game[]) => void;
 }
 
 // detectedGames більше не персіститься - має перевірятися при кожному запуску
@@ -107,57 +108,6 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   // Installation Actions
-  loadInstalledGames: async (games: Game[]) => {
-    if (!window.electronAPI) return;
-
-    const state = get();
-    const installedGamesMap = new Map(state.installedGames); // Мержимо з існуючими
-    const gamesWithUpdatesSet = new Set(state.gamesWithUpdates); // Мержимо з існуючими
-
-    // Фільтруємо тільки нові ігри, які ще не перевірені
-    const gamesToCheck = games.filter(game => !installedGamesMap.has(game.id));
-
-    if (gamesToCheck.length === 0) {
-      // Всі ігри вже перевірені, нічого не робимо
-      return;
-    }
-
-    console.log(`[Store] Checking installation for ${gamesToCheck.length} new games`);
-
-    // Виконуємо перевірки паралельно для швидкості
-    const checkResults = await Promise.all(
-      gamesToCheck.map(async (game) => {
-        const installInfo = await window.electronAPI.checkInstallation(game);
-        return { game, installInfo };
-      })
-    );
-
-    // Обробляємо результати
-    for (const { game, installInfo } of checkResults) {
-      if (installInfo) {
-        installedGamesMap.set(game.id, installInfo);
-
-        // Check if installed version differs from current version in DB
-        if (game.version && installInfo.version !== game.version) {
-          gamesWithUpdatesSet.add(game.id);
-
-          // Show in-app notification for this game
-          window.electronAPI.showGameUpdateNotification?.(
-            game.name,
-            game.version,
-            true // isInitialLoad - skip system notification
-          );
-        }
-      }
-    }
-
-    set({
-      installedGames: installedGamesMap,
-      gamesWithUpdates: gamesWithUpdatesSet,
-    });
-  },
-
-  // Новий підхід: завантажуємо встановлені переклади з installation-cache
   loadInstalledGamesFromSystem: async () => {
     if (!window.electronAPI) return;
 
@@ -168,7 +118,7 @@ export const useStore = create<Store>((set, get) => ({
     const gamesWithUpdatesSet = new Set(state.gamesWithUpdates);
 
     try {
-      // 1. Отримати ID всіх ігор з встановленими перекладами з installation-cache/
+      // 1. Отримати ID всіх ігор з встановленими українізаторами з installation-cache/
       const installedGameIds = await window.electronAPI.getAllInstalledGameIds();
       console.log(`[Store] Found ${installedGameIds.length} games with installed translations`);
 
@@ -204,12 +154,27 @@ export const useStore = create<Store>((set, get) => ({
           if (game.version && installInfo.version !== game.version) {
             gamesWithUpdatesSet.add(game.id);
 
-            // Show in-app notification for this game
-            window.electronAPI.showGameUpdateNotification?.(
-              game.name,
-              game.version,
-              true // isInitialLoad - skip system notification
-            );
+            // Додати нотифікацію в store (з перевіркою налаштувань та дублікатів)
+            const { gameUpdateNotificationsEnabled } = useSettingsStore.getState();
+            const { notifications, addVersionUpdateNotification } = useSubscriptionsStore.getState();
+
+            if (gameUpdateNotificationsEnabled) {
+              // Перевірити чи вже є така нотифікація
+              const hasExistingNotification = notifications.some(
+                n => n.type === 'version-update' &&
+                     n.gameId === game.id &&
+                     n.newValue === game.version
+              );
+
+              if (!hasExistingNotification) {
+                addVersionUpdateNotification(
+                  game.id,
+                  game.name,
+                  installInfo.version,
+                  game.version
+                );
+              }
+            }
           }
         } else {
           // Гра була встановлена раніше але зараз не існує (видалена через Steam/GOG/Epic)
@@ -279,23 +244,6 @@ export const useStore = create<Store>((set, get) => ({
         return { isCheckingInstallation: newChecking };
       });
     }
-  },
-
-  checkForGameUpdate: (gameId: string, newVersion: string) => {
-    const state = get();
-    const installedGame = state.installedGames.get(gameId);
-
-    if (!installedGame) return false;
-
-    return installedGame.version !== newVersion;
-  },
-
-  markGameAsUpdated: (gameId: string) => {
-    set((state) => {
-      const newSet = new Set(state.gamesWithUpdates);
-      newSet.add(gameId);
-      return { gamesWithUpdates: newSet };
-    });
   },
 
   clearGameUpdate: (gameId: string) => {
@@ -396,11 +344,66 @@ export const useStore = create<Store>((set, get) => ({
     }
   },
 
-  getDetectedGameInfo: (gameId: string) => {
-    return get().detectedGames.get(gameId);
-  },
-
   isGameDetected: (gameId: string) => {
     return get().detectedGames.has(gameId);
+  },
+
+  // Check subscribed games for status changes on app startup
+  checkSubscribedGamesStatus: (games: Game[]) => {
+    const { statusChangeNotificationsEnabled } = useSettingsStore.getState();
+    if (!statusChangeNotificationsEnabled) return;
+
+    const {
+      subscribedGames,
+      getSubscribedStatus,
+      updateSubscribedStatus,
+      addNotification,
+      notifications
+    } = useSubscriptionsStore.getState();
+
+    // Create a map of games for quick lookup
+    const gamesMap = new Map(games.map(g => [g.id, g]));
+
+    // Check each subscribed game
+    subscribedGames.forEach((gameId) => {
+      const game = gamesMap.get(gameId);
+      if (!game) return;
+
+      const savedStatus = getSubscribedStatus(gameId);
+
+      // If we have a saved status and it was 'planned' but now it's different
+      if (savedStatus === 'planned' && game.status !== 'planned') {
+        // Check if we already have this notification
+        const statusText = game.status === 'completed'
+          ? 'Завершено'
+          : game.status === 'in-progress'
+            ? 'Ранній доступ'
+            : game.status;
+
+        const hasExistingNotification = notifications.some(
+          n => n.type === 'status-change' &&
+               n.gameId === gameId &&
+               n.newValue === statusText
+        );
+
+        if (!hasExistingNotification) {
+          console.log(`[Store] Status changed for subscribed game ${game.name}: ${savedStatus} -> ${game.status}`);
+
+          addNotification({
+            type: 'status-change',
+            gameId: game.id,
+            gameName: game.name,
+            oldValue: 'Заплановано',
+            newValue: statusText,
+          });
+        }
+
+        // Update saved status
+        updateSubscribedStatus(gameId, game.status);
+      } else if (!savedStatus) {
+        // If no saved status, save current one (for legacy subscriptions)
+        updateSubscribedStatus(gameId, game.status);
+      }
+    });
   },
 }));

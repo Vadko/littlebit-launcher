@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, User, MessageCircle, ListFilter, Check, History } from 'lucide-react';
+import { Settings, MessageCircle, ListFilter, Check, Bell } from 'lucide-react';
 import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
 import { Loader } from '../ui/Loader';
 import { useStore } from '../../store/useStore';
-import { useModalStore } from '../../store/useModalStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
 import { useGames } from '../../hooks/useGames';
@@ -32,7 +31,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
     isGameDetected,
     loadInstalledGamesFromSystem,
   } = useStore();
-  const { showModal } = useModalStore();
   const { openSettingsModal } = useSettingsStore();
   const unreadCount = useSubscriptionsStore((state) => state.unreadCount);
 
@@ -77,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
     { label: 'Заплановано', value: 'planned' },
     { label: 'Ранній доступ', value: 'in-progress' },
     { label: 'Готово', value: 'completed' },
-    { label: 'Встановлені переклади', value: 'installed-translations', group: 'installed' },
+    { label: 'Встановлені українізатори', value: 'installed-translations', group: 'installed' },
     { label: 'Встановлені ігри', value: 'installed-games', group: 'installed' },
   ], []);
 
@@ -106,14 +104,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
     window.electronAPI?.openExternal('https://t.me/lb_launcher_bot');
   }, []);
 
-  const handleShowAbout = useCallback(() => {
-    showModal({
-      title: 'Про додаток',
-      message: `LB Launcher v${window.electronAPI?.getVersion?.() || '1.0.0'}\n\nІнсталятор українських перекладів відеоігор\n\n💙 Дякуємо за підтримку!`,
-      type: 'info',
-    });
-  }, [showModal]);
-
   return (
     <GlassPanel className="w-[320px] h-full flex flex-col">
       {/* Header */}
@@ -126,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
         />
         <div>
           <h1 className="text-lg font-head font-bold text-white">LB</h1>
-          <p className="text-xs text-text-muted">Українські переклади</p>
+          <p className="text-xs text-text-muted">Українізатори ігор</p>
         </div>
       </div>
 
@@ -258,9 +248,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
         <button
           onClick={onOpenHistory}
           className="relative flex-1 p-3 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"
-          title="Історія оновлень"
+          title="Сповіщення"
         >
-          <History size={20} className="mx-auto text-text-muted" />
+          <Bell size={20} className="mx-auto text-text-muted" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1 min-w-[18px] px-1 h-4 bg-neon-blue text-bg-dark text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -280,13 +270,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
           title="Зворотній зв'язок"
         >
           <MessageCircle size={20} className="mx-auto text-text-muted" />
-        </button>
-        <button
-          onClick={handleShowAbout}
-          className="flex-1 p-3 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"
-          title="Профіль"
-        >
-          <User size={20} className="mx-auto text-text-muted" />
         </button>
       </div>
     </GlassPanel>

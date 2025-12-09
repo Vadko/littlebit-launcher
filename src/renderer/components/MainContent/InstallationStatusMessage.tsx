@@ -47,7 +47,7 @@ export const InstallationStatusMessage: React.FC<InstallationStatusMessageProps>
       <div className="flex items-center gap-3">
         {icon}
         <span className={`text-sm font-medium ${colorClass}`}>
-          {statusMessage || (isUpdateAvailable ? 'Оновлення перекладу...' : 'Встановлення перекладу...')}
+          {statusMessage || (isUpdateAvailable ? 'Оновлення українізатора...' : 'Встановлення українізатора...')}
         </span>
       </div>
       {!isOnline && isInstalling && (

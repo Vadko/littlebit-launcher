@@ -19,7 +19,7 @@ export function getPlatform(): 'macos' | 'windows' | 'linux' | 'unknown' {
   return 'unknown';
 }
 
-export function getMacOSVersion(): number {
+function getMacOSVersion(): number {
   if (!isMacOS()) return 0;
 
   // Parse Darwin kernel version from os.release()

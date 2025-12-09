@@ -1,6 +1,5 @@
-import { app, ipcMain, Notification } from 'electron';
+import { app, ipcMain } from 'electron';
 import { fetchGames, fetchGamesByIds, findGamesByInstallPaths } from '../api';
-import { getMainWindow } from '../window';
 import { GetGamesParams, Game } from '../../shared/types';
 import { getFirstAvailableGamePath, getAllInstalledGamePaths, getAllInstalledSteamGames } from '../game-detector';
 
@@ -60,26 +59,6 @@ export function setupGamesHandlers(): void {
       console.error('Error finding games by install paths:', error);
       return { games: [], total: 0 };
     }
-  });
-
-  // Show game update notification
-  ipcMain.on('show-game-update-notification', (_, gameName: string, version: string, isInitialLoad: boolean) => {
-    // Skip system notification during initial load
-    if (!isInitialLoad) {
-      const notification = new Notification({
-        title: 'Доступне оновлення перекладу',
-        body: `Нова версія перекладу для ${gameName} (${version})`,
-        silent: false,
-      });
-
-      notification.show();
-    }
-
-    // Always send in-app notification
-    getMainWindow()?.webContents.send('game-update-available', {
-      gameName,
-      version,
-    });
   });
 
   // Launch game

@@ -92,8 +92,6 @@ export interface ElectronAPI {
   // Real-time updates (автоматично керуються в main process)
   onGameUpdated: (callback: (game: Game) => void) => void;
   onGameRemoved: (callback: (gameId: string) => void) => void;
-  // Game update notifications
-  showGameUpdateNotification?: (gameName: string, version: string, isInitialLoad: boolean) => void;
   // Game detection
   onSteamLibraryChanged?: (callback: () => void) => void;
   onInstalledGamesChanged?: (callback: () => void) => void;

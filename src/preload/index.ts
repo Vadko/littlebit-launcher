@@ -49,10 +49,6 @@ const electronAPI: ElectronAPI = {
   onGameRemoved: (callback: (gameId: string) => void) => {
     ipcRenderer.on('game-removed', (_, gameId) => callback(gameId));
   },
-  // Game update notifications
-  showGameUpdateNotification: (gameName: string, version: string, isInitialLoad: boolean) => {
-    ipcRenderer.send('show-game-update-notification', gameName, version, isInitialLoad);
-  },
   // Game detection
   onSteamLibraryChanged: (callback: () => void) => {
     ipcRenderer.on('steam-library-changed', callback);
@@ -76,11 +72,6 @@ contextBridge.exposeInMainWorld('windowControls', {
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => {
     ipcRenderer.on('window:maximized', (_, isMaximized) => callback(isMaximized));
   },
-});
-
-// Listen for game update notifications and dispatch as custom events
-ipcRenderer.on('game-update-available', (_, updateInfo) => {
-  window.dispatchEvent(new CustomEvent('game-update-available', { detail: updateInfo }));
 });
 
 // Liquid Glass API

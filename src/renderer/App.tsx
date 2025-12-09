@@ -4,7 +4,7 @@ import { TitleBar } from './components/Layout/TitleBar';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { MainContent } from './components/MainContent/MainContent';
 import { UpdateNotification } from './components/UpdateNotification/UpdateNotification';
-import { GameUpdateNotification } from './components/GameUpdateNotification/GameUpdateNotification';
+import { ToastNotifications } from './components/Notifications/ToastNotifications';
 import { GlobalModal } from './components/Modal/GlobalModal';
 import { ConfirmModal } from './components/Modal/ConfirmModal';
 import { SettingsModal } from './components/Settings/SettingsModal';
@@ -121,7 +121,7 @@ export const App: React.FC = () => {
     const handleSteamLibraryChange = async () => {
       console.log('[App] Steam library changed, clearing cache and reloading');
 
-      // Очистити кеші (installedGames НЕ очищаємо - це переклади, вони персістентні в installation-cache/)
+      // Очистити кеші (installedGames НЕ очищаємо - це українізатори, вони персістентні в installation-cache/)
       clearSteamGamesCache();
       clearDetectedGamesCache();
 
@@ -140,7 +140,7 @@ export const App: React.FC = () => {
     window.electronAPI.onSteamLibraryChanged?.(handleSteamLibraryChange);
   }, [autoDetectInstalledGames, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearDetectedGamesCache]);
 
-  // Слухати зміни встановлених перекладів
+  // Слухати зміни встановлених українізаторів
   useEffect(() => {
     if (!window.electronAPI) return;
 
@@ -202,7 +202,7 @@ export const App: React.FC = () => {
 
       {/* Update notifications */}
       <UpdateNotification />
-      <GameUpdateNotification />
+      <ToastNotifications />
 
       {/* Global modals */}
       <GlobalModal />

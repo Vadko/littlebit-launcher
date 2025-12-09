@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
 
 export const UpdateNotification = () => {
   const { appUpdateNotificationsEnabled } = useSettingsStore();
@@ -9,16 +10,34 @@ export const UpdateNotification = () => {
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [updateInfo, setUpdateInfo] = useState<unknown>(null);
+  const notifiedVersionRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!window.electronAPI) return;
 
     // Listen for update events
-    window.electronAPI.onUpdateAvailable((info) => {
+    window.electronAPI.onUpdateAvailable(async (info) => {
       console.log('Update available:', info);
       if (appUpdateNotificationsEnabled) {
         setUpdateAvailable(true);
         setUpdateInfo(info);
+
+        // Додати в історію сповіщень (тільки один раз для кожної версії)
+        const newVersion = (info as { version?: string })?.version;
+        if (newVersion && notifiedVersionRef.current !== newVersion) {
+          notifiedVersionRef.current = newVersion;
+          const currentVersion = await window.electronAPI.getVersion();
+          const { addAppUpdateNotification, notifications } = useSubscriptionsStore.getState();
+
+          // Перевірити чи вже є таке сповіщення
+          const hasExisting = notifications.some(
+            n => n.type === 'app-update' && n.newValue === newVersion
+          );
+
+          if (!hasExisting) {
+            addAppUpdateNotification(currentVersion, newVersion, false); // false = без toast, бо вже є floating notification
+          }
+        }
       }
     });
 
@@ -50,7 +69,7 @@ export const UpdateNotification = () => {
   if (!appUpdateNotificationsEnabled || (!updateAvailable && !updateDownloaded)) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl max-w-sm">
+    <div className="fixed bottom-4 right-4 glass-panel border border-neon-blue rounded-xl p-4 shadow-xl max-w-sm z-50">
       <div className="flex items-start gap-3">
         <div className="p-2 bg-blue-500/20 rounded-lg">
           {downloading ? (

@@ -452,7 +452,7 @@ function findEpicGame(gameFolderName: string): string | null {
 /**
  * Detect all possible paths for a game
  */
-export function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
+function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
   const results: GamePath[] = [];
 
   for (const installPath of installPaths) {

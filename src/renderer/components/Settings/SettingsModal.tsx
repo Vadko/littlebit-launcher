@@ -28,10 +28,6 @@ export const SettingsModal: React.FC = () => {
   const setTheme = useSettingsStore((state) => state.setTheme);
   const animationsEnabled = useSettingsStore((state) => state.animationsEnabled);
   const toggleAnimations = useSettingsStore((state) => state.toggleAnimations);
-  const appUpdateNotificationsEnabled = useSettingsStore((state) => state.appUpdateNotificationsEnabled);
-  const toggleAppUpdateNotifications = useSettingsStore((state) => state.toggleAppUpdateNotifications);
-  const gameUpdateNotificationsEnabled = useSettingsStore((state) => state.gameUpdateNotificationsEnabled);
-  const toggleGameUpdateNotifications = useSettingsStore((state) => state.toggleGameUpdateNotifications);
   const createBackupBeforeInstall = useSettingsStore((state) => state.createBackupBeforeInstall);
   const toggleCreateBackup = useSettingsStore((state) => state.toggleCreateBackup);
   const autoDetectInstalledGames = useSettingsStore((state) => state.autoDetectInstalledGames);
@@ -129,23 +125,9 @@ export const SettingsModal: React.FC = () => {
           />
         )}
         <SettingItem
-          id="app-updates"
-          title="Сповіщення про оновлення додатку"
-          description="Показувати сповіщення про нові версії додатку"
-          enabled={appUpdateNotificationsEnabled}
-          onChange={toggleAppUpdateNotifications}
-        />
-        <SettingItem
-          id="game-updates"
-          title="Сповіщення про оновлення ігор"
-          description="Показувати сповіщення про нові версії перекладів"
-          enabled={gameUpdateNotificationsEnabled}
-          onChange={toggleGameUpdateNotifications}
-        />
-        <SettingItem
           id="backup"
           title="Створювати резервну копію"
-          description="Зберігати оригінальні файли гри перед встановленням перекладу"
+          description="Зберігати оригінальні файли гри перед встановленням українізатора"
           enabled={createBackupBeforeInstall}
           onChange={toggleCreateBackup}
         />

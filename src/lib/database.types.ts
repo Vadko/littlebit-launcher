@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      deleted_games: {
+        Row: {
+          deleted_at: string
+          game_id: string
+          id: string
+        }
+        Insert: {
+          deleted_at?: string
+          game_id: string
+          id?: string
+        }
+        Update: {
+          deleted_at?: string
+          game_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       game_downloads: {
         Row: {
           downloaded_at: string | null

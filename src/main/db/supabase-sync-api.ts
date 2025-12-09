@@ -114,3 +114,19 @@ export async function fetchUpdatedGamesFromSupabase(since: string): Promise<Game
   console.log(`[SupabaseSync] Fetched ${allGames.length} updated games`);
   return allGames;
 }
+
+/**
+ * Завантажити ID ігор видалених після певної дати
+ */
+export async function fetchDeletedGameIdsFromSupabase(since: string): Promise<string[]> {
+  console.log(`[SupabaseSync] Fetching deleted games since ${since}`);
+
+  const data = await supabaseRequest<{ game_id: string }>('deleted_games', {
+    'deleted_at': `gt.${since}`,
+    'select': 'game_id'
+  });
+
+  const deletedIds = data.map(row => row.game_id);
+  console.log(`[SupabaseSync] Fetched ${deletedIds.length} deleted game IDs`);
+  return deletedIds;
+}

@@ -80,9 +80,12 @@ export class SyncManager {
   }
 
   /**
-   * Delta sync - завантажити тільки оновлені ігри
+   * Delta sync - завантажити тільки оновлені ігри та видалити видалені
    */
-  async deltaSync(fetchUpdatedGames: (since: string) => Promise<Game[]>): Promise<void> {
+  async deltaSync(
+    fetchUpdatedGames: (since: string) => Promise<Game[]>,
+    fetchDeletedGameIds?: (since: string) => Promise<string[]>
+  ): Promise<void> {
     if (this.isSyncing) {
       console.log('[SyncManager] Sync already in progress, skipping');
       return;
@@ -108,6 +111,17 @@ export class SyncManager {
         console.log(`[SyncManager] Updated ${updatedGames.length} games`);
       }
 
+      // Видалити ігри, які були видалені на сервері
+      if (fetchDeletedGameIds) {
+        const deletedIds = await fetchDeletedGameIds(lastSync);
+        if (deletedIds.length > 0) {
+          console.log(`[SyncManager] Deleting ${deletedIds.length} games removed from server`);
+          for (const gameId of deletedIds) {
+            this.gamesRepo.deleteGame(gameId);
+          }
+        }
+      }
+
       // Оновити last_sync_timestamp
       const now = new Date().toISOString();
       this.setLastSyncTimestamp(now);
@@ -127,7 +141,8 @@ export class SyncManager {
    */
   async sync(
     fetchAllGames: () => Promise<Game[]>,
-    fetchUpdatedGames: (since: string) => Promise<Game[]>
+    fetchUpdatedGames: (since: string) => Promise<Game[]>,
+    fetchDeletedGameIds?: (since: string) => Promise<string[]>
   ): Promise<void> {
     if (this.isFirstRun()) {
       console.log('[SyncManager] First run detected, performing full sync');
@@ -135,7 +150,7 @@ export class SyncManager {
     } else {
       console.log('[SyncManager] Performing delta sync');
       try {
-        await this.deltaSync(fetchUpdatedGames);
+        await this.deltaSync(fetchUpdatedGames, fetchDeletedGameIds);
       } catch (error) {
         console.log('[SyncManager] Delta sync failed, falling back to full sync');
         await this.fullSync(fetchAllGames);

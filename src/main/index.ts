@@ -18,7 +18,7 @@ import { startSteamWatcher, stopSteamWatcher } from './steam-watcher';
 import { startInstallationWatcher, stopInstallationWatcher } from './installation-watcher';
 import { initDatabase, closeDatabase } from './db/database';
 import { SyncManager } from './db/sync-manager';
-import { fetchAllGamesFromSupabase, fetchUpdatedGamesFromSupabase } from './db/supabase-sync-api';
+import { fetchAllGamesFromSupabase, fetchUpdatedGamesFromSupabase, fetchDeletedGameIdsFromSupabase } from './db/supabase-sync-api';
 import { SupabaseRealtimeManager } from './db/supabase-realtime';
 
 // Глобальні менеджери
@@ -64,7 +64,8 @@ if (!gotTheLock) {
     try {
       await syncManager.sync(
         fetchAllGamesFromSupabase,
-        fetchUpdatedGamesFromSupabase
+        fetchUpdatedGamesFromSupabase,
+        fetchDeletedGameIdsFromSupabase
       );
       console.log('[Main] Initial sync completed');
     } catch (error) {

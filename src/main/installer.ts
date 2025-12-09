@@ -7,7 +7,7 @@ import { createHash } from 'crypto';
 import StreamZip from 'node-stream-zip';
 import got from 'got';
 import { getFirstAvailableGamePath } from './game-detector';
-import { InstallationInfo, Game } from '../shared/types';
+import type { InstallationInfo, Game, DownloadProgress, InstallationStatus } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
 import { isWindows, isLinux, getPlatform } from './utils/platform';
 
@@ -47,10 +47,6 @@ export function abortCurrentDownload(): void {
 /**
  * Main installation function
  */
-export interface InstallationStatus {
-  message: string;
-}
-
 export async function installTranslation(
   game: Game,
   platform: string,
@@ -126,7 +122,7 @@ export async function installTranslation(
     const { getArchiveDownloadUrl } = await import('../lib/api');
 
     if (!game.archive_path) {
-      throw new Error('Архів перекладу не знайдено');
+      throw new Error('Архів українізатора не знайдено');
     }
 
     const downloadUrl = getArchiveDownloadUrl(game.archive_path);
@@ -167,7 +163,7 @@ export async function installTranslation(
           await unlink(archivePath);
         }
         throw new Error(
-          'Файл перекладу пошкоджено або змінено.\n\n' +
+          'Файл українізатора пошкоджено або змінено.\n\n' +
           'Спробуйте завантажити ще раз або зверніться до підтримки.'
         );
       }
@@ -276,7 +272,7 @@ export async function installTranslation(
       console.log('[Installer] Backup creation disabled by user');
     }
 
-    onStatus?.({ message: 'Копіювання файлів перекладу...' });
+    onStatus?.({ message: 'Копіювання файлів українізатора...' });
     await copyDirectory(extractDir, fullTargetPath);
 
     // 7. Cleanup
@@ -320,7 +316,7 @@ export async function installTranslation(
       // Network errors
       if (error.message.includes('ERR_CONNECTION_REFUSED')) {
         throw new Error(
-          'Не вдалося завантажити переклад.\n\nПеревірте підключення до Інтернету та спробуйте ще раз.'
+          'Не вдалося завантажити українізатор.\n\nПеревірте підключення до Інтернету та спробуйте ще раз.'
         );
       }
 
@@ -361,18 +357,10 @@ export async function installTranslation(
   }
 }
 
-export interface DownloadProgress {
-  percent: number;
-  downloadedBytes: number;
-  totalBytes: number;
-  bytesPerSecond: number;
-  timeRemaining: number; // in seconds
-}
-
 /**
  * Download file from URL with progress tracking and retry logic
  */
-export async function downloadFile(
+async function downloadFile(
   url: string,
   outputPath: string,
   onProgress?: (progress: DownloadProgress) => void,
@@ -400,7 +388,7 @@ export async function downloadFile(
           throw new Error('Завантаження скасовано');
         }
       } else {
-        onStatus?.({ message: 'Завантаження перекладу...' });
+        onStatus?.({ message: 'Завантаження українізатора...' });
       }
 
       await downloadFileAttempt(url, outputPath, onProgress, onStatus, signal);
@@ -950,7 +938,7 @@ export async function uninstallTranslation(game: Game): Promise<void> {
     const installInfo = await checkInstallation(game);
 
     if (!installInfo) {
-      throw new Error('Переклад не встановлено');
+      throw new Error('Українізатор не встановлено');
     }
 
     const gamePath = installInfo.gamePath;
@@ -1057,7 +1045,7 @@ export async function uninstallTranslation(game: Game): Promise<void> {
   } catch (error) {
     console.error('[Installer] Uninstall error:', error);
     throw new Error(
-      `Помилка видалення перекладу: ${error instanceof Error ? error.message : 'Невідома помилка'}`
+      `Помилка видалення українізатора: ${error instanceof Error ? error.message : 'Невідома помилка'}`
     );
   }
 }

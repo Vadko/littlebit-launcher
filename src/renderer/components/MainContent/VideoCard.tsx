@@ -54,7 +54,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
   return (
     <div className="glass-card">
       <h3 className="text-lg font-head font-semibold text-white mb-3">
-        Трейлер перекладу
+        Трейлер українізації
       </h3>
       <div className="relative rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
         <iframe

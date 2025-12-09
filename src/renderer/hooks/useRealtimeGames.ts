@@ -8,7 +8,7 @@ import { useStore } from '../store/useStore';
  * Підписка на Supabase керується автоматично в main process
  */
 export function useRealtimeGames() {
-  const { installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame } = useStore();
+  const { selectedGame, setSelectedGame } = useStore();
 
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -23,27 +23,11 @@ export function useRealtimeGames() {
         setSelectedGame(updatedGame);
       }
 
-      // Перевірити наявність оновлення для встановленої гри
-      const isInstalled = installedGames.has(updatedGame.id);
-
-      if (isInstalled && updatedGame.version) {
-        const hasUpdate = checkForGameUpdate(updatedGame.id, updatedGame.version);
-
-        if (hasUpdate) {
-          markGameAsUpdated(updatedGame.id);
-
-          // Показати нотифікацію через Electron API
-          window.electronAPI.showGameUpdateNotification?.(
-            updatedGame.name,
-            updatedGame.version,
-            isInitialLoad
-          );
-        }
-      }
+      // Нотифікації про оновлення версій та зміни статусів обробляються в useGames.ts
     };
 
     // Підписатися на оновлення
     console.log('[useRealtimeGames] Subscribing to game updates');
     window.electronAPI.onGameUpdated(handleGameUpdate);
-  }, [installedGames, checkForGameUpdate, markGameAsUpdated, isInitialLoad, selectedGame, setSelectedGame]);
+  }, [selectedGame, setSelectedGame]);
 }

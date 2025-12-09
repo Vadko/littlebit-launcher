@@ -45,17 +45,19 @@ export const Modal: React.FC<ModalProps> = ({
             }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
-              <h3 className="text-lg font-semibold text-white break-words">{title}</h3>
-              {showCloseButton && (
-                <button
-                  onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors flex-shrink-0 ml-2"
-                >
-                  <X size={18} className="text-text-muted" />
-                </button>
-              )}
-            </div>
+            {(title || showCloseButton) && (
+              <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
+                <h3 className="text-lg font-semibold text-white break-words">{title}</h3>
+                {showCloseButton && (
+                  <button
+                    onClick={onClose}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors flex-shrink-0 ml-2"
+                  >
+                    <X size={18} className="text-text-muted" />
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Content */}
             <div className="p-6 overflow-y-auto break-words flex-1">{children}</div>

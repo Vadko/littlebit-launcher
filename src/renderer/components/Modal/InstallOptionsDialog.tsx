@@ -30,7 +30,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Опції встановлення">
       <div className="flex flex-col gap-6">
         <p className="text-text-muted">
-          Виберіть опції для встановлення перекладу "{game.name}":
+          Виберіть опції для встановлення українізатора "{game.name}":
         </p>
 
         {/* Backup option */}
@@ -96,7 +96,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
               </span>
             </div>
             <div className="text-sm text-text-muted mt-1">
-              <p>Додати українську озвучку до перекладу.</p>
+              <p>Додати українську озвучку до українізатора.</p>
               {game.voice_archive_size && (
                 <p className="flex items-center gap-1 mt-1 text-purple-400">
                   <Archive size={14} />

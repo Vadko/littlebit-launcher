@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Game, GetGamesParams } from '../types/game';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
+import { useStore } from '../store/useStore';
 
 interface UseGamesParams {
   filter: string;
@@ -21,17 +22,19 @@ interface UseGamesResult {
  */
 export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResult {
   const showAdultGames = useSettingsStore((state) => state.showAdultGames);
+  const checkSubscribedGamesStatus = useStore((state) => state.checkSubscribedGamesStatus);
 
   const [games, setGames] = useState<Game[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const hasCheckedSubscriptions = useRef(false);
 
   /**
    * Завантажити ігри
    */
   const loadGames = useCallback(async () => {
     try {
-      // Спеціальна обробка для встановлених перекладів
+      // Спеціальна обробка для встановлених українізаторів
       if (filter === 'installed-translations') {
         const installedGameIds = [...new Set(await window.electronAPI.getAllInstalledGameIds())];
 
@@ -41,7 +44,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
           return;
         }
 
-        // Отримати всі ігри зі встановленими перекладами
+        // Отримати всі ігри зі встановленими українізаторами
         const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
 
         // Застосувати пошук
@@ -116,6 +119,14 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
     loadGames();
   }, [loadGames]);
 
+  // Перевірити статуси підписаних ігор після першого завантаження
+  useEffect(() => {
+    if (!isLoading && games.length > 0 && !hasCheckedSubscriptions.current) {
+      hasCheckedSubscriptions.current = true;
+      checkSubscribedGamesStatus(games);
+    }
+  }, [isLoading, games, checkSubscribedGamesStatus]);
+
   // Слухати realtime оновлення окремих ігор
   useEffect(() => {
     if (!window.electronAPI?.onGameUpdated) return;
@@ -124,42 +135,37 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       console.log('[useGames] Game updated via realtime:', updatedGame.name);
 
       // Перевірити зміну статусу/версії для історії
-      const { isSubscribed, addNotification, addVersionUpdateNotification } = useSubscriptionsStore.getState();
+      const { addVersionUpdateNotification, notifications } = useSubscriptionsStore.getState();
+      const { installedGames, checkSubscribedGamesStatus } = useStore.getState();
+
+      // Перевірити статус підписаних ігор (централізована обробка)
+      checkSubscribedGamesStatus([updatedGame]);
 
       setGames((prevGames) => {
         const index = prevGames.findIndex(g => g.id === updatedGame.id);
         const oldGame = index !== -1 ? prevGames[index] : null;
 
         if (oldGame) {
-          // Перевірити зміну статусу для підписаних користувачів
-          if (isSubscribed(updatedGame.id) &&
-              oldGame.status === 'planned' &&
-              updatedGame.status !== 'planned') {
-
-            const statusText = updatedGame.status === 'completed'
-              ? 'Завершено'
-              : updatedGame.status === 'in-progress'
-                ? 'Ранній доступ'
-                : updatedGame.status;
-
-            addNotification({
-              type: 'status-change',
-              gameId: updatedGame.id,
-              gameName: updatedGame.name,
-              oldValue: 'Заплановано',
-              newValue: statusText,
-            });
-          }
-
-          // Перевірити оновлення версії (для всіх ігор, не тільки підписаних)
-          if (oldGame.version && updatedGame.version &&
+          // Перевірити оновлення версії (тільки для встановлених українізаторів)
+          const isInstalled = installedGames.has(updatedGame.id);
+          if (isInstalled && oldGame.version && updatedGame.version &&
               oldGame.version !== updatedGame.version) {
-            addVersionUpdateNotification(
-              updatedGame.id,
-              updatedGame.name,
-              oldGame.version,
-              updatedGame.version
+
+            // Перевірити чи вже є така нотифікація (уникнення дублікатів)
+            const hasExistingVersionNotification = notifications.some(
+              n => n.type === 'version-update' &&
+                   n.gameId === updatedGame.id &&
+                   n.newValue === updatedGame.version
             );
+
+            if (!hasExistingVersionNotification) {
+              addVersionUpdateNotification(
+                updatedGame.id,
+                updatedGame.name,
+                oldGame.version,
+                updatedGame.version
+              );
+            }
           }
         }
 
@@ -227,7 +233,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
     window.electronAPI.onGameRemoved(handleGameRemoved);
   }, []);
 
-  // Слухати зміни у встановлених перекладах (install/uninstall)
+  // Слухати зміни у встановлених українізаторах (install/uninstall)
   useEffect(() => {
     if (!window.electronAPI?.onInstalledGamesChanged) return;
     if (filter !== 'installed-translations') return;
@@ -238,6 +244,19 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
     };
 
     window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
+  }, [filter, loadGames]);
+
+  // Слухати зміни Steam бібліотеки (для вкладки встановлених ігор)
+  useEffect(() => {
+    if (!window.electronAPI?.onSteamLibraryChanged) return;
+    if (filter !== 'installed-games') return;
+
+    const handleSteamLibraryChanged = () => {
+      console.log('[useGames] Steam library changed, reloading installed games list');
+      loadGames();
+    };
+
+    window.electronAPI.onSteamLibraryChanged(handleSteamLibraryChanged);
   }, [filter, loadGames]);
 
   return {
