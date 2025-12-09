@@ -1,8 +1,10 @@
 import { BrowserWindow } from 'electron';
 import { supportsMacOSLiquidGlass, shouldEnableLiquidGlass } from './utils/platform';
-import liquidGlassModule from 'electron-liquid-glass';
 
-const liquidGlass = liquidGlassModule;
+// Conditionally import based on platform
+const liquidGlass = process.platform === 'darwin'
+  ? require('electron-liquid-glass')
+  : null;
 
 /**
  * Initialize liquid glass for a window
@@ -12,7 +14,7 @@ const liquidGlass = liquidGlassModule;
  */
 export async function applyLiquidGlass(
   window: BrowserWindow,
-  userPreference: boolean = true
+  userPreference = true
 ): Promise<number | null> {
   try {
     // Check if we should enable liquid glass
@@ -21,6 +23,11 @@ export async function applyLiquidGlass(
       return null;
     }
 
+    // Check if module is available
+    if (!liquidGlass) {
+      console.log('[LiquidGlass] Module not available on this platform');
+      return null;
+    }
 
     // Get the native window handle
     const handle = window.getNativeWindowHandle();
