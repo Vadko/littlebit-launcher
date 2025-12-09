@@ -20,9 +20,9 @@ jobs:
     environment: production
 
     strategy:
-      max-parallel: 1
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -77,3 +77,12 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm dist:linux --publish always
+
+      - name: Build and publish (macOS)
+        if: matrix.os == 'macos-latest'
+        timeout-minutes: 20
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm dist:mac --publish always
