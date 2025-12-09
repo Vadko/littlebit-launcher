@@ -21,6 +21,19 @@
   StrCpy $LANGUAGE 1058
 !macroend
 
+; Override Multi-User page strings (the first "Install for current user / all users" page)
+!macro customInstallMode
+  ; Ukrainian translations for Multi-User plugin
+  !define MULTIUSER_INSTALLMODE_DISPLAYNAME "$(^Name)"
+
+  ; Override the install mode page strings
+  !define MUI_PAGE_HEADER_TEXT "Виберіть режим встановлення"
+  !define MUI_PAGE_HEADER_SUBTEXT "Виберіть, чи встановлювати $(^Name) для поточного користувача або для всіх користувачів."
+  !define MUI_INNERTEXT_INSTALLMODE_TOP "Виберіть, як встановити $(^Name):"
+  !define MUI_INNERTEXT_INSTALLMODE_ALLUSERS "Встановити для всіх користувачів"
+  !define MUI_INNERTEXT_INSTALLMODE_CURRENTUSER "Встановити тільки для мене"
+!macroend
+
 ; Custom welcome page finish text (optional)
 !macro customWelcomePageOption
   ; Custom welcome page options can be set here
