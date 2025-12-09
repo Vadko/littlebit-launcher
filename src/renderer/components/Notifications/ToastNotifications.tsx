@@ -71,7 +71,7 @@ export const ToastNotifications: React.FC = () => {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 100, scale: 0.9 }}
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className={`glass-panel border ${getToastBorder(toast.type)} rounded-xl p-4 shadow-lg min-w-[320px] max-w-[400px] pointer-events-auto`}
+            className={`notification-toast border ${getToastBorder(toast.type)} rounded-xl p-4 shadow-lg min-w-[320px] max-w-[400px] pointer-events-auto`}
           >
             <div className="flex items-start gap-3">
               <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${getToastGradient(toast.type)} flex items-center justify-center flex-shrink-0`}>
