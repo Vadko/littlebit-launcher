@@ -140,8 +140,8 @@ export const SettingsModal: React.FC = () => {
         />
         <SettingItem
           id="adult-games"
-          title="Показувати 18+ ігри"
-          description="Дозволити відображення ігор з контентом для дорослих"
+          title="Показувати ігри з порно контентом"
+          description="Дозволити відображення ігор з порнографічним/еротичним контентом (hentai, візуальні новели для дорослих тощо)"
           enabled={showAdultGames}
           onChange={toggleShowAdultGames}
         />
