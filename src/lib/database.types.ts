@@ -510,7 +510,7 @@ export type Database = {
     }
     Enums: {
       game_status: "completed" | "in-progress" | "planned"
-      install_source: "steam" | "gog" | "emulator" | "epic"
+      install_source: "steam" | "gog" | "emulator" | "epic" | "rockstar"
     }
     CompositeTypes: {
       install_path_entry: {
@@ -642,7 +642,7 @@ export const Constants = {
   public: {
     Enums: {
       game_status: ["completed", "in-progress", "planned"],
-      install_source: ["steam", "gog", "emulator", "epic"],
+      install_source: ["steam", "gog", "emulator", "epic", "rockstar"],
     },
   },
 } as const

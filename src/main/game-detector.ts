@@ -450,6 +450,186 @@ function findEpicGame(gameFolderName: string): string | null {
 }
 
 /**
+ * Detect Rockstar Games Launcher installation path
+ * Rockstar stores game manifests in AppData/Local
+ */
+function getRockstarPath(): string | null {
+  try {
+    if (isWindows()) {
+      // Rockstar Games Launcher stores settings in LocalAppData
+      const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+      const launcherSettingsPath = path.join(localAppData, 'Rockstar Games', 'Launcher', 'settings_user.dat');
+
+      if (fs.existsSync(launcherSettingsPath)) {
+        console.log('[GameDetector] Rockstar Games Launcher settings found at:', launcherSettingsPath);
+        return path.dirname(launcherSettingsPath);
+      }
+
+      // Alternative: check for launcher in Program Files
+      const programFiles = process.env['PROGRAMFILES'] || 'C:\\Program Files';
+      const programFilesX86 = process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)';
+
+      const launcherPaths = [
+        path.join(programFiles, 'Rockstar Games', 'Launcher'),
+        path.join(programFilesX86, 'Rockstar Games', 'Launcher'),
+      ];
+
+      for (const launcherPath of launcherPaths) {
+        if (fs.existsSync(launcherPath)) {
+          console.log('[GameDetector] Rockstar Games Launcher found at:', launcherPath);
+          return launcherPath;
+        }
+      }
+    } else if (isMacOS()) {
+      // macOS: Rockstar Games Launcher (if available)
+      const macPath = path.join(os.homedir(), 'Library', 'Application Support', 'Rockstar Games');
+      if (fs.existsSync(macPath)) {
+        console.log('[GameDetector] Rockstar Games found at:', macPath);
+        return macPath;
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error detecting Rockstar path:', error);
+  }
+  console.warn('[GameDetector] Rockstar Games Launcher not found');
+  return null;
+}
+
+/**
+ * Get Rockstar Games installation directories from registry
+ */
+function getRockstarGamePaths(): Map<string, string> {
+  const games = new Map<string, string>();
+
+  if (!isWindows()) {
+    return games;
+  }
+
+  try {
+    const regPath = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'reg.exe');
+
+    // Known Rockstar game registry keys
+    const rockstarGames = [
+      { key: 'Grand Theft Auto V', registry: 'Grand Theft Auto V' },
+      { key: 'Red Dead Redemption 2', registry: 'Red Dead Redemption 2' },
+      { key: 'Grand Theft Auto IV', registry: 'Grand Theft Auto IV' },
+      { key: 'Max Payne 3', registry: 'Max Payne 3' },
+      { key: 'L.A. Noire', registry: 'L.A. Noire' },
+      { key: 'GTA San Andreas', registry: 'Grand Theft Auto San Andreas' },
+    ];
+
+    for (const game of rockstarGames) {
+      try {
+        // Try WOW6432Node first (64-bit Windows)
+        const output = execSync(
+          `"${regPath}" query "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Rockstar Games\\${game.registry}" /v InstallFolder`,
+          { encoding: 'utf8', timeout: 5000 }
+        );
+        const match = output.match(/InstallFolder\s+REG_SZ\s+(.+)/);
+        if (match && match[1]) {
+          const installPath = match[1].trim();
+          if (fs.existsSync(installPath)) {
+            const folderName = path.basename(installPath);
+            games.set(folderName.toLowerCase(), installPath);
+            console.log(`[GameDetector] Rockstar game found: ${game.key} at ${installPath}`);
+          }
+        }
+      } catch {
+        // Try 32-bit registry path
+        try {
+          const output = execSync(
+            `"${regPath}" query "HKEY_LOCAL_MACHINE\\SOFTWARE\\Rockstar Games\\${game.registry}" /v InstallFolder`,
+            { encoding: 'utf8', timeout: 5000 }
+          );
+          const match = output.match(/InstallFolder\s+REG_SZ\s+(.+)/);
+          if (match && match[1]) {
+            const installPath = match[1].trim();
+            if (fs.existsSync(installPath)) {
+              const folderName = path.basename(installPath);
+              games.set(folderName.toLowerCase(), installPath);
+              console.log(`[GameDetector] Rockstar game found (32-bit): ${game.key} at ${installPath}`);
+            }
+          }
+        } catch {
+          // Game not found in registry, continue to next
+        }
+      }
+    }
+
+    // Also scan default Rockstar Games folder
+    const defaultPaths = [
+      'C:\\Program Files\\Rockstar Games',
+      'C:\\Program Files (x86)\\Rockstar Games',
+      path.join(process.env['PROGRAMFILES'] || 'C:\\Program Files', 'Rockstar Games'),
+      path.join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Rockstar Games'),
+    ];
+
+    for (const basePath of defaultPaths) {
+      if (fs.existsSync(basePath)) {
+        try {
+          const entries = fs.readdirSync(basePath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory() && entry.name !== 'Launcher' && entry.name !== 'Social Club') {
+              const gamePath = path.join(basePath, entry.name);
+              // Only add if not already in map
+              if (!games.has(entry.name.toLowerCase())) {
+                games.set(entry.name.toLowerCase(), gamePath);
+                console.log(`[GameDetector] Rockstar game found in folder: ${entry.name} at ${gamePath}`);
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`[GameDetector] Error reading Rockstar folder ${basePath}:`, err);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error getting Rockstar game paths:', error);
+  }
+
+  return games;
+}
+
+/**
+ * Find Rockstar game by folder name
+ */
+function findRockstarGame(gameFolderName: string): string | null {
+  console.log(`[GameDetector] Searching for Rockstar game: "${gameFolderName}"`);
+
+  const rockstarPath = getRockstarPath();
+  if (!rockstarPath) {
+    console.warn('[GameDetector] Cannot search for game - Rockstar Games Launcher not found');
+    // Still try to find via registry
+  }
+
+  // Get all Rockstar game paths
+  const rockstarGames = getRockstarGamePaths();
+
+  // Try exact match (case-insensitive)
+  const gamePath = rockstarGames.get(gameFolderName.toLowerCase());
+  if (gamePath && fs.existsSync(gamePath)) {
+    console.log(`[GameDetector] ✓ Rockstar game found: ${gameFolderName} at ${gamePath}`);
+    return gamePath;
+  }
+
+  // Try partial match
+  for (const [folderName, fullPath] of rockstarGames.entries()) {
+    if (folderName.includes(gameFolderName.toLowerCase()) ||
+        gameFolderName.toLowerCase().includes(folderName)) {
+      if (fs.existsSync(fullPath)) {
+        console.log(`[GameDetector] ✓ Rockstar game found (partial match): ${gameFolderName} -> ${fullPath}`);
+        return fullPath;
+      }
+    }
+  }
+
+  // List available games for debugging
+  console.log(`[GameDetector] Available Rockstar games (${rockstarGames.size}):`, Array.from(rockstarGames.keys()));
+  console.warn(`[GameDetector] ✗ Rockstar game "${gameFolderName}" not found`);
+  return null;
+}
+
+/**
  * Detect all possible paths for a game
  */
 function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
@@ -478,6 +658,13 @@ function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
       foundPath = findEpicGame(installPath.path);
       results.push({
         platform: 'epic',
+        path: foundPath || '',
+        exists: !!foundPath,
+      });
+    } else if (installPath.type === 'rockstar') {
+      foundPath = findRockstarGame(installPath.path);
+      results.push({
+        platform: 'rockstar',
         path: foundPath || '',
         exists: !!foundPath,
       });
@@ -577,6 +764,16 @@ export function getAllInstalledGamePaths(): string[] {
     }
   } catch (error) {
     console.error('[GameDetector] Error getting Epic games:', error);
+  }
+
+  // Get all Rockstar Games
+  try {
+    const rockstarGames = getRockstarGamePaths();
+    for (const [folderName] of rockstarGames.entries()) {
+      installedPaths.push(folderName);
+    }
+  } catch (error) {
+    console.error('[GameDetector] Error getting Rockstar games:', error);
   }
 
   console.log(`[GameDetector] Found ${installedPaths.length} installed game paths on system`);

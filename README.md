@@ -12,9 +12,67 @@
 [![Windows Setup](https://img.shields.io/badge/Setup-завантажити-00f2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-win-Setup.exe)
 [![Windows Portable](https://img.shields.io/badge/Portable-завантажити-00a2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-win-Portable.exe)
 
+<details>
+<summary>⚠️ Браузер або Windows можуть заблокувати завантаження/встановлення</summary>
+
+**Попередження в браузері при завантаженні**
+
+Браузер (Chrome, Edge, Firefox) може показати попередження, що файл «не перевірено» або «може бути небезпечним». Це тому, що файл не має цифрового підпису — просто натисни **«Зберегти»** або **«Все одно завантажити»**.
+
+**Попередження Windows при запуску**
+
+При спробі запустити інсталятор Windows може показати **«Windows protected your PC»** (Windows захистив ваш ПК) або **SmartScreen** заблокує запуск.
+
+**Чому це відбувається?**
+
+Microsoft вимагає, щоб програми були підписані цифровим сертифікатом (EV Code Signing Certificate коштує від $200-400/рік). LB Launcher — безкоштовний open-source проєкт, тому ми не маємо такого сертифіката. Windows SmartScreen автоматично блокує непідписані програми, особливо якщо вони ще не набрали «репутацію» (достатню кількість завантажень).
+
+**Як запустити інсталятор?**
+
+1. У вікні попередження натисни **«More info»** (Докладніше)
+2. Потім натисни **«Run anyway»** (Усе одно запустити)
+
+Або через властивості файлу:
+1. Клацни правою кнопкою миші на завантаженому файлі
+2. Обери **«Властивості»**
+3. Внизу вікна постав галочку **«Розблокувати»** (Unblock)
+4. Натисни **«OK»** і запусти файл знову
+
+</details>
+
 ### macOS
 [![macOS Apple Silicon](https://img.shields.io/badge/Apple_Silicon-завантажити-a855f7?logo=apple&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-1.19.4-arm64.dmg)
 [![macOS Intel](https://img.shields.io/badge/Intel-завантажити-9333ea?logo=apple&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-1.19.4-x64.dmg)
+
+<details>
+<summary>⚠️ macOS може показати, що додаток «пошкоджено»</summary>
+
+Якщо при спробі запустити додаток з'являється повідомлення **«LB Launcher пошкоджено і його не вдається відкрити»** — не хвилюйся, із файлом все гаразд.
+
+**Чому це відбувається?**
+
+Apple вимагає, щоб усі додатки були підписані сертифікатом розробника Apple Developer Program ($99/рік). LB Launcher — безкоштовний open-source проєкт, тому ми не маємо цього сертифіката. macOS за замовчуванням блокує такі додатки через систему безпеки **Gatekeeper**.
+
+**Як це вирішити?**
+
+Відкрий **Terminal** (Програми → Утиліти → Terminal) і виконай команду:
+
+```bash
+xattr -cr /Applications/LB\ Launcher.app
+```
+
+**Що робить ця команда?**
+
+- `xattr` — утиліта для роботи з розширеними атрибутами файлів у macOS
+- `-c` — очищає (clear) всі розширені атрибути
+- `-r` — рекурсивно застосовує до всіх файлів всередині .app
+- Команда видаляє карантинний атрибут `com.apple.quarantine`, який macOS додає до завантажених з інтернету файлів
+
+Після виконання команди додаток запуститься без проблем.
+
+> Це стандартна процедура для багатьох open-source додатків на macOS.
+
+</details>
 
 ### Linux
 [![Linux AppImage](https://img.shields.io/badge/AppImage-завантажити-10b981?logo=linux&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-linux.AppImage)
@@ -175,6 +233,7 @@ LB Launcher — **відкритий проєкт з відкритим вихі
 3. Встанови або запусти лаунчер.
 4. Обери гру, локалізацію та натисни «Встановити».
 5. Запускай гру — і насолоджуйся українською. 💛
+
 ---
 
 ## 🧑‍💻 Для розробників

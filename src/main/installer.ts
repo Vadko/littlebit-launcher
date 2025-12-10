@@ -4,7 +4,7 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
-import StreamZip from 'node-stream-zip';
+import * as unzipper from 'unzipper';
 import got from 'got';
 import { getFirstAvailableGamePath } from './game-detector';
 import type { InstallationInfo, Game, DownloadProgress, InstallationStatus } from '../shared/types';
@@ -678,21 +678,30 @@ async function downloadFileAttempt(
 }
 
 /**
- * Extract ZIP archive with UTF-8 support
+ * Extract ZIP archive with support for all compression methods and UTF-8/Cyrillic filenames
+ * Uses unzipper library which supports LZMA, Deflate64, and other methods
  */
 async function extractArchive(archivePath: string, extractPath: string): Promise<void> {
+  await mkdir(extractPath, { recursive: true });
+
   try {
-    await mkdir(extractPath, { recursive: true });
+    console.log(`[Installer] Extracting archive: ${archivePath}`);
+    console.log(`[Installer] Target directory: ${extractPath}`);
 
-    const zip = new StreamZip.async({ file: archivePath });
-    await zip.extract(null, extractPath);
-    await zip.close();
-
-    console.log(`Extracted archive to: ${extractPath}`);
+    await new Promise<void>((resolve, reject) => {
+      fs.createReadStream(archivePath)
+        .pipe(unzipper.Extract({ path: extractPath }))
+        .on('close', () => {
+          console.log(`[Installer] Extracted archive to: ${extractPath}`);
+          resolve();
+        })
+        .on('error', (err) => {
+          reject(err);
+        });
+    });
   } catch (error) {
-    throw new Error(
-      `Помилка розпакування архіву: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Помилка розпакування архіву: ${errorMessage}`);
   }
 }
 
@@ -1327,19 +1336,37 @@ export async function getAllInstalledGameIds(): Promise<string[]> {
 let installedGameIdsCache: string[] | null = null;
 
 /**
- * Verify file hash (SHA-256)
+ * Verify file hash using streaming for large files
+ * Supports both MD5 (ETag from Supabase) and SHA-256 (legacy)
  */
 async function verifyFileHash(filePath: string, expectedHash: string): Promise<boolean> {
   try {
-    const fileBuffer = await fs.promises.readFile(filePath);
-    const hash = createHash('sha256');
-    hash.update(fileBuffer);
-    const actualHash = hash.digest('hex');
+    // Determine hash algorithm based on hash length
+    // MD5 = 32 chars, SHA-256 = 64 chars
+    const algorithm = expectedHash.length === 32 ? 'md5' : 'sha256';
+    console.log(`[Hash] Using ${algorithm.toUpperCase()} algorithm (hash length: ${expectedHash.length})`);
 
-    console.log(`[Hash] Expected: ${expectedHash}`);
-    console.log(`[Hash] Actual:   ${actualHash}`);
+    // Use streaming to handle files larger than 2GB
+    const hash = createHash(algorithm);
+    const stream = fs.createReadStream(filePath);
 
-    return actualHash === expectedHash;
+    return new Promise((resolve) => {
+      stream.on('data', (chunk) => {
+        hash.update(chunk);
+      });
+
+      stream.on('end', () => {
+        const actualHash = hash.digest('hex');
+        console.log(`[Hash] Expected: ${expectedHash}`);
+        console.log(`[Hash] Actual:   ${actualHash}`);
+        resolve(actualHash === expectedHash);
+      });
+
+      stream.on('error', (error) => {
+        console.error('[Hash] Error reading file for hash:', error);
+        resolve(false);
+      });
+    });
   } catch (error) {
     console.error('[Hash] Error verifying file hash:', error);
     return false;
