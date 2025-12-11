@@ -1,5 +1,6 @@
 import { app, session } from 'electron';
 import { isLinux, isMacOS } from './utils/platform';
+import { initLogger } from './utils/logger';
 
 // Steam Deck / Gaming Mode support
 // Disable GPU sandbox to prevent issues with Gamescope
@@ -31,6 +32,9 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  // Initialize logger early to capture all logs
+  initLogger();
+
   app.on('second-instance', () => {
     // When someone tries to run a second instance, focus our window instead
     const mainWindow = getMainWindow();

@@ -13,8 +13,6 @@ type GameInsertParams = {
     ? number // boolean перетворюється на 0/1 для SQLite
     : K extends 'platforms' | 'install_paths'
     ? string | null // JSON.stringify для SQLite
-    : K extends 'archive_size'
-    ? number | null // string в Supabase, але number в SQLite
     : SupabaseDatabase['public']['Tables']['games']['Row'][K];
 };
 
@@ -58,7 +56,7 @@ export class GamesRepository {
       approved_by: game.approved_by ?? null,
       archive_hash: game.archive_hash ?? null,
       archive_path: game.archive_path ?? null,
-      archive_size: game.archive_size ? Number(game.archive_size) : null,
+      archive_size: game.archive_size ?? null,
       banner_path: game.banner_path ?? null,
       created_at: game.created_at ?? null,
       created_by: game.created_by ?? null,

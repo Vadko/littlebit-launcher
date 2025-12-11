@@ -75,12 +75,21 @@ contextBridge.exposeInMainWorld('windowControls', {
   isVisible: () => ipcRenderer.invoke('window:is-visible'),
   showSystemNotification: (options: { title: string; body: string }) =>
     ipcRenderer.invoke('show-system-notification', options),
+  clearCacheAndRestart: () => ipcRenderer.invoke('clear-cache-and-restart'),
 });
 
 // Liquid Glass API
 contextBridge.exposeInMainWorld('liquidGlassAPI', {
   isSupported: () => ipcRenderer.invoke('liquid-glass:is-supported'),
   toggle: (enabled: boolean) => ipcRenderer.invoke('liquid-glass:toggle', enabled),
+});
+
+// Logger API
+contextBridge.exposeInMainWorld('loggerAPI', {
+  setEnabled: (enabled: boolean) => ipcRenderer.invoke('logger:set-enabled', enabled),
+  isEnabled: () => ipcRenderer.invoke('logger:is-enabled'),
+  openLogsFolder: () => ipcRenderer.invoke('logger:open-logs-folder'),
+  log: (level: string, message: string, ...args: unknown[]) => ipcRenderer.send('logger:log', level, message, args),
 });
 
 // Handle liquid glass preference request from main process

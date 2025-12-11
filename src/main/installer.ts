@@ -1160,13 +1160,50 @@ export async function uninstallTranslation(game: Game): Promise<void> {
 
 /**
  * Check if translation is installed and get installation info
+ * Priority: Library paths (Steam, GOG, etc.) > Manual/cached paths
  */
 export async function checkInstallation(game: Game): Promise<InstallationInfo | null> {
   try {
     console.log(`[Installer] Checking installation for: ${game.id}`);
 
-    // First, try to find installation info from previous installations
-    // This helps when game was installed via manual folder selection
+    // PRIORITY 1: Check standard library paths first (Steam, GOG, Epic, etc.)
+    // This ensures that if user installed game via Steam after manual installation,
+    // the library path takes priority
+    const gamePath = getFirstAvailableGamePath(game.install_paths || []);
+
+    if (gamePath && gamePath.exists) {
+      // Check for installation info file in library path
+      const infoPath = path.join(gamePath.path, INSTALLATION_INFO_FILE);
+
+      if (fs.existsSync(infoPath)) {
+        // Read installation info from library path
+        const infoContent = await fs.promises.readFile(infoPath, 'utf-8');
+        const info: InstallationInfo = JSON.parse(infoContent);
+
+        console.log(
+          `[Installer] Translation found in library path: ${gamePath.path}, version ${info.version}`
+        );
+
+        // Update cache to point to library path (important for consistency)
+        const userDataPath = app.getPath('userData');
+        const installInfoDir = path.join(userDataPath, 'installation-cache');
+        const cacheInfoPath = path.join(installInfoDir, `${game.id}.json`);
+
+        try {
+          await mkdir(installInfoDir, { recursive: true });
+          await fs.promises.writeFile(cacheInfoPath, JSON.stringify(info, null, 2), 'utf-8');
+          console.log(`[Installer] Updated cache with library path: ${cacheInfoPath}`);
+          invalidateInstalledGameIdsCache();
+        } catch (cacheError) {
+          console.warn('[Installer] Failed to update cache:', cacheError);
+        }
+
+        return info;
+      }
+    }
+
+    // PRIORITY 2: Check cached/manual installation paths
+    // Only if game is NOT found in standard library locations
     const previousInstallInfoPath = getPreviousInstallPath(game.id);
     if (previousInstallInfoPath && fs.existsSync(previousInstallInfoPath)) {
       try {
@@ -1176,6 +1213,8 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
         // Verify the path still exists AND the installation info file exists in game folder
         const gameInfoPath = path.join(info.gamePath, INSTALLATION_INFO_FILE);
         if (fs.existsSync(info.gamePath) && fs.existsSync(gameInfoPath)) {
+          // Additional check: if this cached path is NOT a library path, use it
+          // (library paths were already checked above and didn't have translation)
           console.log(
             `[Installer] Found previous installation at custom path: ${info.gamePath}`
           );
@@ -1194,48 +1233,14 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
       }
     }
 
-    // Detect game installation path from standard locations
-    const gamePath = getFirstAvailableGamePath(game.install_paths || []);
-
+    // No translation found
     if (!gamePath || !gamePath.exists) {
       console.log(`[Installer] Game not installed on this computer`);
-      return null;
-    }
-
-    // Check for installation info file
-    const infoPath = path.join(gamePath.path, INSTALLATION_INFO_FILE);
-
-    if (!fs.existsSync(infoPath)) {
+    } else {
       console.log(`[Installer] No translation installed (info file not found)`);
-      return null;
     }
 
-    // Read installation info
-    const infoContent = await fs.promises.readFile(infoPath, 'utf-8');
-    const info: InstallationInfo = JSON.parse(infoContent);
-
-    console.log(
-      `[Installer] Translation installed: version ${info.version}, installed at ${info.installedAt}`
-    );
-
-    // Save to cache if not already cached (auto-discovery of installed translations)
-    const userDataPath = app.getPath('userData');
-    const installInfoDir = path.join(userDataPath, 'installation-cache');
-    const cacheInfoPath = path.join(installInfoDir, `${game.id}.json`);
-    
-    if (!fs.existsSync(cacheInfoPath)) {
-      try {
-        await mkdir(installInfoDir, { recursive: true });
-        await fs.promises.writeFile(cacheInfoPath, JSON.stringify(info, null, 2), 'utf-8');
-        console.log(`[Installer] Auto-cached installation info to: ${cacheInfoPath}`);
-        // Invalidate cache so next query will pick up new entry
-        invalidateInstalledGameIdsCache();
-      } catch (cacheError) {
-        console.warn('[Installer] Failed to auto-cache installation info:', cacheError);
-      }
-    }
-
-    return info;
+    return null;
   } catch (error) {
     console.error('[Installer] Error checking installation:', error);
     return null;
@@ -1336,40 +1341,103 @@ export async function getAllInstalledGameIds(): Promise<string[]> {
 let installedGameIdsCache: string[] | null = null;
 
 /**
- * Verify file hash using streaming for large files
- * Supports both MD5 (ETag from Supabase) and SHA-256 (legacy)
+ * Verify file hash - supports both new fingerprint hash and legacy full SHA-256
+ * For files ≤100MB: full SHA-256 hash
+ * For files >100MB: try fingerprint first, fallback to full SHA-256 for backward compatibility
  */
 async function verifyFileHash(filePath: string, expectedHash: string): Promise<boolean> {
+  const FULL_HASH_LIMIT = 100 * 1024 * 1024; // 100MB
+  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+
   try {
-    // Determine hash algorithm based on hash length
-    // MD5 = 32 chars, SHA-256 = 64 chars
-    const algorithm = expectedHash.length === 32 ? 'md5' : 'sha256';
-    console.log(`[Hash] Using ${algorithm.toUpperCase()} algorithm (hash length: ${expectedHash.length})`);
+    const stats = fs.statSync(filePath);
+    const fileSize = stats.size;
 
-    // Use streaming to handle files larger than 2GB
-    const hash = createHash(algorithm);
-    const stream = fs.createReadStream(filePath);
+    // Small files - always use full SHA-256
+    if (fileSize <= FULL_HASH_LIMIT) {
+      console.log(`[Hash] Small file (${(fileSize / 1024 / 1024).toFixed(1)}MB), using full SHA-256`);
+      const actualHash = await calculateFullHash(filePath);
+      console.log(`[Hash] Expected: ${expectedHash}`);
+      console.log(`[Hash] Actual:   ${actualHash}`);
+      return actualHash === expectedHash;
+    }
 
-    return new Promise((resolve) => {
-      stream.on('data', (chunk) => {
-        hash.update(chunk);
-      });
+    // Large files - try fingerprint hash first (new format)
+    console.log(
+      `[Hash] Large file (${(fileSize / 1024 / 1024).toFixed(1)}MB), trying fingerprint hash first`
+    );
+    const fingerprintHash = await calculateFingerprintHash(filePath, fileSize, CHUNK_SIZE);
+    console.log(`[Hash] Expected:    ${expectedHash}`);
+    console.log(`[Hash] Fingerprint: ${fingerprintHash}`);
 
-      stream.on('end', () => {
-        const actualHash = hash.digest('hex');
-        console.log(`[Hash] Expected: ${expectedHash}`);
-        console.log(`[Hash] Actual:   ${actualHash}`);
-        resolve(actualHash === expectedHash);
-      });
+    if (fingerprintHash === expectedHash) {
+      console.log(`[Hash] ✓ Fingerprint hash matched`);
+      return true;
+    }
 
-      stream.on('error', (error) => {
-        console.error('[Hash] Error reading file for hash:', error);
-        resolve(false);
-      });
-    });
+    // Fallback to full SHA-256 for backward compatibility with old hashes
+    console.log(`[Hash] Fingerprint mismatch, trying full SHA-256 (legacy)...`);
+    const fullHash = await calculateFullHash(filePath);
+    console.log(`[Hash] Full SHA-256: ${fullHash}`);
+
+    if (fullHash === expectedHash) {
+      console.log(`[Hash] ✓ Full SHA-256 hash matched (legacy)`);
+      return true;
+    }
+
+    console.log(`[Hash] ✗ No hash matched`);
+    return false;
   } catch (error) {
     console.error('[Hash] Error verifying file hash:', error);
     return false;
+  }
+}
+
+/**
+ * Calculate full SHA-256 hash using streaming
+ */
+async function calculateFullHash(filePath: string): Promise<string> {
+  const hash = createHash('sha256');
+  const stream = fs.createReadStream(filePath);
+
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', reject);
+  });
+}
+
+/**
+ * Calculate fingerprint hash for large files
+ * Hash of: first 10MB + last 10MB + file size (as 8-byte little-endian)
+ */
+async function calculateFingerprintHash(
+  filePath: string,
+  fileSize: number,
+  chunkSize: number
+): Promise<string> {
+  const fd = fs.openSync(filePath, 'r');
+
+  try {
+    // Read first chunk
+    const firstChunk = Buffer.alloc(chunkSize);
+    fs.readSync(fd, firstChunk, 0, chunkSize, 0);
+
+    // Read last chunk
+    const lastChunk = Buffer.alloc(chunkSize);
+    fs.readSync(fd, lastChunk, 0, chunkSize, fileSize - chunkSize);
+
+    // Create size buffer (8 bytes, little-endian, like browser BigUint64)
+    const sizeBuffer = Buffer.alloc(8);
+    sizeBuffer.writeBigUInt64LE(BigInt(fileSize), 0);
+
+    // Combine and hash
+    const combined = Buffer.concat([firstChunk, lastChunk, sizeBuffer]);
+    const hash = createHash('sha256');
+    hash.update(combined);
+    return hash.digest('hex');
+  } finally {
+    fs.closeSync(fd);
   }
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, RefreshCw, FolderOpen } from 'lucide-react';
 import { Modal } from '../Modal/Modal';
 import { Switch } from '../ui/Switch';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -37,6 +37,10 @@ export const SettingsModal: React.FC = () => {
   const toggleShowAdultGames = useSettingsStore((state) => state.toggleShowAdultGames);
   const liquidGlassEnabled = useSettingsStore((state) => state.liquidGlassEnabled);
   const toggleLiquidGlass = useSettingsStore((state) => state.toggleLiquidGlass);
+  // Debug settings
+  const isDebugMode = useSettingsStore((state) => state.isDebugMode);
+  const saveLogsToFile = useSettingsStore((state) => state.saveLogsToFile);
+  const toggleSaveLogsToFile = useSettingsStore((state) => state.toggleSaveLogsToFile);
 
   // Check if liquid glass is supported
   const [isLiquidGlassSupported, setIsLiquidGlassSupported] = useState(false);
@@ -58,6 +62,27 @@ export const SettingsModal: React.FC = () => {
   const handleOpenFeedback = useCallback(() => {
     window.electronAPI?.openExternal('https://t.me/lb_launcher_bot');
   }, []);
+
+  const handleClearCacheAndRestart = useCallback(async () => {
+    await window.windowControls?.clearCacheAndRestart();
+  }, []);
+
+  const handleToggleSaveLogsToFile = useCallback(async () => {
+    const newValue = !saveLogsToFile;
+    toggleSaveLogsToFile();
+    await window.loggerAPI?.setEnabled(newValue);
+  }, [saveLogsToFile, toggleSaveLogsToFile]);
+
+  const handleOpenLogsFolder = useCallback(async () => {
+    await window.loggerAPI?.openLogsFolder();
+  }, []);
+
+  // Sync logger state when modal opens
+  useEffect(() => {
+    if (isSettingsModalOpen && isDebugMode()) {
+      window.loggerAPI?.setEnabled(saveLogsToFile);
+    }
+  }, [isSettingsModalOpen, saveLogsToFile, isDebugMode]);
 
   return (
     <Modal
@@ -164,6 +189,52 @@ export const SettingsModal: React.FC = () => {
           enabled={showAdultGames}
           onChange={toggleShowAdultGames}
         />
+
+        {/* Clear cache and restart */}
+        <button
+          onClick={handleClearCacheAndRestart}
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-glass border border-border hover:bg-glass-hover hover:border-border-hover transition-all duration-300"
+        >
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
+            <RefreshCw size={20} className="text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <h4 className="text-sm font-semibold text-white">Очистити кеш і перезапустити</h4>
+            <p className="text-xs text-text-muted">Видалити тимчасові дані та перезавантажити додаток</p>
+          </div>
+        </button>
+
+        {/* Debug settings - only visible in debug mode */}
+        {isDebugMode() && (
+          <>
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-semibold text-yellow-500 mb-4">Режим розробника</h3>
+              <div className="space-y-4">
+                <SettingItem
+                  id="save-logs"
+                  title="Зберігати логи"
+                  description="Записувати всі логи у файл для діагностики"
+                  enabled={saveLogsToFile}
+                  onChange={handleToggleSaveLogsToFile}
+                />
+                {saveLogsToFile && (
+                  <button
+                    onClick={handleOpenLogsFolder}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-glass border border-border hover:bg-glass-hover hover:border-border-hover transition-all duration-300"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                      <FolderOpen size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h4 className="text-sm font-semibold text-white">Відкрити папку з логами</h4>
+                      <p className="text-xs text-text-muted">Переглянути збережені файли логів</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );

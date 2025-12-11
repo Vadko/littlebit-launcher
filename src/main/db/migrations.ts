@@ -49,6 +49,35 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    name: 'fix_archive_size_nan_values',
+    up: (db) => {
+      // Check if this migration was already run by looking for marker in sync_metadata
+      const migrationDone = db.prepare(
+        "SELECT COUNT(*) as count FROM sync_metadata WHERE key = 'migration_fix_archive_size_done'"
+      ).get() as { count: number };
+
+      if (migrationDone.count > 0) {
+        return; // Already done
+      }
+
+      // Fix archive_size values that were incorrectly converted to NaN
+      // This happened because Number("150.00 MB") returns NaN
+      // Force full resync to get correct string values from Supabase
+      console.log('[Migrations] Running: fix_archive_size_nan_values');
+
+      // Reset sync metadata to force full resync
+      db.exec(`DELETE FROM sync_metadata WHERE key = 'last_sync_timestamp'`);
+
+      // Mark migration as done
+      db.exec(`
+        INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
+        VALUES ('migration_fix_archive_size_done', '1', datetime('now'))
+      `);
+
+      console.log('[Migrations] Completed: fix_archive_size_nan_values - will resync on next startup');
+    },
+  },
 ];
 
 /**
