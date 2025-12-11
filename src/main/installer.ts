@@ -6,7 +6,10 @@ import { exec } from 'child_process';
 import { createHash } from 'crypto';
 import got from 'got';
 import { extractFull } from 'node-7z';
-import { path7za } from '7zip-bin';
+import { path7z as originalPath7z } from '7zip-bin-full';
+
+// Fix for ASAR: replace .asar with .asar.unpacked for spawnable binaries
+const path7z = originalPath7z.replace('app.asar', 'app.asar.unpacked');
 import { getFirstAvailableGamePath } from './game-detector';
 import type { InstallationInfo, Game, DownloadProgress, InstallationStatus } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
@@ -733,7 +736,7 @@ async function extractArchive(
   return new Promise<void>((resolve, reject) => {
     // Use 7-Zip for extraction (supports all compression methods including LZMA)
     const stream = extractFull(archivePath, extractPath, {
-      $bin: path7za,
+      $bin: path7z,
       $progress: true,
     });
 

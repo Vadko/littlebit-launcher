@@ -23,7 +23,7 @@ module.exports = {
 
   icon: 'resources/icon.png',
 
-  asarUnpack: ['**/*.node', '**/7zip-bin/**'],
+  asarUnpack: ['**/*.node', '**/7zip-bin-full/**'],
 
   electronLanguages: ['en-US', 'uk'],
 

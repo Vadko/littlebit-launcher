@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      7zip-bin:
-        specifier: ^5.2.0
-        version: 5.2.0
+      7zip-bin-full:
+        specifier: ^25.1.2
+        version: 25.1.2
       '@node-steam/vdf':
         specifier: ^2.2.0
         version: 2.2.0
@@ -125,6 +125,9 @@ importers:
         version: 0.24.0(rollup@4.53.3)(vite@5.4.21(@types/node@20.19.25))
 
 packages:
+
+  7zip-bin-full@25.1.2:
+    resolution: {integrity: sha512-6+9Te5sNqC1vZYKuzS9OhP9HMLnDA4EOlG9C3n4ieq2caAY/bR98x8EzExsjLM6Ajtje+MRKkdFvbsodPtKS9g==}
 
   7zip-bin@5.2.0:
     resolution: {integrity: sha512-ukTPVhqG4jNzMro2qA9HSCSSVJN3aN7tlb+hfqYCt3ER0yWroeA2VR38MNrOHLQ/cVj+DaIMad0kFCtWWowh/A==}
@@ -3529,6 +3532,8 @@ packages:
         optional: true
 
 snapshots:
+
+  7zip-bin-full@25.1.2: {}
 
   7zip-bin@5.2.0: {}
 
