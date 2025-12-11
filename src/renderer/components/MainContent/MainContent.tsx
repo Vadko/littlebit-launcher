@@ -25,9 +25,9 @@ export const MainContent: React.FC = () => {
     setInstallationProgress,
     clearInstallationProgress,
     checkInstallationStatus,
-    getInstallationInfo,
     isCheckingInstallationStatus,
     isGameDetected,
+    installedGames,
   } = useStore();
   const { showModal } = useModalStore();
   const { showConfirm } = useConfirmStore();
@@ -44,7 +44,7 @@ export const MainContent: React.FC = () => {
   const installProgress = gameProgress?.progress || 0;
   const downloadProgress = gameProgress?.downloadProgress || null;
   const statusMessage = gameProgress?.statusMessage || null;
-  const installationInfo = selectedGame ? getInstallationInfo(selectedGame.id) : undefined;
+  const installationInfo = selectedGame ? installedGames.get(selectedGame.id) : undefined;
   const isCheckingInstallation = selectedGame ? isCheckingInstallationStatus(selectedGame.id) : false;
 
   const isGameInstalledOnSystem = selectedGame ? isGameDetected(selectedGame.id) : false;
@@ -197,7 +197,8 @@ export const MainContent: React.FC = () => {
       // Clear pending options on success
       setPendingInstallOptions(undefined);
 
-      checkInstallationStatus(selectedGame.id, selectedGame);
+      // Note: checkInstallationStatus is called automatically via InstallationWatcher
+      // when the installation cache file changes, so no need to call it manually
       useStore.getState().clearGameUpdate(selectedGame.id);
 
       const message = isUpdateAvailable
@@ -219,7 +220,7 @@ export const MainContent: React.FC = () => {
     } finally {
       clearInstallationProgress(selectedGame.id);
     }
-  }, [selectedGame, isUpdateAvailable, createBackupBeforeInstall, pendingInstallOptions, setInstallationProgress, checkInstallationStatus, clearInstallationProgress, showModal, showConfirm]);
+  }, [selectedGame, isUpdateAvailable, createBackupBeforeInstall, pendingInstallOptions, setInstallationProgress, clearInstallationProgress, showModal, showConfirm]);
 
   const handleInstall = useCallback(async (customGamePath?: string) => {
     if (!selectedGame || isInstalling || isCheckingInstallation) return;
@@ -361,7 +362,8 @@ export const MainContent: React.FC = () => {
             return;
           }
 
-          checkInstallationStatus(selectedGame.id, selectedGame);
+          // Note: checkInstallationStatus is called automatically via InstallationWatcher
+          // when the installation cache file changes, so no need to call it manually
 
           showModal({
             title: 'Українізатор видалено',
@@ -380,7 +382,7 @@ export const MainContent: React.FC = () => {
         }
       },
     });
-  }, [selectedGame, installationInfo, setInstallationProgress, checkInstallationStatus, clearInstallationProgress, showModal, showConfirm]);
+  }, [selectedGame, installationInfo, setInstallationProgress, clearInstallationProgress, showModal, showConfirm]);
 
   const getInstallButtonText = (): string => {
     if (!isOnline) return '❌ Немає інтернету';

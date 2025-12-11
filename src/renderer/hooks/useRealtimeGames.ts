@@ -28,6 +28,7 @@ export function useRealtimeGames() {
 
     // Підписатися на оновлення
     console.log('[useRealtimeGames] Subscribing to game updates');
-    window.electronAPI.onGameUpdated(handleGameUpdate);
+    const unsubscribe = window.electronAPI.onGameUpdated(handleGameUpdate);
+    return unsubscribe;
   }, [selectedGame, setSelectedGame]);
 }

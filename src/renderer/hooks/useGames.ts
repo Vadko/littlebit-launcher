@@ -96,6 +96,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       };
 
       const result = await window.electronAPI.fetchGames(params);
+      console.log('[useGames] Setting games:', result.games.length, 'total:', result.total);
       setGames(result.games);
       setTotal(result.total);
     } catch (error) {
@@ -169,6 +170,19 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
           }
         }
 
+        // Для спеціальних фільтрів (installed-games, installed-translations)
+        // просто оновлюємо дані гри якщо вона вже в списку, не додаємо/видаляємо
+        if (filter === 'installed-games' || filter === 'installed-translations') {
+          if (index !== -1) {
+            // Гра є в списку - оновити дані
+            const newGames = [...prevGames];
+            newGames[index] = updatedGame;
+            return newGames;
+          }
+          // Гра не в списку - не додаємо (membership визначається окремими listeners)
+          return prevGames;
+        }
+
         // Перевірити чи гра відповідає поточному фільтру пошуку
         const matchesSearch = !searchQuery ||
           updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -208,7 +222,8 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       });
     };
 
-    window.electronAPI.onGameUpdated(handleGameUpdate);
+    const unsubscribe = window.electronAPI.onGameUpdated(handleGameUpdate);
+    return unsubscribe;
   }, [searchQuery, filter]);
 
   // Слухати realtime видалення ігор
@@ -228,34 +243,46 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       });
     };
 
-    window.electronAPI.onGameRemoved(handleGameRemoved);
+    const unsubscribe = window.electronAPI.onGameRemoved(handleGameRemoved);
+    return unsubscribe;
   }, []);
 
   // Слухати зміни у встановлених українізаторах (install/uninstall)
+  // Використовуємо ref щоб уникнути проблем з closure та накопиченням listeners
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+
+  const loadGamesRef = useRef(loadGames);
+  loadGamesRef.current = loadGames;
+
   useEffect(() => {
     if (!window.electronAPI?.onInstalledGamesChanged) return;
-    if (filter !== 'installed-translations') return;
 
     const handleInstalledGamesChanged = () => {
+      // Перевіряємо актуальний фільтр через ref
+      if (filterRef.current !== 'installed-translations') return;
       console.log('[useGames] Installed translations changed, reloading list');
-      loadGames();
+      loadGamesRef.current();
     };
 
-    window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
-  }, [filter, loadGames]);
+    const unsubscribe = window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
+    return unsubscribe;
+  }, []);
 
   // Слухати зміни Steam бібліотеки (для вкладки встановлених ігор)
   useEffect(() => {
     if (!window.electronAPI?.onSteamLibraryChanged) return;
-    if (filter !== 'installed-games') return;
 
     const handleSteamLibraryChanged = () => {
+      // Перевіряємо актуальний фільтр через ref
+      if (filterRef.current !== 'installed-games') return;
       console.log('[useGames] Steam library changed, reloading installed games list');
-      loadGames();
+      loadGamesRef.current();
     };
 
-    window.electronAPI.onSteamLibraryChanged(handleSteamLibraryChanged);
-  }, [filter, loadGames]);
+    const unsubscribe = window.electronAPI.onSteamLibraryChanged(handleSteamLibraryChanged);
+    return unsubscribe;
+  }, []);
 
   return {
     games,

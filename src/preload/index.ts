@@ -18,43 +18,65 @@ const electronAPI: ElectronAPI = {
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {
-    ipcRenderer.on('install-progress', (_, progress) => callback(progress));
+    const handler = (_: unknown, progress: number) => callback(progress);
+    ipcRenderer.on('install-progress', handler);
+    return () => ipcRenderer.removeListener('install-progress', handler);
   },
   onDownloadProgress: (callback) => {
-    ipcRenderer.on('download-progress', (_, progress) => callback(progress));
+    const handler = (_: unknown, progress: Parameters<typeof callback>[0]) => callback(progress);
+    ipcRenderer.on('download-progress', handler);
+    return () => ipcRenderer.removeListener('download-progress', handler);
   },
   onInstallationStatus: (callback) => {
-    ipcRenderer.on('installation-status', (_, status) => callback(status));
+    const handler = (_: unknown, status: Parameters<typeof callback>[0]) => callback(status);
+    ipcRenderer.on('installation-status', handler);
+    return () => ipcRenderer.removeListener('installation-status', handler);
   },
   // Auto-updater
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   onUpdateAvailable: (callback) => {
-    ipcRenderer.on('update-available', (_, info) => callback(info));
+    const handler = (_: unknown, info: Parameters<typeof callback>[0]) => callback(info);
+    ipcRenderer.on('update-available', handler);
+    return () => ipcRenderer.removeListener('update-available', handler);
   },
   onUpdateDownloaded: (callback) => {
-    ipcRenderer.on('update-downloaded', (_, info) => callback(info));
+    const handler = (_: unknown, info: Parameters<typeof callback>[0]) => callback(info);
+    ipcRenderer.on('update-downloaded', handler);
+    return () => ipcRenderer.removeListener('update-downloaded', handler);
   },
   onUpdateProgress: (callback) => {
-    ipcRenderer.on('update-progress', (_, progress) => callback(progress));
+    const handler = (_: unknown, progress: Parameters<typeof callback>[0]) => callback(progress);
+    ipcRenderer.on('update-progress', handler);
+    return () => ipcRenderer.removeListener('update-progress', handler);
   },
   onUpdateError: (callback) => {
-    ipcRenderer.on('update-error', (_, error) => callback(error));
+    const handler = (_: unknown, error: Parameters<typeof callback>[0]) => callback(error);
+    ipcRenderer.on('update-error', handler);
+    return () => ipcRenderer.removeListener('update-error', handler);
   },
   // Real-time updates (автоматично керуються в main process)
   onGameUpdated: (callback) => {
-    ipcRenderer.on('game-updated', (_, game) => callback(game));
+    const handler = (_: unknown, game: Parameters<typeof callback>[0]) => callback(game);
+    ipcRenderer.on('game-updated', handler);
+    return () => ipcRenderer.removeListener('game-updated', handler);
   },
   onGameRemoved: (callback: (gameId: string) => void) => {
-    ipcRenderer.on('game-removed', (_, gameId) => callback(gameId));
+    const handler = (_: unknown, gameId: string) => callback(gameId);
+    ipcRenderer.on('game-removed', handler);
+    return () => ipcRenderer.removeListener('game-removed', handler);
   },
   // Game detection
   onSteamLibraryChanged: (callback: () => void) => {
-    ipcRenderer.on('steam-library-changed', callback);
+    const handler = () => callback();
+    ipcRenderer.on('steam-library-changed', handler);
+    return () => ipcRenderer.removeListener('steam-library-changed', handler);
   },
   onInstalledGamesChanged: (callback: () => void) => {
-    ipcRenderer.on('installed-games-changed', callback);
+    const handler = () => callback();
+    ipcRenderer.on('installed-games-changed', handler);
+    return () => ipcRenderer.removeListener('installed-games-changed', handler);
   },
   // Game launcher
   launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
@@ -70,7 +92,9 @@ contextBridge.exposeInMainWorld('windowControls', {
   maximize: () => ipcRenderer.send('window:maximize'),
   close: () => ipcRenderer.send('window:close'),
   onMaximizedChange: (callback: (isMaximized: boolean) => void) => {
-    ipcRenderer.on('window:maximized', (_, isMaximized) => callback(isMaximized));
+    const handler = (_: unknown, isMaximized: boolean) => callback(isMaximized);
+    ipcRenderer.on('window:maximized', handler);
+    return () => ipcRenderer.removeListener('window:maximized', handler);
   },
   isVisible: () => ipcRenderer.invoke('window:is-visible'),
   showSystemNotification: (options: { title: string; body: string }) =>

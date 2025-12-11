@@ -4,6 +4,8 @@ import { app, BrowserWindow } from 'electron';
 import { invalidateInstalledGameIdsCache } from './installer';
 
 let watcher: fs.FSWatcher | null = null;
+let debounceTimer: NodeJS.Timeout | null = null;
+let pendingChanges = new Set<string>();
 
 /**
  * Start watching installation-cache directory for changes
@@ -27,15 +29,29 @@ export function startInstallationWatcher(mainWindow: BrowserWindow | null): void
   console.log('[InstallationWatcher] Starting directory watcher for:', installInfoDir);
 
   // Watch for directory changes (file additions/deletions)
-  watcher = fs.watch(installInfoDir, (eventType, filename) => {
+  watcher = fs.watch(installInfoDir, (_eventType, filename) => {
     if (filename && filename.endsWith('.json')) {
-      console.log('[InstallationWatcher] Installation cache changed:', eventType, filename);
+      // Collect pending changes and debounce
+      pendingChanges.add(filename);
 
-      // Invalidate the installed game IDs cache
-      invalidateInstalledGameIdsCache();
+      // Clear existing timer
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
 
-      // Notify renderer to refresh installed games list
-      mainWindow?.webContents.send('installed-games-changed');
+      // Debounce: wait 100ms before processing to batch multiple rapid changes
+      debounceTimer = setTimeout(() => {
+        if (pendingChanges.size > 0) {
+          console.log('[InstallationWatcher] Installation cache changed:', [...pendingChanges].join(', '));
+          pendingChanges.clear();
+
+          // Invalidate the installed game IDs cache
+          invalidateInstalledGameIdsCache();
+
+          // Notify renderer to refresh installed games list
+          mainWindow?.webContents.send('installed-games-changed');
+        }
+      }, 100);
     }
   });
 }

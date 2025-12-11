@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, invalidateInstalledGameIdsCache, ManualSelectionError, abortCurrentDownload, removeOrphanedInstallationMetadata } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, ManualSelectionError, abortCurrentDownload, removeOrphanedInstallationMetadata } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game } from '../../shared/types';
 import { machineIdSync } from 'node-machine-id';
@@ -24,8 +24,8 @@ export function setupInstallerHandlers(): void {
           }
         );
 
-        // Invalidate cache after successful installation
-        invalidateInstalledGameIdsCache();
+        // Note: cache invalidation та installed-games-changed event
+        // автоматично відбуваються через InstallationWatcher при зміні файлів
 
         // Track successful download
         try {
@@ -111,11 +111,8 @@ export function setupInstallerHandlers(): void {
     try {
       await uninstallTranslation(game);
 
-      // Invalidate cache after successful uninstallation
-      invalidateInstalledGameIdsCache();
-
-      // Notify renderer about installed games change
-      getMainWindow()?.webContents.send('installed-games-changed');
+      // Note: cache invalidation та installed-games-changed event
+      // автоматично відбуваються через InstallationWatcher при зміні файлів
 
       return { success: true };
     } catch (error) {

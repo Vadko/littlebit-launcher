@@ -47,6 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
     searchQuery: debouncedSearchQuery,
   });
 
+  console.log('[Sidebar] Render with games:', visibleGames.length, 'filter:', filter, 'search:', debouncedSearchQuery);
+
   const hasLoadedRef = useRef(false);
 
   // Новий підхід: один раз перевіряємо всі встановлені ігри на системі

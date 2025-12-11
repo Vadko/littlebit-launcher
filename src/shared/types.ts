@@ -80,23 +80,23 @@ export interface ElectronAPI {
   removeOrphanedMetadata: (gameIds: string[]) => Promise<{ success: boolean }>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
-  onInstallProgress: (callback: (progress: number) => void) => void;
-  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
-  onInstallationStatus: (callback: (status: InstallationStatus) => void) => void;
+  onInstallProgress: (callback: (progress: number) => void) => () => void;
+  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => () => void;
+  onInstallationStatus: (callback: (status: InstallationStatus) => void) => () => void;
   // Auto-updater
   checkForUpdates: () => Promise<{ available: boolean; updateInfo?: unknown; message?: string; error?: string }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   installUpdate: () => void;
-  onUpdateAvailable: (callback: (info: unknown) => void) => void;
-  onUpdateDownloaded: (callback: (info: unknown) => void) => void;
-  onUpdateProgress: (callback: (progress: { percent?: number; bytesPerSecond?: number; total?: number; transferred?: number }) => void) => void;
-  onUpdateError: (callback: (error: Error) => void) => void;
+  onUpdateAvailable: (callback: (info: unknown) => void) => () => void;
+  onUpdateDownloaded: (callback: (info: unknown) => void) => () => void;
+  onUpdateProgress: (callback: (progress: { percent?: number; bytesPerSecond?: number; total?: number; transferred?: number }) => void) => () => void;
+  onUpdateError: (callback: (error: Error) => void) => () => void;
   // Real-time updates (автоматично керуються в main process)
-  onGameUpdated: (callback: (game: Game) => void) => void;
-  onGameRemoved: (callback: (gameId: string) => void) => void;
+  onGameUpdated: (callback: (game: Game) => void) => () => void;
+  onGameRemoved: (callback: (gameId: string) => void) => () => void;
   // Game detection
-  onSteamLibraryChanged?: (callback: () => void) => void;
-  onInstalledGamesChanged?: (callback: () => void) => void;
+  onSteamLibraryChanged?: (callback: () => void) => () => void;
+  onInstalledGamesChanged?: (callback: () => void) => () => void;
   // Game launcher
   launchGame: (game: Game) => Promise<LaunchGameResult>;
   // Version

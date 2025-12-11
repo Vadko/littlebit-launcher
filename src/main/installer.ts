@@ -1269,16 +1269,35 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
           `[Installer] Translation found in library path: ${gamePath.path}, version ${info.version}`
         );
 
-        // Update cache to point to library path (important for consistency)
+        // Update cache to point to library path (only if changed to avoid triggering watcher loop)
         const userDataPath = app.getPath('userData');
         const installInfoDir = path.join(userDataPath, 'installation-cache');
         const cacheInfoPath = path.join(installInfoDir, `${game.id}.json`);
 
         try {
           await mkdir(installInfoDir, { recursive: true });
-          await fs.promises.writeFile(cacheInfoPath, JSON.stringify(info, null, 2), 'utf-8');
-          console.log(`[Installer] Updated cache with library path: ${cacheInfoPath}`);
-          invalidateInstalledGameIdsCache();
+
+          // Check if cache already has the same data
+          let needsUpdate = true;
+          if (fs.existsSync(cacheInfoPath)) {
+            try {
+              const existingContent = await fs.promises.readFile(cacheInfoPath, 'utf-8');
+              const existingInfo = JSON.parse(existingContent);
+              // Compare key fields to avoid unnecessary writes
+              if (existingInfo.gamePath === info.gamePath &&
+                  existingInfo.version === info.version &&
+                  existingInfo.gameId === info.gameId) {
+                needsUpdate = false;
+              }
+            } catch {
+              // If we can't read existing, we need to update
+            }
+          }
+
+          if (needsUpdate) {
+            await fs.promises.writeFile(cacheInfoPath, JSON.stringify(info, null, 2), 'utf-8');
+            console.log(`[Installer] Updated cache with library path: ${cacheInfoPath}`);
+          }
         } catch (cacheError) {
           console.warn('[Installer] Failed to update cache:', cacheError);
         }

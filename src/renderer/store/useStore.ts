@@ -113,10 +113,6 @@ export const useStore = create<Store>((set, get) => ({
 
     console.log('[Store] Loading installed translations from installation-cache');
 
-    const state = get();
-    const installedGamesMap = new Map(state.installedGames);
-    const gamesWithUpdatesSet = new Set(state.gamesWithUpdates);
-
     try {
       // 1. Отримати ID всіх ігор з встановленими українізаторами з installation-cache/
       const installedGameIds = await window.electronAPI.getAllInstalledGameIds();
@@ -142,6 +138,10 @@ export const useStore = create<Store>((set, get) => ({
           return { game, installInfo };
         })
       );
+
+      // Create fresh maps (not copying from old state to properly handle deletions)
+      const installedGamesMap = new Map<string, InstallationInfo>();
+      const gamesWithUpdatesSet = new Set<string>();
 
       // Обробляємо результати
       const orphanedGameIds: string[] = []; // Ігри які вже не існують на диску

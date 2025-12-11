@@ -16,7 +16,7 @@ import { useGamepadNavigation } from './hooks/useGamepadNavigation';
 
 
 export const App: React.FC = () => {
-  const { setInitialLoadComplete, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearInstalledGamesCache, clearDetectedGamesCache } = useStore();
+  const { setInitialLoadComplete, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearDetectedGamesCache } = useStore();
   const { animationsEnabled, autoDetectInstalledGames, theme, liquidGlassEnabled } = useSettingsStore();
   const [online, setOnline] = useState(navigator.onLine);
   const [liquidGlassSupported, setLiquidGlassSupported] = useState(false);
@@ -137,22 +137,24 @@ export const App: React.FC = () => {
       }
     };
 
-    window.electronAPI.onSteamLibraryChanged?.(handleSteamLibraryChange);
+    const unsubscribe = window.electronAPI.onSteamLibraryChanged?.(handleSteamLibraryChange);
+    return unsubscribe;
   }, [autoDetectInstalledGames, detectInstalledGames, loadSteamGames, clearSteamGamesCache, clearDetectedGamesCache]);
 
   // Слухати зміни встановлених українізаторів
+  // Цей listener потрібен для всіх змін: інсталяція, деінсталяція, зовнішні зміни
   useEffect(() => {
-    if (!window.electronAPI) return;
+    if (!window.electronAPI?.onInstalledGamesChanged) return;
 
-    const handleInstalledGamesChange = () => {
-      console.log('[App] Installed games cache changed, clearing cache');
-
-      // Очистити кеш встановлених ігор в store
-      clearInstalledGamesCache();
+    const handleInstalledGamesChanged = () => {
+      console.log('[App] Installed games changed, reloading from system');
+      // Use getState() to avoid dependency on the function reference
+      useStore.getState().loadInstalledGamesFromSystem();
     };
 
-    window.electronAPI.onInstalledGamesChanged?.(handleInstalledGamesChange);
-  }, [clearInstalledGamesCache]);
+    const unsubscribe = window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
+    return unsubscribe;
+  }, []);
 
   const handleOnlineEvent = () => {
     setOnline(true);
