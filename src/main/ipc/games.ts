@@ -2,11 +2,22 @@ import { app, ipcMain } from 'electron';
 import { fetchGames, fetchGamesByIds, findGamesByInstallPaths } from '../api';
 import { GetGamesParams, Game } from '../../shared/types';
 import { getFirstAvailableGamePath, getAllInstalledGamePaths, getAllInstalledSteamGames } from '../game-detector';
+import { getMachineId, trackSubscription } from '../tracking';
 
 export function setupGamesHandlers(): void {
   // Version
   ipcMain.on('get-version', (event) => {
     event.returnValue = app.getVersion();
+  });
+
+  // Machine ID - for subscription tracking
+  ipcMain.handle('get-machine-id', () => {
+    return getMachineId();
+  });
+
+  // Track subscription (subscribe/unsubscribe) from renderer
+  ipcMain.handle('track-subscription', async (_, gameId: string, action: 'subscribe' | 'unsubscribe') => {
+    return trackSubscription(gameId, action);
   });
 
   // Fetch games with pagination - SYNC тепер, тому що локальна БД
@@ -87,9 +98,85 @@ export function setupGamesHandlers(): void {
 
         if (appId) {
           console.log('[LaunchGame] Launching via Steam protocol with App ID:', appId);
-          const { shell } = await import('electron');
-          await shell.openExternal(`steam://rungameid/${appId}`);
-          return { success: true };
+          const { isLinux } = await import('../utils/platform');
+
+          if (isLinux()) {
+            // On Linux, detect Steam installation type and use appropriate command
+            const { spawn } = await import('child_process');
+            const { existsSync } = await import('fs');
+            const { homedir } = await import('os');
+            const steamUrl = `steam://rungameid/${appId}`;
+
+            // Detect Steam installation type
+            const home = homedir();
+            const isFlatpak = existsSync(`${home}/.var/app/com.valvesoftware.Steam`);
+            const isSnap = existsSync(`${home}/snap/steam`);
+
+            let launched = false;
+
+            if (isFlatpak) {
+              // Flatpak Steam
+              console.log('[LaunchGame] Detected Flatpak Steam installation');
+              try {
+                spawn('flatpak', ['run', 'com.valvesoftware.Steam', steamUrl], {
+                  detached: true,
+                  stdio: 'ignore',
+                }).unref();
+                launched = true;
+              } catch (err) {
+                console.warn('[LaunchGame] Flatpak Steam launch failed:', err);
+              }
+            } else if (isSnap) {
+              // Snap Steam
+              console.log('[LaunchGame] Detected Snap Steam installation');
+              try {
+                spawn('snap', ['run', 'steam', steamUrl], {
+                  detached: true,
+                  stdio: 'ignore',
+                }).unref();
+                launched = true;
+              } catch (err) {
+                console.warn('[LaunchGame] Snap Steam launch failed:', err);
+              }
+            }
+
+            // Try native steam command
+            if (!launched) {
+              console.log('[LaunchGame] Trying native Steam command');
+              try {
+                spawn('steam', [steamUrl], {
+                  detached: true,
+                  stdio: 'ignore',
+                }).unref();
+                launched = true;
+              } catch (err) {
+                console.warn('[LaunchGame] Native Steam command failed:', err);
+              }
+            }
+
+            // Fallback to xdg-open
+            if (!launched) {
+              console.log('[LaunchGame] Trying xdg-open fallback');
+              try {
+                spawn('xdg-open', [steamUrl], {
+                  detached: true,
+                  stdio: 'ignore',
+                }).unref();
+                launched = true;
+              } catch (err) {
+                console.warn('[LaunchGame] xdg-open failed:', err);
+              }
+            }
+
+            if (launched) {
+              return { success: true };
+            }
+          } else {
+            // On Windows/macOS, use shell.openExternal
+            const { shell } = await import('electron');
+            await shell.openExternal(`steam://rungameid/${appId}`);
+            return { success: true };
+          }
         }
       }
 

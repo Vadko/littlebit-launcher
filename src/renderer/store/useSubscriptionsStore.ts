@@ -48,6 +48,15 @@ interface SubscriptionsStore {
 
 const TOAST_DURATION = 8000; // 8 seconds
 
+// Helper to track subscription via IPC (main process handles the API call)
+async function trackSubscription(gameId: string, action: 'subscribe' | 'unsubscribe'): Promise<void> {
+  try {
+    await window.electronAPI?.trackSubscription(gameId, action);
+  } catch (error) {
+    console.error('[Subscription] Failed to track subscription:', error);
+  }
+}
+
 // Helper to show system notification when window is hidden (in tray)
 async function showSystemNotificationIfHidden(title: string, body: string): Promise<void> {
   if (!window.windowControls?.isVisible || !window.windowControls?.showSystemNotification) {
@@ -81,6 +90,8 @@ export const useSubscriptionsStore = create<SubscriptionsStore>()(
           newStatuses.set(gameId, status);
           return { subscribedGames: newSubscribed, subscribedGameStatuses: newStatuses };
         });
+        // Track subscription via API (non-blocking)
+        trackSubscription(gameId, 'subscribe');
       },
 
       unsubscribe: (gameId) => {
@@ -91,6 +102,8 @@ export const useSubscriptionsStore = create<SubscriptionsStore>()(
           newStatuses.delete(gameId);
           return { subscribedGames: newSubscribed, subscribedGameStatuses: newStatuses };
         });
+        // Track unsubscription via API (non-blocking)
+        trackSubscription(gameId, 'unsubscribe');
       },
 
       isSubscribed: (gameId) => {

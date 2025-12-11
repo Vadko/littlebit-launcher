@@ -82,6 +82,11 @@ const electronAPI: ElectronAPI = {
   launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
   // Version
   getVersion: () => ipcRenderer.sendSync('get-version'),
+  // Machine ID - for subscription tracking
+  getMachineId: () => ipcRenderer.invoke('get-machine-id'),
+  // Track subscription events
+  trackSubscription: (gameId: string, action: 'subscribe' | 'unsubscribe') =>
+    ipcRenderer.invoke('track-subscription', gameId, action),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

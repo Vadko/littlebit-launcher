@@ -101,6 +101,10 @@ export interface ElectronAPI {
   launchGame: (game: Game) => Promise<LaunchGameResult>;
   // Version
   getVersion: () => string;
+  // Machine ID - for subscription tracking
+  getMachineId: () => Promise<string | null>;
+  // Track subscription events
+  trackSubscription: (gameId: string, action: 'subscribe' | 'unsubscribe') => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {
