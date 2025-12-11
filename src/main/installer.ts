@@ -4,8 +4,9 @@ import fs from 'fs';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { createHash } from 'crypto';
-import * as unzipper from 'unzipper';
 import got from 'got';
+import { extractFull } from 'node-7z';
+import { path7za } from '7zip-bin';
 import { getFirstAvailableGamePath } from './game-detector';
 import type { InstallationInfo, Game, DownloadProgress, InstallationStatus } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
@@ -176,9 +177,8 @@ export async function installTranslation(
     }
 
     // 4. Extract archive
-    onStatus?.({ message: 'Розпакування файлів...' });
     const extractDir = path.join(downloadDir, `${game.id}_extract`);
-    await extractArchive(archivePath, extractDir);
+    await extractArchive(archivePath, extractDir, onStatus);
 
     // Get list of text archive files
     const textFiles = await getAllFiles(extractDir);
@@ -233,9 +233,10 @@ export async function installTranslation(
       }
 
       // Extract voice archive to the same directory
-      onStatus?.({ message: 'Розпакування озвучки...' });
       const voiceExtractDir = path.join(downloadDir, `${game.id}_voice_extract`);
-      await extractArchive(voiceArchivePath, voiceExtractDir);
+      await extractArchive(voiceArchivePath, voiceExtractDir, (status) => {
+        onStatus?.({ message: `Розпакування озвучки... ${status.progress ? status.progress + '%' : ''}`.trim() });
+      });
 
       // Get list of voice files
       voiceFiles = await getAllFiles(voiceExtractDir);
@@ -298,9 +299,10 @@ export async function installTranslation(
       }
 
       // Extract achievements archive to temp directory
-      onStatus?.({ message: 'Розпакування ачівок...' });
       const achievementsExtractDir = path.join(downloadDir, `${game.id}_achievements_extract`);
-      await extractArchive(achievementsArchivePath, achievementsExtractDir);
+      await extractArchive(achievementsArchivePath, achievementsExtractDir, (status) => {
+        onStatus?.({ message: `Розпакування ачівок... ${status.progress ? status.progress + '%' : ''}`.trim() });
+      });
 
       // Get list of achievements files
       achievementsFiles = await getAllFiles(achievementsExtractDir);
@@ -679,30 +681,62 @@ async function downloadFileAttempt(
 
 /**
  * Extract ZIP archive with support for all compression methods and UTF-8/Cyrillic filenames
- * Uses unzipper library which supports LZMA, Deflate64, and other methods
+ * Uses 7-Zip which supports LZMA, Deflate64, and all other compression methods
  */
-async function extractArchive(archivePath: string, extractPath: string): Promise<void> {
+async function extractArchive(
+  archivePath: string,
+  extractPath: string,
+  onStatus?: (status: InstallationStatus) => void
+): Promise<void> {
   await mkdir(extractPath, { recursive: true });
 
-  try {
-    console.log(`[Installer] Extracting archive: ${archivePath}`);
-    console.log(`[Installer] Target directory: ${extractPath}`);
-
-    await new Promise<void>((resolve, reject) => {
-      fs.createReadStream(archivePath)
-        .pipe(unzipper.Extract({ path: extractPath }))
-        .on('close', () => {
-          console.log(`[Installer] Extracted archive to: ${extractPath}`);
-          resolve();
-        })
-        .on('error', (err) => {
-          reject(err);
-        });
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Помилка розпакування архіву: ${errorMessage}`);
+  // Check if file exists and get its size
+  if (!fs.existsSync(archivePath)) {
+    throw new Error(`Archive file not found: ${archivePath}`);
   }
+
+  const stats = fs.statSync(archivePath);
+  console.log(`[Installer] Extracting archive: ${archivePath}`);
+  console.log(`[Installer] Target directory: ${extractPath}`);
+  console.log(`[Installer] Archive size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+
+  return new Promise<void>((resolve, reject) => {
+    // Use 7-Zip for extraction (supports all compression methods including LZMA)
+    const stream = extractFull(archivePath, extractPath, {
+      $bin: path7za,
+      $progress: true,
+    });
+
+    stream.on('data', (data: { file?: string }) => {
+      console.log(`[Installer] Extracted: ${data.file || 'file'}`);
+    });
+
+    stream.on('progress', (progress: { percent?: number; fileCount?: number }) => {
+      if (progress.percent !== undefined) {
+        const percent = Math.round(progress.percent);
+        console.log(`[Installer] Extraction progress: ${percent}%`);
+        onStatus?.({
+          message: `Розпакування файлів... ${percent}%`,
+          progress: percent
+        });
+      }
+    });
+
+    stream.on('end', () => {
+      console.log(`[Installer] Extracted archive to: ${extractPath}`);
+      onStatus?.({ message: 'Розпакування завершено' });
+      resolve();
+    });
+
+    stream.on('error', (err: Error) => {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`[Installer] extractArchive failed:`, {
+        message: errorMessage,
+        archivePath
+      });
+      reject(new Error(`Помилка розпакування архіву: ${errorMessage}`));
+    });
+  });
 }
 
 /**

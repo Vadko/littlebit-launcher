@@ -33,6 +33,7 @@ export interface DownloadProgress {
 
 export interface InstallationStatus {
   message: string;
+  progress?: number;
 }
 
 export interface InstallResult {

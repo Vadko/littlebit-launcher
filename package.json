@@ -29,6 +29,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "7zip-bin": "^5.2.0",
     "@node-steam/vdf": "^2.2.0",
     "@supabase/supabase-js": "2.86.0",
     "better-sqlite3": "^12.5.0",
@@ -37,6 +38,7 @@
     "framer-motion": "^12.23.25",
     "got": "^11.8.6",
     "lucide-react": "^0.294.0",
+    "node-7z": "^3.0.0",
     "node-machine-id": "^1.1.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -46,6 +48,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.10.5",
+    "@types/node-7z": "^2.1.11",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@types/unzipper": "^0.10.11",
