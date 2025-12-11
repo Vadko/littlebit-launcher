@@ -324,20 +324,50 @@ export async function installTranslation(
       await cleanup(achievementsArchivePath, achievementsExtractDir);
     }
 
-    // 5. Check for installer file and run if present
+    // 5. Check for executable installer file and run if present
     const installerFileName = getInstallerFileName(game);
-    if (installerFileName) {
-      console.log(`[Installer] Found installer file: ${installerFileName}`);
+    const isExeInstaller = hasExecutableInstaller(game);
+
+    if (installerFileName && isExeInstaller) {
+      // Game has its own executable installer - let it handle the installation
+      // We don't copy files or create backups since the installer manages everything
+      console.log(`[Installer] Found executable installer: ${installerFileName}`);
+      console.log(`[Installer] Skipping backup and file copy - installer will handle installation`);
+
       try {
         await runInstaller(extractDir, installerFileName);
         console.log(`[Installer] Installer launched successfully. User needs to complete installation.`);
       } catch (error) {
         console.error('[Installer] Failed to launch installer:', error);
-        // Don't fail the whole process if installer fails to launch
+        throw new Error('Не вдалося запустити інсталятор українізатора');
       }
+
+      // Cleanup temp files
+      onStatus?.({ message: 'Очищення тимчасових файлів...' });
+      await cleanup(archivePath, extractDir);
+
+      // Save minimal installation info (no file tracking since installer handles it)
+      const installationInfo: InstallationInfo = {
+        gameId: game.id,
+        version: game.version || '1.0.0',
+        installedAt: new Date().toISOString(),
+        gamePath: gamePath.path,
+        hasBackup: false, // Installer manages its own backups
+        installedFiles: [], // Installer manages files
+        components: {
+          text: {
+            installed: true,
+            files: [], // Unknown - installer handles it
+          },
+        },
+      };
+      await saveInstallationInfo(gamePath.path, installationInfo);
+
+      console.log(`[Installer] Translation installer launched for ${game.id}. User must complete installation manually.`);
+      return;
     }
 
-    // 6. Backup original files and copy translation files
+    // 6. Backup original files and copy translation files (only for non-installer translations)
     const fullTargetPath = gamePath.path;
     console.log(`[Installer] Installing to: ${fullTargetPath}`);
 
@@ -430,7 +460,7 @@ export async function installTranslation(
       // File not found errors
       if (error.message.includes('ENOENT')) {
         throw new Error(
-          'Гру не знайдено на вашому комп\'ютері.\n\nПереконайтеся, що гра встановлена через STEAM.'
+          'Файл або папку не знайдено.\n\nПереконайтеся, що гра встановлена та шлях вказано правильно.'
         );
       }
 
@@ -960,6 +990,15 @@ async function deleteDirectory(dirPath: string): Promise<void> {
 }
 
 /**
+ * Check if file is an executable installer
+ */
+function isExecutableInstaller(fileName: string): boolean {
+  const executableExtensions = ['.exe', '.msi', '.bat', '.cmd', '.sh', '.run', '.bin', '.appimage'];
+  const lowerName = fileName.toLowerCase();
+  return executableExtensions.some(ext => lowerName.endsWith(ext));
+}
+
+/**
  * Get installer file name based on platform
  */
 function getInstallerFileName(game: Game): string | null {
@@ -975,6 +1014,15 @@ function getInstallerFileName(game: Game): string | null {
   }
 
   return null;
+}
+
+/**
+ * Check if game has an executable installer (not just any installation file)
+ */
+function hasExecutableInstaller(game: Game): boolean {
+  const installerFileName = getInstallerFileName(game);
+  if (!installerFileName) return false;
+  return isExecutableInstaller(installerFileName);
 }
 
 /**
