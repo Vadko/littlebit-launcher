@@ -21,6 +21,7 @@ const unlink = promisify(fs.unlink);
 
 const INSTALLATION_INFO_FILE = '.littlebit-translation.json';
 const BACKUP_DIR_NAME = '.littlebit-backup';
+const BACKUP_SUFFIX = '_backup'; // file.upk -> file.upk_backup
 
 /**
  * Помилка яка потребує ручного вибору папки
@@ -318,6 +319,12 @@ export async function installTranslation(
         console.log(`[Installer] Installing achievements to: ${achievementsInstallPath}`);
         onStatus?.({ message: 'Копіювання перекладу ачівок...' });
         await mkdir(achievementsInstallPath, { recursive: true });
+
+        // Create backup of original achievements files before overwriting
+        if (createBackup) {
+          await backupFiles(achievementsExtractDir, achievementsInstallPath);
+        }
+
         await copyDirectory(achievementsExtractDir, achievementsInstallPath);
       } else {
         console.warn('[Installer] Could not determine Steam achievements path, skipping achievements installation');
@@ -356,6 +363,7 @@ export async function installTranslation(
         installedAt: new Date().toISOString(),
         gamePath: gamePath.path,
         hasBackup: false, // Installer manages its own backups
+        isCustomPath: !!customGamePath, // Track if installed via manual folder selection
         installedFiles: [], // Installer manages files
         components: {
           text: {
@@ -400,6 +408,7 @@ export async function installTranslation(
       installedAt: new Date().toISOString(),
       gamePath: gamePath.path,
       hasBackup: createBackup,
+      isCustomPath: !!customGamePath, // Track if installed via manual folder selection
       installedFiles, // Legacy field for backward compatibility
       components: {
         text: {
@@ -773,9 +782,9 @@ async function extractArchive(
 }
 
 /**
- * Restore files from backup
+ * Restore files from backup (legacy format - .littlebit-backup directory)
  */
-async function restoreBackup(backupDir: string, targetDir: string): Promise<void> {
+async function restoreBackupLegacy(backupDir: string, targetDir: string): Promise<void> {
   try {
     const entries = await readdir(backupDir, { withFileTypes: true });
 
@@ -785,17 +794,50 @@ async function restoreBackup(backupDir: string, targetDir: string): Promise<void
 
       if (entry.isDirectory()) {
         // Recursively restore subdirectory
-        await restoreBackup(backupPath, targetPath);
+        await restoreBackupLegacy(backupPath, targetPath);
       } else {
         // Restore file
         await fs.promises.copyFile(backupPath, targetPath);
-        console.log(`[Restore] Restored: ${entry.name}`);
+        console.log(`[Restore] Restored (legacy): ${entry.name}`);
       }
     }
 
-    console.log('[Restore] Restore completed');
+    console.log('[Restore] Legacy restore completed');
   } catch (error) {
     console.error('[Restore] Error restoring backup:', error);
+    throw new Error(
+      `Помилка відновлення файлів: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Restore files from new backup format (file.upk_backup -> file.upk)
+ * Searches for *_backup files and restores them
+ */
+async function restoreBackupNew(targetDir: string, installedFiles: string[]): Promise<void> {
+  try {
+    let restoredCount = 0;
+
+    for (const relativePath of installedFiles) {
+      const targetPath = path.join(targetDir, relativePath);
+      const backupPath = targetPath + BACKUP_SUFFIX;
+
+      if (fs.existsSync(backupPath)) {
+        // Restore the original file from backup
+        await fs.promises.copyFile(backupPath, targetPath);
+        // Delete the backup file
+        await unlink(backupPath);
+        console.log(`[Restore] Restored: ${path.basename(targetPath)} from ${path.basename(backupPath)}`);
+        restoredCount++;
+      }
+    }
+
+    if (restoredCount > 0) {
+      console.log(`[Restore] New format restore completed: ${restoredCount} files restored`);
+    }
+  } catch (error) {
+    console.error('[Restore] Error restoring backup (new format):', error);
     throw new Error(
       `Помилка відновлення файлів: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -831,43 +873,19 @@ async function cleanupEmptyDirectories(dir: string, rootDir: string): Promise<vo
 }
 
 /**
- * Backup files that will be overwritten (only if backup doesn't exist already)
+ * Backup files that will be overwritten using new format (file.upk -> file.upk_backup)
+ * Files are backed up in place, not in a separate directory
+ * This prevents games from detecting backup files by extension scanning
  */
 async function backupFiles(sourceDir: string, targetDir: string): Promise<void> {
   try {
-    const backupDir = path.join(targetDir, BACKUP_DIR_NAME);
-
-    // If backup already exists, don't overwrite it (preserve original files)
-    if (fs.existsSync(backupDir)) {
-      console.log(`[Backup] Backup already exists, skipping to preserve original files: ${backupDir}`);
-      return;
-    }
-
-    await mkdir(backupDir, { recursive: true });
-
-    // Make backup directory hidden on Windows
-    if (isWindows()) {
-      try {
-        await new Promise<void>((resolve) => {
-          exec(`attrib +h "${backupDir}"`, (error) => {
-            if (error) {
-              console.warn('[Backup] Failed to hide backup directory:', error);
-            }
-            resolve(); // Don't fail backup if hiding fails
-          });
-        });
-      } catch (error) {
-        console.warn('[Backup] Failed to set hidden attribute:', error);
-      }
-    }
-
-    // Read all files from source directory
+    // Read all files from source directory (files that will be installed)
     const entries = await readdir(sourceDir, { withFileTypes: true });
+    let backedUpCount = 0;
 
     for (const entry of entries) {
       const sourcePath = path.join(sourceDir, entry.name);
       const targetPath = path.join(targetDir, entry.name);
-      const backupPath = path.join(backupDir, entry.name);
 
       if (entry.isDirectory()) {
         // Recursively backup subdirectory
@@ -875,16 +893,23 @@ async function backupFiles(sourceDir: string, targetDir: string): Promise<void> 
       } else {
         // Check if file exists in target directory
         if (fs.existsSync(targetPath)) {
-          // Backup the original file
-          const backupFileDir = path.dirname(backupPath);
-          await mkdir(backupFileDir, { recursive: true });
-          await fs.promises.copyFile(targetPath, backupPath);
-          console.log(`[Backup] Backed up: ${entry.name}`);
+          const backupPath = targetPath + BACKUP_SUFFIX; // file.upk -> file.upk_backup
+
+          // Only create backup if it doesn't exist (preserve original files)
+          if (!fs.existsSync(backupPath)) {
+            await fs.promises.copyFile(targetPath, backupPath);
+            console.log(`[Backup] Backed up: ${entry.name} -> ${entry.name}${BACKUP_SUFFIX}`);
+            backedUpCount++;
+          } else {
+            console.log(`[Backup] Backup already exists, skipping: ${entry.name}${BACKUP_SUFFIX}`);
+          }
         }
       }
     }
 
-    console.log(`[Backup] Backup completed to: ${backupDir}`);
+    if (backedUpCount > 0) {
+      console.log(`[Backup] Backup completed: ${backedUpCount} files backed up in place`);
+    }
   } catch (error) {
     console.error('[Backup] Error creating backup:', error);
     throw new Error(
@@ -1136,17 +1161,26 @@ export async function uninstallTranslation(game: Game): Promise<void> {
         allFilesToDelete.push(...installInfo.components.voice.files);
         console.log(`[Installer] Voice component: ${installInfo.components.voice.files.length} files`);
       }
-      // Delete achievements files (they are stored with full paths)
+      // Delete/restore achievements files (they are stored with full paths)
       if (installInfo.components.achievements?.installed) {
         console.log(`[Installer] Achievements component: ${installInfo.components.achievements.files.length} files`);
         for (const achievementFile of installInfo.components.achievements.files) {
+          const backupPath = achievementFile + BACKUP_SUFFIX;
           try {
-            if (fs.existsSync(achievementFile)) {
+            // Check if backup exists - restore it
+            if (fs.existsSync(backupPath)) {
+              if (fs.existsSync(achievementFile)) {
+                await unlink(achievementFile);
+              }
+              await fs.promises.rename(backupPath, achievementFile);
+              console.log(`[Installer] Restored achievement file from backup: ${achievementFile}`);
+            } else if (fs.existsSync(achievementFile)) {
+              // No backup - just delete
               await unlink(achievementFile);
               console.log(`[Installer] Deleted achievement file: ${achievementFile}`);
             }
           } catch (error) {
-            console.warn(`[Installer] Failed to delete achievement file ${achievementFile}:`, error);
+            console.warn(`[Installer] Failed to restore/delete achievement file ${achievementFile}:`, error);
           }
         }
       }
@@ -1195,19 +1229,25 @@ export async function uninstallTranslation(game: Game): Promise<void> {
     }
 
     // Step 2: Restore files from backup (original files that were overwritten)
-    if (installInfo.hasBackup !== false && fs.existsSync(backupDir)) {
-      console.log(`[Installer] Restoring files from backup: ${backupDir}`);
-      await restoreBackup(backupDir, gamePath);
+    // Support both legacy format (.littlebit-backup directory) and new format (*_backup files)
+    if (installInfo.hasBackup !== false) {
+      const hasLegacyBackup = fs.existsSync(backupDir);
 
-      // Delete backup directory
-      await deleteDirectory(backupDir);
-      console.log(`[Installer] Deleted backup directory: ${backupDir}`);
-    } else {
-      if (installInfo.hasBackup === false) {
-        console.warn('[Installer] Backup was disabled during installation, skipping file restoration');
+      if (hasLegacyBackup) {
+        // Legacy format: restore from .littlebit-backup directory
+        console.log(`[Installer] Restoring files from legacy backup: ${backupDir}`);
+        await restoreBackupLegacy(backupDir, gamePath);
+
+        // Delete backup directory
+        await deleteDirectory(backupDir);
+        console.log(`[Installer] Deleted backup directory: ${backupDir}`);
       } else {
-        console.warn('[Installer] No backup found, skipping file restoration');
+        // New format: restore from *_backup files
+        console.log(`[Installer] Restoring files from new backup format (${BACKUP_SUFFIX} files)`);
+        await restoreBackupNew(gamePath, allFilesToDelete);
       }
+    } else {
+      console.warn('[Installer] Backup was disabled during installation, skipping file restoration');
     }
 
     // Step 3: Clean up empty directories (including .littlebit-backup if empty)
@@ -1244,6 +1284,101 @@ export async function uninstallTranslation(game: Game): Promise<void> {
 }
 
 /**
+ * Remove specific components (voice, achievements) without full uninstall
+ * Used when user unchecks a component during reinstallation
+ * Restores backups if they exist
+ */
+export async function removeComponents(
+  game: Game,
+  componentsToRemove: { voice?: boolean; achievements?: boolean }
+): Promise<void> {
+  try {
+    console.log(`[Installer] Removing components for: ${game.id}`, componentsToRemove);
+
+    const installInfo = await checkInstallation(game);
+    if (!installInfo) {
+      throw new Error('Українізатор не встановлено');
+    }
+
+    const gamePath = installInfo.gamePath;
+
+    // Remove voice component
+    if (componentsToRemove.voice && installInfo.components?.voice?.installed) {
+      console.log(`[Installer] Removing voice component: ${installInfo.components.voice.files.length} files`);
+
+      for (const relativePath of installInfo.components.voice.files) {
+        const filePath = path.join(gamePath, relativePath);
+        const backupPath = filePath + BACKUP_SUFFIX;
+
+        try {
+          // Check if backup exists - restore it
+          if (fs.existsSync(backupPath)) {
+            // Delete the translation file first
+            if (fs.existsSync(filePath)) {
+              await unlink(filePath);
+            }
+            // Restore from backup
+            await fs.promises.rename(backupPath, filePath);
+            console.log(`[Installer] Restored voice file from backup: ${relativePath}`);
+          } else if (fs.existsSync(filePath)) {
+            // No backup - just delete (file was added, not replaced)
+            await unlink(filePath);
+            console.log(`[Installer] Deleted voice file (no backup): ${relativePath}`);
+          }
+        } catch (error) {
+          console.warn(`[Installer] Failed to restore/delete voice file ${relativePath}:`, error);
+        }
+      }
+
+      // Update installation info - remove voice component
+      installInfo.components.voice = { installed: false, files: [] };
+    }
+
+    // Remove achievements component
+    if (componentsToRemove.achievements && installInfo.components?.achievements?.installed) {
+      console.log(`[Installer] Removing achievements component: ${installInfo.components.achievements.files.length} files`);
+
+      // Achievements files are stored with full paths
+      for (const achievementFile of installInfo.components.achievements.files) {
+        const backupPath = achievementFile + BACKUP_SUFFIX;
+
+        try {
+          // Check if backup exists - restore it
+          if (fs.existsSync(backupPath)) {
+            // Delete the translation file first
+            if (fs.existsSync(achievementFile)) {
+              await unlink(achievementFile);
+            }
+            // Restore from backup
+            await fs.promises.rename(backupPath, achievementFile);
+            console.log(`[Installer] Restored achievement file from backup: ${achievementFile}`);
+          } else if (fs.existsSync(achievementFile)) {
+            // No backup - just delete (file was added, not replaced)
+            await unlink(achievementFile);
+            console.log(`[Installer] Deleted achievement file (no backup): ${achievementFile}`);
+          }
+        } catch (error) {
+          console.warn(`[Installer] Failed to restore/delete achievement file ${achievementFile}:`, error);
+        }
+      }
+
+      // Update installation info - remove achievements component
+      installInfo.components.achievements = { installed: false, files: [] };
+    }
+
+    // Save updated installation info
+    await saveInstallationInfo(gamePath, installInfo);
+
+    console.log(`[Installer] Components removed successfully for ${game.id}`);
+  } catch (error) {
+    console.error('[Installer] Error removing components:', error);
+    throw new Error(
+      `Помилка видалення компонентів: ${error instanceof Error ? error.message : 'Невідома помилка'}`
+    );
+  }
+}
+
+/**
  * Check if translation is installed and get installation info
  * Priority: Library paths (Steam, GOG, etc.) > Manual/cached paths
  */
@@ -1268,6 +1403,7 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
         console.log(
           `[Installer] Translation found in library path: ${gamePath.path}, version ${info.version}`
         );
+        console.log(`[Installer] Components: voice=${info.components?.voice?.installed}, achievements=${info.components?.achievements?.installed}`);
 
         // Update cache to point to library path (only if changed to avoid triggering watcher loop)
         const userDataPath = app.getPath('userData');
@@ -1283,10 +1419,15 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
             try {
               const existingContent = await fs.promises.readFile(cacheInfoPath, 'utf-8');
               const existingInfo = JSON.parse(existingContent);
-              // Compare key fields to avoid unnecessary writes
+              // Compare key fields and components to avoid unnecessary writes
+              const sameComponents =
+                existingInfo.components?.voice?.installed === info.components?.voice?.installed &&
+                existingInfo.components?.achievements?.installed === info.components?.achievements?.installed;
+
               if (existingInfo.gamePath === info.gamePath &&
                   existingInfo.version === info.version &&
-                  existingInfo.gameId === info.gameId) {
+                  existingInfo.gameId === info.gameId &&
+                  sameComponents) {
                 needsUpdate = false;
               }
             } catch {

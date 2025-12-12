@@ -15,6 +15,7 @@ export interface InstallationInfo {
   installedAt: string;
   gamePath: string;
   hasBackup?: boolean;
+  isCustomPath?: boolean; // True if installed via manual folder selection (not auto-detected Steam path)
   installedFiles?: string[]; // Legacy: Relative paths of all installed files (kept for migration)
   components?: {
     text: InstallationComponent;
@@ -78,6 +79,7 @@ export interface ElectronAPI {
   checkInstallation: (game: Game) => Promise<InstallationInfo | null>;
   getAllInstalledGameIds: () => Promise<string[]>;
   removeOrphanedMetadata: (gameIds: string[]) => Promise<{ success: boolean }>;
+  removeComponents: (game: Game, componentsToRemove: { voice?: boolean; achievements?: boolean }) => Promise<InstallResult>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => () => void;

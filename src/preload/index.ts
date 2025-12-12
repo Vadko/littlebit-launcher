@@ -15,6 +15,8 @@ const electronAPI: ElectronAPI = {
   checkInstallation: (game: Game) => ipcRenderer.invoke('check-installation', game),
   getAllInstalledGameIds: () => ipcRenderer.invoke('get-all-installed-game-ids'),
   removeOrphanedMetadata: (gameIds: string[]) => ipcRenderer.invoke('remove-orphaned-metadata', gameIds),
+  removeComponents: (game: Game, componentsToRemove: { voice?: boolean; achievements?: boolean }) =>
+    ipcRenderer.invoke('remove-components', game, componentsToRemove),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {

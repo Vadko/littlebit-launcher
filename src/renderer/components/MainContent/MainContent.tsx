@@ -201,9 +201,14 @@ export const MainContent: React.FC = () => {
       // when the installation cache file changes, so no need to call it manually
       useStore.getState().clearGameUpdate(selectedGame.id);
 
-      const message = isUpdateAvailable
+      let message = isUpdateAvailable
         ? `Українізатор ${selectedGame.name} успішно оновлено до версії ${selectedGame.version}!`
         : `Українізатор ${selectedGame.name} успішно встановлено!`;
+
+      // Add Steam restart notice if achievements were installed
+      if (installAchievements) {
+        message += '\n\nДля застосування перекладу досягнень перезапустіть Steam.';
+      }
 
       showModal({
         title: isUpdateAvailable ? 'Українізатор оновлено' : 'Українізатор встановлено',
@@ -243,36 +248,71 @@ export const MainContent: React.FC = () => {
       return;
     }
 
-    const hasInstaller =
-      selectedGame.installation_file_windows_path ||
-      selectedGame.installation_file_linux_path;
+    // Always show install options dialog
+    setPendingInstallPath(customGamePath);
+    setShowInstallOptions(true);
+  }, [selectedGame, isInstalling, isCheckingInstallation, isOnline, showModal]);
 
-    // Show install options dialog if game has voice archive or achievements archive
-    if (selectedGame.voice_archive_path || selectedGame.achievements_archive_path) {
-      setPendingInstallPath(customGamePath);
-      setShowInstallOptions(true);
-      return;
-    }
-
-    if (hasInstaller) {
-      showConfirm({
-        title: 'Запуск інсталятора',
-        message: 'Після завантаження та розпакування українізатора буде запущено інсталятор.\n\nПродовжити встановлення?',
-        confirmText: 'Продовжити',
-        cancelText: 'Скасувати',
-        onConfirm: async () => {
-          await performInstallation(customGamePath);
-        },
-      });
-      return;
-    }
-
-    await performInstallation(customGamePath);
-  }, [selectedGame, isInstalling, isCheckingInstallation, isOnline, performInstallation, showModal, showConfirm]);
-
-  const handleInstallOptionsConfirm = useCallback(async (options: { createBackup: boolean; installVoice: boolean; installAchievements: boolean }) => {
+  const handleInstallOptionsConfirm = useCallback(async (options: {
+    createBackup: boolean;
+    installVoice: boolean;
+    installAchievements: boolean;
+    removeVoice: boolean;
+    removeAchievements: boolean;
+  }) => {
     if (!selectedGame) return;
 
+    // First, remove components if requested
+    if (options.removeVoice || options.removeAchievements) {
+      try {
+        setInstallationProgress(selectedGame.id, {
+          isInstalling: true,
+          statusMessage: 'Видалення компонентів...',
+        });
+
+        const result = await window.electronAPI.removeComponents(selectedGame, {
+          voice: options.removeVoice,
+          achievements: options.removeAchievements,
+        });
+
+        if (!result.success) {
+          showModal({
+            title: 'Помилка видалення',
+            message: result.error?.message || 'Не вдалося видалити компоненти',
+            type: 'error',
+          });
+          clearInstallationProgress(selectedGame.id);
+          return;
+        }
+
+        // Refresh installation info after removal
+        await checkInstallationStatus(selectedGame.id, selectedGame);
+      } catch (error) {
+        console.error('Error removing components:', error);
+        showModal({
+          title: 'Помилка видалення',
+          message: error instanceof Error ? error.message : 'Невідома помилка',
+          type: 'error',
+        });
+        clearInstallationProgress(selectedGame.id);
+        return;
+      }
+    }
+
+    // If only removing components (no new downloads needed), we're done
+    const needsDownload = !installationInfo || options.installVoice && !installationInfo?.components?.voice?.installed || options.installAchievements && !installationInfo?.components?.achievements?.installed;
+
+    if (!needsDownload && (options.removeVoice || options.removeAchievements)) {
+      clearInstallationProgress(selectedGame.id);
+      showModal({
+        title: 'Компоненти видалено',
+        message: 'Вибрані компоненти успішно видалено.',
+        type: 'success',
+      });
+      return;
+    }
+
+    // Proceed with installation if needed
     const hasInstaller =
       selectedGame.installation_file_windows_path ||
       selectedGame.installation_file_linux_path;
@@ -284,14 +324,22 @@ export const MainContent: React.FC = () => {
         confirmText: 'Продовжити',
         cancelText: 'Скасувати',
         onConfirm: async () => {
-          await performInstallation(pendingInstallPath, options);
+          await performInstallation(pendingInstallPath, {
+            createBackup: options.createBackup,
+            installVoice: options.installVoice,
+            installAchievements: options.installAchievements,
+          });
         },
       });
       return;
     }
 
-    await performInstallation(pendingInstallPath, options);
-  }, [selectedGame, pendingInstallPath, performInstallation, showConfirm]);
+    await performInstallation(pendingInstallPath, {
+      createBackup: options.createBackup,
+      installVoice: options.installVoice,
+      installAchievements: options.installAchievements,
+    });
+  }, [selectedGame, pendingInstallPath, performInstallation, showConfirm, showModal, installationInfo, setInstallationProgress, clearInstallationProgress, checkInstallationStatus]);
 
   const handleSupport = useCallback(() => {
     if (!selectedGame) return;
@@ -449,6 +497,8 @@ export const MainContent: React.FC = () => {
           onConfirm={handleInstallOptionsConfirm}
           game={selectedGame}
           defaultCreateBackup={createBackupBeforeInstall}
+          installationInfo={installationInfo}
+          isCustomPath={!!pendingInstallPath || installationInfo?.isCustomPath || !isGameInstalledOnSystem}
         />
       )}
 

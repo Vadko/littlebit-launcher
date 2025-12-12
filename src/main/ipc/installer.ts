@@ -1,5 +1,5 @@
 import { ipcMain, dialog, shell } from 'electron';
-import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, ManualSelectionError, abortCurrentDownload, removeOrphanedInstallationMetadata } from '../installer';
+import { installTranslation, checkInstallation, uninstallTranslation, getAllInstalledGameIds, ManualSelectionError, abortCurrentDownload, removeOrphanedInstallationMetadata, removeComponents } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game } from '../../shared/types';
 import { trackDownload } from '../tracking';
@@ -119,6 +119,21 @@ export function setupInstallerHandlers(): void {
     } catch (error) {
       console.error('Error removing orphaned metadata:', error);
       return { success: false };
+    }
+  });
+
+  ipcMain.handle('remove-components', async (_, game: Game, componentsToRemove: { voice?: boolean; achievements?: boolean }) => {
+    try {
+      await removeComponents(game, componentsToRemove);
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing components:', error);
+      return {
+        success: false,
+        error: {
+          message: error instanceof Error ? error.message : 'Невідома помилка',
+        },
+      };
     }
   });
 }

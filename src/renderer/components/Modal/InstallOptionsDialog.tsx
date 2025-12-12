@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from './Modal';
-import { Volume2, Archive, Shield, Trophy } from 'lucide-react';
-import type { Game } from '../../../shared/types';
+import { Volume2, Archive, Shield, Trophy, Check, Trash2 } from 'lucide-react';
+import type { Game, InstallationInfo } from '../../../shared/types';
 
 interface InstallOptionsDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (options: { createBackup: boolean; installVoice: boolean; installAchievements: boolean }) => void;
+  onConfirm: (options: {
+    createBackup: boolean;
+    installVoice: boolean;
+    installAchievements: boolean;
+    removeVoice: boolean;
+    removeAchievements: boolean;
+  }) => void;
   game: Game;
   defaultCreateBackup: boolean;
+  installationInfo?: InstallationInfo;
+  isCustomPath?: boolean; // True if installed via custom path (not Steam folder)
 }
 
 export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
@@ -17,122 +25,114 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
   onConfirm,
   game,
   defaultCreateBackup,
+  installationInfo,
+  isCustomPath,
 }) => {
+  // Check what's available and what's already installed
+  const isSteamGame = game.platforms?.includes('steam');
+  // Achievements only available for Steam games installed in Steam folder (not custom path)
+  const hasAchievementsArchive = !!(isSteamGame && game.achievements_archive_path && !isCustomPath);
+  const hasVoiceArchive = !!game.voice_archive_path;
+
+  const isVoiceInstalled = installationInfo?.components?.voice?.installed ?? false;
+  const isAchievementsInstalled = installationInfo?.components?.achievements?.installed ?? false;
+  const isReinstall = !!installationInfo;
+
+  // State for checkboxes - initialize based on what's installed or defaults
   const [createBackup, setCreateBackup] = useState(defaultCreateBackup);
   const [installVoice, setInstallVoice] = useState(true);
   const [installAchievements, setInstallAchievements] = useState(true);
 
-  // Перевіряємо чи гра для Steam та наявність архівів
-  const isSteamGame = game.platforms?.includes('steam');
-  const hasAchievements = !!(isSteamGame && game.achievements_archive_path);
-  const hasVoice = !!game.voice_archive_path;
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setCreateBackup(defaultCreateBackup);
+      // Set defaults based on what's already installed
+      setInstallVoice(isVoiceInstalled || !isReinstall);
+      setInstallAchievements(isAchievementsInstalled || !isReinstall);
+    }
+  }, [isOpen, defaultCreateBackup, isVoiceInstalled, isAchievementsInstalled, isReinstall]);
+
+  // Calculate what will be downloaded/removed
+  const willDownloadVoice = hasVoiceArchive && installVoice && !isVoiceInstalled;
+  const willDownloadAchievements = hasAchievementsArchive && installAchievements && !isAchievementsInstalled;
+  const willRemoveVoice = hasVoiceArchive && !installVoice && isVoiceInstalled;
+  const willRemoveAchievements = hasAchievementsArchive && !installAchievements && isAchievementsInstalled;
 
   const handleConfirm = () => {
     onConfirm({
       createBackup,
-      installVoice: hasVoice ? installVoice : false,
-      installAchievements: hasAchievements ? installAchievements : false
+      installVoice: hasVoiceArchive ? installVoice : false,
+      installAchievements: hasAchievementsArchive ? installAchievements : false,
+      removeVoice: willRemoveVoice,
+      removeAchievements: willRemoveAchievements,
     });
     onClose();
   };
 
+  // Compute total download size
+  const totalDownloadSize = useMemo(() => {
+    const sizes: (string | null)[] = [];
+
+    // Always downloading text if not a reinstall, or if it's an update
+    if (!isReinstall) {
+      sizes.push(game.archive_size);
+    }
+
+    if (willDownloadVoice) {
+      sizes.push(game.voice_archive_size ?? null);
+    }
+
+    if (willDownloadAchievements) {
+      sizes.push(game.achievements_archive_size ?? null);
+    }
+
+    return calculateTotalSize(sizes.filter(Boolean) as string[]);
+  }, [game, isReinstall, willDownloadVoice, willDownloadAchievements]);
+
+  // Compute approximate backup size (same as what will be installed)
+  const backupSize = useMemo(() => {
+    if (isReinstall) return null;
+
+    const sizes: (string | null)[] = [game.archive_size];
+
+    if (installVoice && hasVoiceArchive) {
+      sizes.push(game.voice_archive_size ?? null);
+    }
+
+    if (installAchievements && hasAchievementsArchive) {
+      sizes.push(game.achievements_archive_size ?? null);
+    }
+
+    const result = calculateTotalSize(sizes.filter(Boolean) as string[]);
+    return result !== 'N/A' ? result : null;
+  }, [game, isReinstall, installVoice, installAchievements, hasVoiceArchive, hasAchievementsArchive]);
+
+  const hasChanges = willDownloadVoice || willDownloadAchievements || willRemoveVoice || willRemoveAchievements || !isReinstall;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Опції встановлення">
+    <Modal isOpen={isOpen} onClose={onClose} title={isReinstall ? "Керування компонентами" : "Опції встановлення"}>
       <div className="flex flex-col gap-6">
         <p className="text-text-muted">
-          Виберіть опції для встановлення українізатора "{game.name}":
+          {isReinstall
+            ? `Оберіть компоненти для "${game.name}":`
+            : `Виберіть опції для встановлення українізатора "${game.name}":`
+          }
         </p>
 
-        {/* Backup option */}
-        <label className="flex items-start gap-4 cursor-pointer group">
-          <div className="relative flex items-center justify-center mt-0.5">
-            <input
-              type="checkbox"
-              checked={createBackup}
-              onChange={(e) => setCreateBackup(e.target.checked)}
-              className="appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors cursor-pointer"
-            />
-            <svg
-              className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
-                createBackup ? 'opacity-100' : 'opacity-0'
-              }`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <Shield size={18} className="text-neon-blue" />
-              <span className="font-medium text-white group-hover:text-neon-blue transition-colors">
-                Створити резервну копію
-              </span>
-            </div>
-            <p className="text-sm text-text-muted mt-1">
-              Зберегти оригінальні файли гри. Рекомендовано для можливості відновлення.
-            </p>
-          </div>
-        </label>
-
-        {/* Voice archive option */}
-        <label className={`flex items-start gap-4 group ${hasVoice ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-          <div className="relative flex items-center justify-center mt-0.5">
-            <input
-              type="checkbox"
-              checked={hasVoice && installVoice}
-              onChange={(e) => setInstallVoice(e.target.checked)}
-              disabled={!hasVoice}
-              className={`appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors ${hasVoice ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-            />
-            <svg
-              className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
-                hasVoice && installVoice ? 'opacity-100' : 'opacity-0'
-              }`}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <Volume2 size={18} className={hasVoice ? 'text-purple-400' : 'text-text-muted'} />
-              <span className={`font-medium transition-colors ${hasVoice ? 'text-white group-hover:text-purple-400' : 'text-text-muted'}`}>
-                Встановити озвучку
-              </span>
-              {!hasVoice && <span className="text-xs text-text-muted">(недоступно)</span>}
-            </div>
-            <div className="text-sm text-text-muted mt-1">
-              <p>Додати українську озвучку до українізатора.</p>
-              {game.voice_archive_size && (
-                <p className="flex items-center gap-1 mt-1 text-purple-400">
-                  <Archive size={14} />
-                  <span>Розмір: {game.voice_archive_size}</span>
-                </p>
-              )}
-            </div>
-          </div>
-        </label>
-
-        {/* Achievements archive option - Steam only */}
-        {isSteamGame && (
-          <label className={`flex items-start gap-4 group ${hasAchievements ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+        {/* Backup option - only show for new installs */}
+        {!isReinstall && (
+          <label className="flex items-start gap-4 cursor-pointer group">
             <div className="relative flex items-center justify-center mt-0.5">
               <input
                 type="checkbox"
-                checked={hasAchievements && installAchievements}
-                onChange={(e) => setInstallAchievements(e.target.checked)}
-                disabled={!hasAchievements}
-                className={`appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors ${hasAchievements ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                checked={createBackup}
+                onChange={(e) => setCreateBackup(e.target.checked)}
+                className="appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors cursor-pointer"
               />
               <svg
                 className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
-                  hasAchievements && installAchievements ? 'opacity-100' : 'opacity-0'
+                  createBackup ? 'opacity-100' : 'opacity-0'
                 }`}
                 viewBox="0 0 24 24"
                 fill="none"
@@ -144,18 +144,139 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <Trophy size={18} className={hasAchievements ? 'text-green-400' : 'text-text-muted'} />
-                <span className={`font-medium transition-colors ${hasAchievements ? 'text-white group-hover:text-green-400' : 'text-text-muted'}`}>
-                  Встановити досягнення
+                <Shield size={18} className="text-neon-blue" />
+                <span className="font-medium text-white group-hover:text-neon-blue transition-colors">
+                  Створити резервну копію
                 </span>
-                {!hasAchievements && <span className="text-xs text-text-muted">(недоступно)</span>}
+              </div>
+              <p className="text-sm text-text-muted mt-1">
+                Зберегти оригінальні файли гри. Рекомендовано для можливості відновлення.
+              </p>
+              {createBackup && backupSize && (
+                <p className="flex items-center gap-1 mt-1 text-neon-blue text-sm">
+                  <Archive size={14} />
+                  <span>Орієнтовний розмір: {backupSize}</span>
+                </p>
+              )}
+            </div>
+          </label>
+        )}
+
+        {/* Voice archive option */}
+        <label className={`flex items-start gap-4 group ${hasVoiceArchive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+          <div className="relative flex items-center justify-center mt-0.5">
+            <input
+              type="checkbox"
+              checked={hasVoiceArchive && installVoice}
+              onChange={(e) => setInstallVoice(e.target.checked)}
+              disabled={!hasVoiceArchive}
+              className={`appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors ${hasVoiceArchive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+            />
+            <svg
+              className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
+                hasVoiceArchive && installVoice ? 'opacity-100' : 'opacity-0'
+              }`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Volume2 size={18} className={hasVoiceArchive ? 'text-purple-400' : 'text-text-muted'} />
+              <span className={`font-medium transition-colors ${hasVoiceArchive ? 'text-white group-hover:text-purple-400' : 'text-text-muted'}`}>
+                Озвучка
+              </span>
+              {!hasVoiceArchive && <span className="text-xs text-text-muted">(недоступно)</span>}
+              {isVoiceInstalled && (
+                <span className="flex items-center gap-1 text-xs text-green-400">
+                  <Check size={12} />
+                  встановлено
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-text-muted mt-1">
+              <p>Українська озвучка.</p>
+              {game.voice_archive_size && (
+                <p className="flex items-center gap-1 mt-1 text-purple-400">
+                  <Archive size={14} />
+                  <span>Розмір: {game.voice_archive_size}</span>
+                </p>
+              )}
+              {willRemoveVoice && (
+                <p className="flex items-center gap-1 mt-1 text-red-400">
+                  <Trash2 size={14} />
+                  <span>Буде видалено</span>
+                </p>
+              )}
+              {willDownloadVoice && (
+                <p className="flex items-center gap-1 mt-1 text-green-400">
+                  <Archive size={14} />
+                  <span>Буде завантажено</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </label>
+
+        {/* Achievements archive option - Steam only */}
+        {isSteamGame && (
+          <label className={`flex items-start gap-4 group ${hasAchievementsArchive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+            <div className="relative flex items-center justify-center mt-0.5">
+              <input
+                type="checkbox"
+                checked={hasAchievementsArchive && installAchievements}
+                onChange={(e) => setInstallAchievements(e.target.checked)}
+                disabled={!hasAchievementsArchive}
+                className={`appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors ${hasAchievementsArchive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              />
+              <svg
+                className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
+                  hasAchievementsArchive && installAchievements ? 'opacity-100' : 'opacity-0'
+                }`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Trophy size={18} className={hasAchievementsArchive ? 'text-green-400' : 'text-text-muted'} />
+                <span className={`font-medium transition-colors ${hasAchievementsArchive ? 'text-white group-hover:text-green-400' : 'text-text-muted'}`}>
+                  Досягнення Steam
+                </span>
+                {!hasAchievementsArchive && <span className="text-xs text-text-muted">(недоступно)</span>}
+                {isAchievementsInstalled && (
+                  <span className="flex items-center gap-1 text-xs text-green-400">
+                    <Check size={12} />
+                    встановлено
+                  </span>
+                )}
               </div>
               <div className="text-sm text-text-muted mt-1">
-                <p>Додати переклад досягнень Steam.</p>
+                <p>Переклад досягнень Steam.</p>
                 {game.achievements_archive_size && (
                   <p className="flex items-center gap-1 mt-1 text-green-400">
                     <Archive size={14} />
                     <span>Розмір: {game.achievements_archive_size}</span>
+                  </p>
+                )}
+                {willRemoveAchievements && (
+                  <p className="flex items-center gap-1 mt-1 text-red-400">
+                    <Trash2 size={14} />
+                    <span>Буде видалено</span>
+                </p>
+                )}
+                {willDownloadAchievements && (
+                  <p className="flex items-center gap-1 mt-1 text-green-400">
+                    <Archive size={14} />
+                    <span>Буде завантажено</span>
                   </p>
                 )}
               </div>
@@ -163,20 +284,26 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
           </label>
         )}
 
-        {/* Total size info */}
-        <div className="bg-glass rounded-xl p-4 border border-border">
-          <div className="flex items-center gap-2 text-sm">
-            <Archive size={16} className="text-text-muted" />
-            <span className="text-text-muted">Буде завантажено:</span>
-            <span className="text-white font-medium">
-              {calculateTotalSize(
-                game.archive_size,
-                hasVoice && installVoice ? game.voice_archive_size : null,
-                hasAchievements && installAchievements ? game.achievements_archive_size : null
-              )}
-            </span>
+        {/* Info about what will happen */}
+        {(totalDownloadSize !== 'N/A' || willRemoveVoice || willRemoveAchievements) && (
+          <div className="bg-glass rounded-xl p-4 border border-border space-y-2">
+            {totalDownloadSize !== 'N/A' && (
+              <div className="flex items-center gap-2 text-sm">
+                <Archive size={16} className="text-text-muted" />
+                <span className="text-text-muted">Буде завантажено:</span>
+                <span className="text-white font-medium">{totalDownloadSize}</span>
+              </div>
+            )}
+            {(willRemoveVoice || willRemoveAchievements) && (
+              <div className="flex items-center gap-2 text-sm">
+                <Trash2 size={16} className="text-red-400" />
+                <span className="text-red-400">
+                  Буде видалено: {[willRemoveVoice && 'озвучка', willRemoveAchievements && 'досягнення'].filter(Boolean).join(', ')}
+                </span>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Buttons */}
         <div className="flex gap-3">
@@ -188,9 +315,14 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-neon-blue to-neon-purple text-white font-semibold hover:opacity-90 transition-opacity"
+            disabled={isReinstall && !hasChanges}
+            className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-opacity ${
+              isReinstall && !hasChanges
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:opacity-90'
+            }`}
           >
-            Встановити
+            {isReinstall ? 'Застосувати' : 'Встановити'}
           </button>
         </div>
       </div>
@@ -201,12 +333,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
 /**
  * Calculate total size from size strings like "150.00 MB" and "50.00 MB"
  */
-function calculateTotalSize(
-  textSize: string | null,
-  voiceSize: string | null,
-  achievementsSize: string | null
-): string {
-  const sizes = [textSize, voiceSize, achievementsSize].filter(Boolean) as string[];
+function calculateTotalSize(sizes: string[]): string {
   if (sizes.length === 0) return 'N/A';
   if (sizes.length === 1) return sizes[0];
 
