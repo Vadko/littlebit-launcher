@@ -56,16 +56,18 @@ export const VideoCard: React.FC<VideoCardProps> = ({ videoUrl }) => {
       <h3 className="text-lg font-head font-semibold text-white mb-3">
         Трейлер українізації
       </h3>
-      <div className="relative rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
-        <iframe
-          referrerPolicy="strict-origin-when-cross-origin"
-          className="absolute top-0 left-0 w-full h-full"
-          src={embedUrl}
-          title="YouTube video player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+      <div className="max-w-3xl mx-auto">
+        <div className="relative rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+          <iframe
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="absolute top-0 left-0 w-full h-full"
+            src={embedUrl}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
       </div>
     </div>
   );
