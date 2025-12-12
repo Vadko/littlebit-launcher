@@ -82,6 +82,7 @@ export class DatabaseManager {
         description TEXT,
         discord TEXT,
         downloads INTEGER,
+        subscriptions INTEGER,
         editing_progress INTEGER NOT NULL DEFAULT 0,
         fonts_progress INTEGER,
         fundraising_current INTEGER,

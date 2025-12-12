@@ -63,6 +63,7 @@ export class GamesRepository {
       description: game.description ?? null,
       discord: game.discord ?? null,
       downloads: game.downloads ?? null,
+      subscriptions: game.subscriptions ?? null,
       editing_progress: game.editing_progress ?? null,
       fonts_progress: game.fonts_progress ?? null,
       fundraising_current: game.fundraising_current ?? null,
@@ -222,7 +223,7 @@ export class GamesRepository {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO games (
         id, approved, approved_at, approved_by, archive_hash, archive_path, archive_size,
-        banner_path, created_at, created_by, description, discord, downloads, editing_progress,
+        banner_path, created_at, created_by, description, discord, downloads, subscriptions, editing_progress,
         fonts_progress, fundraising_current, fundraising_goal, game_description, install_paths,
         installation_file_linux_path, installation_file_windows_path, is_adult, logo_path,
         name, platforms, project_id, slug, status, support_url, team, telegram, textures_progress,
@@ -232,7 +233,7 @@ export class GamesRepository {
         website, youtube
       ) VALUES (
         @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
-        @banner_path, @created_at, @created_by, @description, @discord, @downloads, @editing_progress,
+        @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
         @fonts_progress, @fundraising_current, @fundraising_goal, @game_description, @install_paths,
         @installation_file_linux_path, @installation_file_windows_path, @is_adult, @logo_path,
         @name, @platforms, @project_id, @slug, @status, @support_url, @team, @telegram, @textures_progress,
@@ -254,7 +255,7 @@ export class GamesRepository {
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO games (
           id, approved, approved_at, approved_by, archive_hash, archive_path, archive_size,
-          banner_path, created_at, created_by, description, discord, downloads, editing_progress,
+          banner_path, created_at, created_by, description, discord, downloads, subscriptions, editing_progress,
           fonts_progress, fundraising_current, fundraising_goal, game_description, install_paths,
           installation_file_linux_path, installation_file_windows_path, is_adult, logo_path,
           name, platforms, project_id, slug, status, support_url, team, telegram, textures_progress,
@@ -264,7 +265,7 @@ export class GamesRepository {
           website, youtube
         ) VALUES (
           @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
-          @banner_path, @created_at, @created_by, @description, @discord, @downloads, @editing_progress,
+          @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
           @fonts_progress, @fundraising_current, @fundraising_goal, @game_description, @install_paths,
           @installation_file_linux_path, @installation_file_windows_path, @is_adult, @logo_path,
           @name, @platforms, @project_id, @slug, @status, @support_url, @team, @telegram, @textures_progress,

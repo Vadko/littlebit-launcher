@@ -61,6 +61,35 @@ export type Database = {
           },
         ]
       }
+      game_subscriptions: {
+        Row: {
+          game_id: string
+          id: string
+          subscribed_at: string | null
+          user_identifier: string
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          subscribed_at?: string | null
+          user_identifier: string
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          subscribed_at?: string | null
+          user_identifier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_subscriptions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_versions: {
         Row: {
           achievements_archive_hash: string | null
@@ -268,6 +297,7 @@ export type Database = {
           project_id: string | null
           slug: string
           status: Database["public"]["Enums"]["game_status"]
+          subscriptions: number | null
           support_url: string | null
           team: string
           telegram: string | null
@@ -319,6 +349,7 @@ export type Database = {
           project_id?: string | null
           slug: string
           status?: Database["public"]["Enums"]["game_status"]
+          subscriptions?: number | null
           support_url?: string | null
           team: string
           telegram?: string | null
@@ -370,6 +401,7 @@ export type Database = {
           project_id?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["game_status"]
+          subscriptions?: number | null
           support_url?: string | null
           team?: string
           telegram?: string | null
@@ -490,12 +522,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_game_subscription: {
+        Args: { p_game_id: string; p_user_identifier: string }
+        Returns: undefined
+      }
       increment_game_downloads: {
         Args: { p_game_id: string; p_user_identifier: string }
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
       is_verified_user: { Args: never; Returns: boolean }
+      remove_game_subscription: {
+        Args: { p_game_id: string; p_user_identifier: string }
+        Returns: undefined
+      }
       search_steam_apps: {
         Args: { limit_val?: number; offset_val?: number; search_query: string }
         Returns: {

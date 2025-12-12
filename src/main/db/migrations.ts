@@ -50,6 +50,20 @@ const migrations: Migration[] = [
     },
   },
   {
+    name: 'add_subscriptions_column',
+    up: (db) => {
+      const hasColumn = db.prepare(
+        "SELECT COUNT(*) as count FROM pragma_table_info('games') WHERE name='subscriptions'"
+      ).get() as { count: number };
+
+      if (hasColumn.count === 0) {
+        console.log('[Migrations] Running: add_subscriptions_column');
+        db.exec(`ALTER TABLE games ADD COLUMN subscriptions INTEGER;`);
+        console.log('[Migrations] Completed: add_subscriptions_column');
+      }
+    },
+  },
+  {
     name: 'fix_archive_size_nan_values',
     up: (db) => {
       // Check if this migration was already run by looking for marker in sync_metadata
