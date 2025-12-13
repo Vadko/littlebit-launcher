@@ -1,5 +1,7 @@
 # LB Launcher
 
+[![Website](https://img.shields.io/badge/Сайт-lblauncher.com-00f2ff?style=for-the-badge&logo=google-chrome&logoColor=white)](https://lblauncher.com/)
+
 **LB Launcher** — настільний застосунок, який збирає українські фанатські локалізації в одному місці й допомагає встановлювати їх без танців із бубном.
 
 > Один лаунчер. Багато команд. Ще більше ігор українською.
