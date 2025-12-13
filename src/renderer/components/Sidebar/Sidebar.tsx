@@ -34,8 +34,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
   const { openSettingsModal } = useSettingsStore();
   const unreadCount = useSubscriptionsStore((state) => state.unreadCount);
 
-  // Debounce search query - 500ms delay
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+  // Debounce search query - 300ms delay
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Локальна база даних через IPC (завантажуємо всі ігри одразу)
   const {
@@ -209,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
             </motion.div>
           ) : (
             <motion.div
-              key={`games-${filter}-${searchQuery}`}
+              key={`games-${filter}-${debouncedSearchQuery}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

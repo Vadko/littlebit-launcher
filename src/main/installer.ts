@@ -10,7 +10,7 @@ import { path7z as originalPath7z } from '7zip-bin-full';
 
 // Fix for ASAR: replace .asar with .asar.unpacked for spawnable binaries
 const path7z = originalPath7z.replace('app.asar', 'app.asar.unpacked');
-import { getFirstAvailableGamePath } from './game-detector';
+import { getFirstAvailableGamePath, getSteamPath } from './game-detector';
 import type { InstallationInfo, Game, DownloadProgress, InstallationStatus, InstallOptions } from '../shared/types';
 import { formatBytes } from '../shared/formatters';
 import { isWindows, isLinux, getPlatform } from './utils/platform';
@@ -373,7 +373,8 @@ export async function installTranslation(
       console.log(`[Installer] Achievements archive has ${achievementsFiles.length} files`);
 
       // Determine Steam path for achievements (Steam/appcache/stats)
-      achievementsInstallPath = await getSteamAchievementsPath(gamePath.path);
+      // Always uses main Steam installation, not the game's library folder
+      achievementsInstallPath = await getSteamAchievementsPath();
 
       if (achievementsInstallPath) {
         console.log(`[Installer] Installing achievements to: ${achievementsInstallPath}`);
@@ -1740,30 +1741,22 @@ async function calculateFingerprintHash(
 
 /**
  * Get Steam achievements path (Steam/appcache/stats)
- * Try to determine from game path (which should be in Steam/steamapps/common/...)
+ * Always uses the main Steam installation path, not the game's library folder
  */
-async function getSteamAchievementsPath(gamePath: string): Promise<string | null> {
+async function getSteamAchievementsPath(): Promise<string | null> {
   try {
-    // Game path is typically: Steam/steamapps/common/GameName
-    // We need: Steam/appcache/stats
-    const normalizedPath = gamePath.replace(/\\/g, '/');
-    const steamappsIndex = normalizedPath.toLowerCase().indexOf('/steamapps/common/');
+    // Always use main Steam installation path (where Steam.exe is located)
+    // Achievements must be in the main Steam folder, not in additional libraries
+    const steamPath = getSteamPath();
 
-    if (steamappsIndex === -1) {
-      console.warn('[Installer] Could not find steamapps/common in game path');
+    if (!steamPath) {
+      console.warn('[Installer] Steam path not found');
       return null;
     }
 
-    const steamPath = normalizedPath.substring(0, steamappsIndex);
     const achievementsPath = path.join(steamPath, 'appcache', 'stats');
-
-    // Verify Steam path exists
-    if (fs.existsSync(steamPath)) {
-      console.log(`[Installer] Found Steam path: ${steamPath}`);
-      return achievementsPath;
-    }
-
-    return null;
+    console.log(`[Installer] Steam achievements path: ${achievementsPath}`);
+    return achievementsPath;
   } catch (error) {
     console.error('[Installer] Error getting Steam achievements path:', error);
     return null;

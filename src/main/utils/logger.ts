@@ -1,9 +1,18 @@
 import { app } from 'electron';
 import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs';
+import { appendFile } from 'fs/promises';
 import { join } from 'path';
 
 let saveLogsEnabled = false;
 let logFilePath: string | null = null;
+
+// Буфер для накопичення логів
+let logBuffer: string[] = [];
+let flushTimeout: NodeJS.Timeout | null = null;
+let isWriting = false;
+
+const FLUSH_INTERVAL_MS = 500; // Записувати кожні 500мс
+const MAX_BUFFER_SIZE = 50; // Або коли накопичиться 50 записів
 
 function getLogFilePath(): string {
   if (!logFilePath) {
@@ -32,15 +41,72 @@ function formatLogMessage(level: string, message: string, ...args: unknown[]): s
   return `[${timestamp}] [${level}] ${message}${formattedArgs}\n`;
 }
 
-function writeToFile(logMessage: string): void {
-  if (!saveLogsEnabled) return;
+/**
+ * Асинхронний flush буфера на диск
+ */
+async function flushBuffer(): Promise<void> {
+  if (isWriting || logBuffer.length === 0) return;
+
+  isWriting = true;
+  const dataToWrite = logBuffer.join('');
+  logBuffer = [];
 
   try {
     const filePath = getLogFilePath();
-    appendFileSync(filePath, logMessage);
+    await appendFile(filePath, dataToWrite);
   } catch (error) {
-    // Silent fail - don't want logging to break the app
-    console.error('[Logger] Failed to write to log file:', error);
+    // Silent fail - записуємо в оригінальний console
+    originalConsoleError('[Logger] Failed to write to log file:', error);
+  } finally {
+    isWriting = false;
+  }
+}
+
+/**
+ * Запланувати flush якщо ще не заплановано
+ */
+function scheduleFlush(): void {
+  if (flushTimeout) return;
+
+  flushTimeout = setTimeout(() => {
+    flushTimeout = null;
+    flushBuffer();
+  }, FLUSH_INTERVAL_MS);
+}
+
+/**
+ * Додати повідомлення до буфера
+ */
+function writeToFile(logMessage: string): void {
+  if (!saveLogsEnabled) return;
+
+  logBuffer.push(logMessage);
+
+  // Flush негайно якщо буфер заповнений
+  if (logBuffer.length >= MAX_BUFFER_SIZE) {
+    if (flushTimeout) {
+      clearTimeout(flushTimeout);
+      flushTimeout = null;
+    }
+    flushBuffer();
+  } else {
+    scheduleFlush();
+  }
+}
+
+/**
+ * Синхронний flush при закритті додатку
+ */
+export function flushLogsSync(): void {
+  if (logBuffer.length === 0) return;
+
+  try {
+    const filePath = getLogFilePath();
+    const dataToWrite = logBuffer.join('');
+    appendFileSync(filePath, dataToWrite);
+    logBuffer = [];
+  } catch (error) {
+    originalConsoleError('[Logger] Failed to flush logs:', error);
   }
 }
 
@@ -53,6 +119,9 @@ export function setSaveLogsEnabled(enabled: boolean): void {
     if (!existsSync(filePath)) {
       writeFileSync(filePath, `=== LittleBit Launcher Logs ===\nStarted: ${new Date().toISOString()}\n\n`);
     }
+  } else {
+    // Flush буфер перед вимкненням
+    flushLogsSync();
   }
 }
 
@@ -86,6 +155,15 @@ export function initLogger(): void {
     originalConsoleInfo(message, ...args);
     writeToFile(formatLogMessage('INFO', message, ...args));
   };
+
+  // Flush логи при закритті додатку
+  app.on('before-quit', () => {
+    flushLogsSync();
+  });
+
+  app.on('will-quit', () => {
+    flushLogsSync();
+  });
 }
 
 export function getLogFileDirectory(): string {

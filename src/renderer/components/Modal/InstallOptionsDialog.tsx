@@ -63,7 +63,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
     onConfirm(
       {
         createBackup,
-        installText: isReinstall ? installText : true,
+        installText,
         installVoice: hasVoiceArchive ? installVoice : false,
         installAchievements: hasAchievementsArchive ? installAchievements : false,
       },
@@ -113,7 +113,11 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
     return result !== 'N/A' ? result : null;
   }, [game, isReinstall, installVoice, installAchievements, hasVoiceArchive, hasAchievementsArchive]);
 
-  const hasChanges = installText || willDownloadVoice || willDownloadAchievements || willRemoveVoice || willRemoveAchievements || !isReinstall;
+  // При новому встановленні - хоча б один компонент має бути вибраний
+  // При перевстановленні - будь-яка зміна
+  const hasChanges = isReinstall
+    ? (installText || willDownloadVoice || willDownloadAchievements || willRemoveVoice || willRemoveAchievements)
+    : (installText || (hasVoiceArchive && installVoice) || (hasAchievementsArchive && installAchievements));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isReinstall ? "Керування компонентами" : "Опції встановлення"}>
@@ -167,57 +171,63 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
           </label>
         )}
 
-        {/* Text localization - can be reinstalled in reinstall mode */}
-        {isReinstall && (
-          <label className="flex items-start gap-4 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-0.5">
-              <input
-                type="checkbox"
-                checked={installText}
-                onChange={(e) => setInstallText(e.target.checked)}
-                className="appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors cursor-pointer"
-              />
-              <svg
-                className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
-                  installText ? 'opacity-100' : 'opacity-0'
-                }`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <FileText size={18} className="text-neon-blue" />
-                <span className="font-medium text-white group-hover:text-neon-blue transition-colors">
-                  Текстова локалізація
-                </span>
+        {/* Text localization */}
+        <label className="flex items-start gap-4 cursor-pointer group">
+          <div className="relative flex items-center justify-center mt-0.5">
+            <input
+              type="checkbox"
+              checked={installText}
+              onChange={(e) => setInstallText(e.target.checked)}
+              className="appearance-none w-5 h-5 rounded-md bg-glass border border-border checked:bg-gradient-to-r checked:from-neon-blue checked:to-neon-purple transition-colors cursor-pointer"
+            />
+            <svg
+              className={`absolute w-3 h-3 text-white pointer-events-none transition-opacity ${
+                installText ? 'opacity-100' : 'opacity-0'
+              }`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <FileText size={18} className="text-neon-blue" />
+              <span className="font-medium text-white group-hover:text-neon-blue transition-colors">
+                Текстова локалізація
+              </span>
+              {isReinstall && (
                 <span className="flex items-center gap-1 text-xs text-green-400">
                   <Check size={12} />
                   встановлено
                 </span>
-              </div>
-              <div className="text-sm text-text-muted mt-1">
-                <p>Переклад текстів гри українською.</p>
-                {game.archive_size && (
-                  <p className="flex items-center gap-1 mt-1 text-neon-blue">
-                    <Archive size={14} />
-                    <span>Розмір: {game.archive_size}</span>
-                  </p>
-                )}
-                {installText && (
-                  <p className="flex items-center gap-1 mt-1 text-green-400">
-                    <Archive size={14} />
-                    <span>Буде перевстановлено</span>
-                  </p>
-                )}
-              </div>
+              )}
             </div>
-          </label>
-        )}
+            <div className="text-sm text-text-muted mt-1">
+              <p>Переклад текстів гри українською.</p>
+              {game.archive_size && (
+                <p className="flex items-center gap-1 mt-1 text-neon-blue">
+                  <Archive size={14} />
+                  <span>Розмір: {game.archive_size}</span>
+                </p>
+              )}
+              {isReinstall && installText && (
+                <p className="flex items-center gap-1 mt-1 text-green-400">
+                  <Archive size={14} />
+                  <span>Буде перевстановлено</span>
+                </p>
+              )}
+              {!isReinstall && installText && (
+                <p className="flex items-center gap-1 mt-1 text-green-400">
+                  <Archive size={14} />
+                  <span>Буде встановлено</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </label>
 
         {/* Voice archive option */}
         <label className={`flex items-start gap-4 group ${hasVoiceArchive ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
@@ -372,9 +382,9 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={isReinstall && !hasChanges}
+            disabled={!hasChanges}
             className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-opacity ${
-              isReinstall && !hasChanges
+              !hasChanges
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:opacity-90'
             }`}

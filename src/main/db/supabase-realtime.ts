@@ -1,14 +1,23 @@
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { Game } from '../../shared/types';
 import { getMainWindow } from '../window';
+
+const MAX_RETRY_ATTEMPTS = 5;
+const INITIAL_RETRY_DELAY_MS = 1000;
+const MAX_RETRY_DELAY_MS = 30000;
 
 /**
  * Supabase Realtime Manager для підписки на зміни в таблиці games
  */
 export class SupabaseRealtimeManager {
   private channel: RealtimeChannel | null = null;
+  private supabase: SupabaseClient | null = null;
   private supabaseUrl: string;
   private supabaseKey: string;
+  private retryCount = 0;
+  private retryTimeout: NodeJS.Timeout | null = null;
+  private onUpdateCallback: ((game: Game) => void) | null = null;
+  private onDeleteCallback: ((gameId: string) => void) | null = null;
 
   constructor() {
     // Отримати credentials з env
@@ -21,9 +30,71 @@ export class SupabaseRealtimeManager {
   }
 
   /**
-   * Підписатися на realtime оновлення games
+   * Розрахувати затримку з exponential backoff
+   */
+  private getRetryDelay(): number {
+    const delay = Math.min(
+      INITIAL_RETRY_DELAY_MS * Math.pow(2, this.retryCount),
+      MAX_RETRY_DELAY_MS
+    );
+    // Додаємо jitter для уникнення thundering herd
+    return delay + Math.random() * 1000;
+  }
+
+  /**
+   * Спробувати перепідключитися
+   */
+  private scheduleRetry(): void {
+    if (this.retryCount >= MAX_RETRY_ATTEMPTS) {
+      console.error('[SupabaseRealtime] Max retry attempts reached, giving up');
+      return;
+    }
+
+    const delay = this.getRetryDelay();
+    console.log(`[SupabaseRealtime] Scheduling retry #${this.retryCount + 1} in ${Math.round(delay)}ms`);
+
+    this.retryTimeout = setTimeout(() => {
+      this.retryCount++;
+      this.reconnect();
+    }, delay);
+  }
+
+  /**
+   * Перепідключитися до realtime
+   */
+  private reconnect(): void {
+    if (!this.onUpdateCallback || !this.onDeleteCallback) {
+      console.error('[SupabaseRealtime] Cannot reconnect: callbacks not set');
+      return;
+    }
+
+    console.log('[SupabaseRealtime] Attempting to reconnect...');
+
+    // Очистити попереднє підключення
+    if (this.channel) {
+      this.channel.unsubscribe();
+      this.channel = null;
+    }
+
+    // Створити нове підключення
+    this.subscribeInternal(this.onUpdateCallback, this.onDeleteCallback);
+  }
+
+  /**
+   * Підписатися на realtime оновлення games (публічний метод)
    */
   subscribe(onUpdate: (game: Game) => void, onDelete: (gameId: string) => void): void {
+    // Зберігаємо callbacks для reconnect
+    this.onUpdateCallback = onUpdate;
+    this.onDeleteCallback = onDelete;
+
+    this.subscribeInternal(onUpdate, onDelete);
+  }
+
+  /**
+   * Внутрішній метод підписки
+   */
+  private subscribeInternal(onUpdate: (game: Game) => void, onDelete: (gameId: string) => void): void {
     if (this.channel) {
       console.log('[SupabaseRealtime] Already subscribed, skipping');
       return;
@@ -31,9 +102,9 @@ export class SupabaseRealtimeManager {
 
     console.log('[SupabaseRealtime] Subscribing to games table changes...');
 
-    const supabase = createClient(this.supabaseUrl, this.supabaseKey);
+    this.supabase = createClient(this.supabaseUrl, this.supabaseKey);
 
-    this.channel = supabase
+    this.channel = this.supabase
       .channel('games-changes')
       .on(
         'postgres_changes',
@@ -94,8 +165,22 @@ export class SupabaseRealtimeManager {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log('[SupabaseRealtime] Subscription status:', status);
+
+        if (status === 'SUBSCRIBED') {
+          // Успішно підключились - скидаємо лічильник спроб
+          this.retryCount = 0;
+          console.log('[SupabaseRealtime] Successfully connected to realtime');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('[SupabaseRealtime] Connection error:', err);
+          this.channel = null;
+          this.scheduleRetry();
+        } else if (status === 'CLOSED') {
+          console.log('[SupabaseRealtime] Channel closed, attempting to reconnect...');
+          this.channel = null;
+          this.scheduleRetry();
+        }
       });
   }
 
@@ -103,6 +188,12 @@ export class SupabaseRealtimeManager {
    * Відписатися від realtime оновлень
    */
   unsubscribe(): void {
+    // Скасувати retry якщо запланований
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout);
+      this.retryTimeout = null;
+    }
+
     if (!this.channel) {
       console.log('[SupabaseRealtime] No active subscription');
       return;
@@ -111,6 +202,16 @@ export class SupabaseRealtimeManager {
     console.log('[SupabaseRealtime] Unsubscribing from games table changes...');
     this.channel.unsubscribe();
     this.channel = null;
+    this.onUpdateCallback = null;
+    this.onDeleteCallback = null;
+    this.retryCount = 0;
+  }
+
+  /**
+   * Скинути лічильник спроб (для ручного retry)
+   */
+  resetRetryCount(): void {
+    this.retryCount = 0;
   }
 
   /**

@@ -12,6 +12,7 @@ interface UseGamesResult {
   games: Game[];
   total: number;
   isLoading: boolean;
+  error: string | null;
   reload: () => void;
 }
 
@@ -26,16 +27,30 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
   const [games, setGames] = useState<Game[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const hasCheckedSubscriptions = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   /**
    * Завантажити ігри
    */
   const loadGames = useCallback(async () => {
+    // Скасувати попередній запит якщо він ще виконується
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    setError(null);
+
     try {
       // Спеціальна обробка для встановлених українізаторів
       if (filter === 'installed-translations') {
         const installedGameIds = [...new Set(await window.electronAPI.getAllInstalledGameIds())];
+
+        // Перевірити чи запит ще актуальний
+        if (signal.aborted) return;
 
         if (installedGameIds.length === 0) {
           setGames([]);
@@ -45,6 +60,9 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
 
         // Отримати всі ігри зі встановленими українізаторами
         const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
+
+        // Перевірити чи запит ще актуальний
+        if (signal.aborted) return;
 
         // Застосувати пошук
         let filteredGames = installedGames;
@@ -64,6 +82,9 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       if (filter === 'installed-games') {
         const installPaths = await window.electronAPI.getAllInstalledGamePaths();
 
+        // Перевірити чи запит ще актуальний
+        if (signal.aborted) return;
+
         if (installPaths.length === 0) {
           setGames([]);
           setTotal(0);
@@ -72,6 +93,9 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
 
         // Знайти ігри за шляхами встановлення
         const result = await window.electronAPI.findGamesByInstallPaths(installPaths);
+
+        // Перевірити чи запит ще актуальний
+        if (signal.aborted) return;
 
         // Застосувати пошук
         let filteredGames = result.games;
@@ -96,15 +120,27 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       };
 
       const result = await window.electronAPI.fetchGames(params);
+
+      // Перевірити чи запит ще актуальний
+      if (signal.aborted) return;
+
       console.log('[useGames] Setting games:', result.games.length, 'total:', result.total);
       setGames(result.games);
       setTotal(result.total);
     } catch (error) {
+      // Ігноруємо помилки від скасованих запитів
+      if (signal.aborted) return;
+
       console.error('[useGames] Error loading games:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Помилка завантаження ігор';
+      setError(errorMessage);
       setGames([]);
       setTotal(0);
     } finally {
-      setIsLoading(false);
+      // Оновлюємо isLoading тільки якщо запит не скасовано
+      if (!signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [filter, searchQuery]);
 
@@ -248,46 +284,51 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
   }, []);
 
   // Слухати зміни у встановлених українізаторах (install/uninstall)
-  // Використовуємо ref щоб уникнути проблем з closure та накопиченням listeners
-  const filterRef = useRef(filter);
-  filterRef.current = filter;
-
-  const loadGamesRef = useRef(loadGames);
-  loadGamesRef.current = loadGames;
-
+  // Перереєструємо listener при зміні filter для коректної роботи closure
   useEffect(() => {
     if (!window.electronAPI?.onInstalledGamesChanged) return;
+    // Підписуємось тільки якщо активний відповідний фільтр
+    if (filter !== 'installed-translations') return;
 
     const handleInstalledGamesChanged = () => {
-      // Перевіряємо актуальний фільтр через ref
-      if (filterRef.current !== 'installed-translations') return;
       console.log('[useGames] Installed translations changed, reloading list');
-      loadGamesRef.current();
+      loadGames();
     };
 
     const unsubscribe = window.electronAPI.onInstalledGamesChanged(handleInstalledGamesChanged);
     return unsubscribe;
-  }, []);
+  }, [filter, loadGames]);
 
   // Слухати зміни Steam бібліотеки (для вкладки встановлених ігор)
+  // Перереєструємо listener при зміні filter для коректної роботи closure
   useEffect(() => {
     if (!window.electronAPI?.onSteamLibraryChanged) return;
+    // Підписуємось тільки якщо активний відповідний фільтр
+    if (filter !== 'installed-games') return;
 
     const handleSteamLibraryChanged = () => {
-      // Перевіряємо актуальний фільтр через ref
-      if (filterRef.current !== 'installed-games') return;
       console.log('[useGames] Steam library changed, reloading installed games list');
-      loadGamesRef.current();
+      loadGames();
     };
 
     const unsubscribe = window.electronAPI.onSteamLibraryChanged(handleSteamLibraryChanged);
     return unsubscribe;
+  }, [filter, loadGames]);
+
+  // Cleanup abort controller при unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   return {
     games,
     total,
     isLoading,
+    error,
     reload,
   };
 }
