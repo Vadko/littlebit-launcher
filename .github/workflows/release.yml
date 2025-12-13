@@ -86,3 +86,55 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm dist:mac --publish always
+
+      - name: Upload Linux tar.gz for Flatpak
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-tar-gz
+          path: release/**/LB-Launcher-linux.tar.gz
+          retention-days: 1
+
+  flatpak:
+    runs-on: ubuntu-latest
+    needs: release
+    timeout-minutes: 60
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:freedesktop-24.08
+      options: --privileged
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Linux tar.gz
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-tar-gz
+          path: flatpak/
+
+      - name: Prepare manifest with local archive
+        run: |
+          TAR_FILE=$(find flatpak -name "*.tar.gz" | head -1)
+          echo "Found tar.gz: $TAR_FILE"
+          # Move to expected location
+          mv "$TAR_FILE" flatpak/lb-launcher.tar.gz
+          SHA256=$(sha256sum flatpak/lb-launcher.tar.gz | cut -d' ' -f1)
+          echo "SHA256: $SHA256"
+          # Replace URL source with local file source
+          sed -i "s|url: https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-linux.tar.gz|path: lb-launcher.tar.gz|" flatpak/org.littlebit.Launcher.yml
+          sed -i "s/REPLACE_WITH_ACTUAL_SHA256/$SHA256/" flatpak/org.littlebit.Launcher.yml
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: org.littlebit.Launcher.flatpak
+          manifest-path: flatpak/org.littlebit.Launcher.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Upload Flatpak bundle to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          gh release upload "$TAG_NAME" org.littlebit.Launcher.flatpak --clobber

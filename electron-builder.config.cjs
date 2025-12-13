@@ -62,7 +62,14 @@ module.exports = {
   },
 
   linux: {
-    target: ['AppImage', 'rpm'],
+    target: [
+      'AppImage',
+      'rpm',
+      {
+        target: 'tar.gz',
+        arch: ['x64'],
+      },
+    ],
     category: 'Utility',
     maintainer: 'LB UA <info@littlebit.org.ua>',
     // Steam Deck compatibility

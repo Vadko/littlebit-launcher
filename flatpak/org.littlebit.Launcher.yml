@@ -1,0 +1,73 @@
+app-id: org.littlebit.Launcher
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+command: lb-launcher
+separate-locales: false
+
+finish-args:
+  # GUI access
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=fallback-x11
+
+  # Network access for downloads
+  - --share=network
+
+  # GPU acceleration
+  - --device=dri
+
+  # Gamepad support (Steam Deck)
+  - --device=all
+
+  # Native Steam directories (read-only for detection)
+  - --filesystem=~/.steam:ro
+  - --filesystem=~/.local/share/Steam:ro
+
+  # Flatpak Steam directories (read-write for installation)
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:rw
+
+  # GOG Galaxy paths
+  - --filesystem=~/GOG Games:rw
+
+  # External drives (common for Steam libraries)
+  - --filesystem=/media:ro
+  - --filesystem=/run/media:ro
+  - --filesystem=/mnt:ro
+
+  # App data persistence
+  - --persist=.config/littlebit-launcher
+  - --persist=.local/share/littlebit-launcher
+
+  # Desktop notifications
+  - --talk-name=org.freedesktop.Notifications
+
+  # System tray icon
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+  # File picker portal
+  - --talk-name=org.freedesktop.portal.FileChooser
+
+modules:
+  - name: littlebit-launcher
+    buildsystem: simple
+    build-commands:
+      - cp -r lb-launcher /app/
+      - ln -s /app/lb-launcher/lb-launcher /app/bin/lb-launcher
+      - install -Dm644 org.littlebit.Launcher.desktop /app/share/applications/org.littlebit.Launcher.desktop
+      - install -Dm644 org.littlebit.Launcher.metainfo.xml /app/share/metainfo/org.littlebit.Launcher.metainfo.xml
+      - install -Dm644 lb-launcher/resources/icon.png /app/share/icons/hicolor/256x256/apps/org.littlebit.Launcher.png
+    sources:
+      # sha256 will be calculated and replaced by CI/CD during release build
+      # URL tag version will also be updated to match the release tag
+      - type: archive
+        url: https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-linux.tar.gz
+        sha256: REPLACE_WITH_ACTUAL_SHA256
+        dest: lb-launcher
+      - type: file
+        path: org.littlebit.Launcher.desktop
+      - type: file
+        path: org.littlebit.Launcher.metainfo.xml

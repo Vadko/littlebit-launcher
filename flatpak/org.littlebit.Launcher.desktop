@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=LB Launcher
+Name[uk]=LB Лаунчер
+Comment=Installer for Ukrainian game localizations
+Comment[uk]=Встановлювач українізаторів відеоігор
+Exec=lb-launcher --no-sandbox %U
+Icon=org.littlebit.Launcher
+Type=Application
+Categories=Game;Utility;
+Keywords=games;localization;translation;ukrainian;steam;
+Keywords[uk]=ігри;локалізація;переклад;українізація;steam;
+StartupWMClass=lb-launcher
+StartupNotify=true

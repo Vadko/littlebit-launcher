@@ -1,7 +1,29 @@
 import { release } from 'os';
+import * as fs from 'fs';
 
 export function isMacOS(): boolean {
   return process.platform === 'darwin';
+}
+
+/**
+ * Check if the app is running inside a Flatpak sandbox
+ */
+export function isRunningInFlatpak(): boolean {
+  return process.platform === 'linux' && fs.existsSync('/.flatpak-info');
+}
+
+/**
+ * Get the Flatpak app ID if running inside a Flatpak sandbox
+ */
+export function getFlatpakAppId(): string | null {
+  if (!isRunningInFlatpak()) return null;
+  try {
+    const info = fs.readFileSync('/.flatpak-info', 'utf8');
+    const match = info.match(/name=(.+)/);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function isWindows(): boolean {

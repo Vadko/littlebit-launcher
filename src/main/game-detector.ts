@@ -14,12 +14,25 @@ export interface GamePath {
 }
 
 /**
+ * Resolve symlinks in a path (useful for Flatpak Steam detection)
+ */
+function resolveSymlinks(targetPath: string): string {
+  try {
+    return fs.realpathSync(targetPath);
+  } catch {
+    return targetPath;
+  }
+}
+
+/**
  * Validate if a path is a valid Steam installation
  */
 function isValidSteamPath(steamPath: string): boolean {
   try {
+    // Resolve symlinks first (important for Flatpak Steam)
+    const resolvedPath = resolveSymlinks(steamPath);
     const requiredDirs = ['steamapps', 'appcache', 'config'];
-    return requiredDirs.every(dir => fs.existsSync(path.join(steamPath, dir)));
+    return requiredDirs.every(dir => fs.existsSync(path.join(resolvedPath, dir)));
   } catch {
     return false;
   }
@@ -112,12 +125,16 @@ export function getSteamPath(): string | null {
     } else if (isLinux()) {
       // Linux - multiple installation methods
       const linuxPaths = [
+        // Native Steam installations
         path.join(os.homedir(), '.steam/steam'),
         path.join(os.homedir(), '.local/share/Steam'),
-        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.steam/steam'),
-        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.local/share/Steam'),
         '/usr/share/steam',
         '/usr/local/share/steam',
+        // Flatpak Steam installations
+        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.steam/steam'),
+        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/.local/share/Steam'),
+        path.join(os.homedir(), '.var/app/com.valvesoftware.Steam/data/Steam'),
+        // Snap Steam installations
         path.join(os.homedir(), 'snap/steam/common/.steam/steam'),
         path.join(os.homedir(), 'snap/steam/common/.local/share/Steam'),
       ];
