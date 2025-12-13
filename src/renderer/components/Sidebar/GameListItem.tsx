@@ -4,6 +4,7 @@ import { Game } from '../../types/game';
 import { getGameImageUrl } from '../../utils/imageUrl';
 import { Loader } from '../ui/Loader';
 import { useSettingsStore } from '../../store/useSettingsStore';
+import { useImagePreload } from '../../hooks/useImagePreload';
 
 interface GameListItemProps {
   game: Game;
@@ -32,6 +33,11 @@ export const GameListItem: React.FC<GameListItemProps> = React.memo(({
   );
 
   const thumbnailUrl = getGameImageUrl(game.thumbnail_path);
+  const bannerUrl = getGameImageUrl(game.banner_path);
+  const logoUrl = getGameImageUrl(game.logo_path);
+
+  // Preload banner and logo when this item becomes visible
+  const preloadRef = useImagePreload([bannerUrl, logoUrl]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -42,6 +48,7 @@ export const GameListItem: React.FC<GameListItemProps> = React.memo(({
 
   return (
     <div
+      ref={preloadRef}
       role="button"
       tabIndex={0}
       onClick={onClick}

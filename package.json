@@ -42,6 +42,7 @@
     "node-machine-id": "^1.1.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-lazy-load-image-component": "^1.6.3",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
@@ -50,6 +51,7 @@
     "@types/node-7z": "^2.1.11",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
+    "@types/react-lazy-load-image-component": "^1.6.5",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
