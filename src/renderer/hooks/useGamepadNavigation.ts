@@ -14,8 +14,11 @@ function getAudioContext(): AudioContext {
 
 /**
  * Play a navigation sound effect (subtle tick)
+ * Only plays when window is focused
  */
 function playNavigateSound(): void {
+  if (!document.hasFocus()) return;
+
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
@@ -39,8 +42,11 @@ function playNavigateSound(): void {
 
 /**
  * Play a confirm sound effect (positive blip)
+ * Only plays when window is focused
  */
 function playConfirmSound(): void {
+  if (!document.hasFocus()) return;
+
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
@@ -65,8 +71,11 @@ function playConfirmSound(): void {
 
 /**
  * Play a back/cancel sound effect (lower tone)
+ * Only plays when window is focused
  */
 function playBackSound(): void {
+  if (!document.hasFocus()) return;
+
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();

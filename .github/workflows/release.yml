@@ -14,10 +14,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Generate release notes from commits
+  release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get current and previous tags
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${CURRENT_TAG}^ 2>/dev/null || echo "")
+
+          echo "Current tag: $CURRENT_TAG"
+          echo "Previous tag: $PREVIOUS_TAG"
+
+          # Generate changelog from commits
+          if [ -n "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:"- %s" --no-merges)
+          else
+            COMMITS=$(git log ${CURRENT_TAG} --pretty=format:"- %s" --no-merges -20)
+          fi
+
+          # Create release notes
+          NOTES="## Що нового
+
+          ${COMMITS}"
+
+          echo "Release notes:"
+          echo "$NOTES"
+
+          # Update release with notes
+          gh release edit "$CURRENT_TAG" --notes "$NOTES" 2>/dev/null || \
+            gh release create "$CURRENT_TAG" --notes "$NOTES" --draft
+
   release:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     environment: production
+    needs: release-notes
 
     strategy:
       fail-fast: false
