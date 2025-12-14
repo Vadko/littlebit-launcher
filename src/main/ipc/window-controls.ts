@@ -133,15 +133,15 @@ export function setupWindowControls(): void {
     return true;
   });
 
-  // Clear cache and restart
-  ipcMain.handle('clear-cache-and-restart', async () => {
+  // Clear only cache (not localStorage) and restart
+  ipcMain.handle('clear-cache-only', async () => {
     try {
-      console.log('[ClearCache] Clearing cache and restarting...');
+      console.log('[ClearCache] Clearing cache only and restarting...');
 
-      // Clear all session data (cache, storage, cookies, etc.)
+      // Clear only cache and temporary data (NOT localStorage)
       await session.defaultSession.clearCache();
       await session.defaultSession.clearStorageData({
-        storages: ['cookies', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
+        storages: ['cookies', 'filesystem', 'shadercache', 'cachestorage'],
       });
 
       // Close database before restart
@@ -156,6 +156,37 @@ export function setupWindowControls(): void {
       console.error('[ClearCache] Error clearing cache:', error);
       return { success: false, error: String(error) };
     }
+  });
+
+  // Clear ALL data (including localStorage) and restart
+  ipcMain.handle('clear-all-data-and-restart', async () => {
+    try {
+      console.log('[ClearAllData] Clearing ALL data and restarting...');
+
+      // Clear all session data (cache, storage, cookies, localStorage, etc.)
+      await session.defaultSession.clearCache();
+      await session.defaultSession.clearStorageData({
+        storages: ['cookies', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage'],
+      });
+
+      // Close database before restart
+      closeDatabase();
+
+      // Relaunch the app
+      app.relaunch();
+      app.exit(0);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[ClearAllData] Error clearing all data:', error);
+      return { success: false, error: String(error) };
+    }
+  });
+
+  // Legacy handler - kept for backwards compatibility
+  ipcMain.handle('clear-cache-and-restart', async () => {
+    // Redirect to clear-all-data for backwards compatibility
+    return ipcMain.emit('clear-all-data-and-restart');
   });
 
   // Logger handlers
