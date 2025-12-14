@@ -115,6 +115,7 @@ export class DatabaseManager {
         achievements_archive_hash TEXT,
         achievements_archive_path TEXT,
         achievements_archive_size TEXT,
+        steam_app_id INTEGER,
         website TEXT,
         youtube TEXT
       );

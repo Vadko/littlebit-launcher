@@ -96,6 +96,7 @@ export class GamesRepository {
       achievements_archive_hash: game.achievements_archive_hash ?? null,
       achievements_archive_path: game.achievements_archive_path ?? null,
       achievements_archive_size: game.achievements_archive_size ?? null,
+      steam_app_id: game.steam_app_id ?? null,
       website: game.website ?? null,
       youtube: game.youtube ?? null,
     };
@@ -230,7 +231,7 @@ export class GamesRepository {
         thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
         voice_archive_hash, voice_archive_path, voice_archive_size,
         voice_progress, achievements_archive_hash, achievements_archive_path, achievements_archive_size,
-        website, youtube
+        steam_app_id, website, youtube
       ) VALUES (
         @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
         @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
@@ -240,7 +241,7 @@ export class GamesRepository {
         @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
         @voice_archive_hash, @voice_archive_path, @voice_archive_size,
         @voice_progress, @achievements_archive_hash, @achievements_archive_path, @achievements_archive_size,
-        @website, @youtube
+        @steam_app_id, @website, @youtube
       )
     `);
 
@@ -262,7 +263,7 @@ export class GamesRepository {
           thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
           voice_archive_hash, voice_archive_path, voice_archive_size,
           voice_progress, achievements_archive_hash, achievements_archive_path, achievements_archive_size,
-          website, youtube
+          steam_app_id, website, youtube
         ) VALUES (
           @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
           @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
@@ -272,7 +273,7 @@ export class GamesRepository {
           @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
           @voice_archive_hash, @voice_archive_path, @voice_archive_size,
           @voice_progress, @achievements_archive_hash, @achievements_archive_path, @achievements_archive_size,
-          @website, @youtube
+          @steam_app_id, @website, @youtube
         )
       `);
 

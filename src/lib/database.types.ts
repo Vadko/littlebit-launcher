@@ -37,18 +37,21 @@ export type Database = {
           downloaded_at: string | null
           game_id: string
           id: string
+          machine_id: string | null
           user_identifier: string
         }
         Insert: {
           downloaded_at?: string | null
           game_id: string
           id?: string
+          machine_id?: string | null
           user_identifier: string
         }
         Update: {
           downloaded_at?: string | null
           game_id?: string
           id?: string
+          machine_id?: string | null
           user_identifier?: string
         }
         Relationships: [
@@ -123,6 +126,7 @@ export type Database = {
           name: string
           platforms: string[]
           status: Database["public"]["Enums"]["game_status"]
+          steam_app_id: number | null
           support_url: string | null
           team: string
           telegram: string | null
@@ -172,6 +176,7 @@ export type Database = {
           name: string
           platforms?: string[]
           status?: Database["public"]["Enums"]["game_status"]
+          steam_app_id?: number | null
           support_url?: string | null
           team: string
           telegram?: string | null
@@ -221,6 +226,7 @@ export type Database = {
           name?: string
           platforms?: string[]
           status?: Database["public"]["Enums"]["game_status"]
+          steam_app_id?: number | null
           support_url?: string | null
           team?: string
           telegram?: string | null
@@ -297,6 +303,7 @@ export type Database = {
           project_id: string | null
           slug: string
           status: Database["public"]["Enums"]["game_status"]
+          steam_app_id: number | null
           subscriptions: number | null
           support_url: string | null
           team: string
@@ -349,6 +356,7 @@ export type Database = {
           project_id?: string | null
           slug: string
           status?: Database["public"]["Enums"]["game_status"]
+          steam_app_id?: number | null
           subscriptions?: number | null
           support_url?: string | null
           team: string
@@ -401,6 +409,7 @@ export type Database = {
           project_id?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["game_status"]
+          steam_app_id?: number | null
           subscriptions?: number | null
           support_url?: string | null
           team?: string
@@ -440,16 +449,19 @@ export type Database = {
         Row: {
           app_id: number
           created_at: string
+          installdir: string | null
           name: string
         }
         Insert: {
           app_id: number
           created_at?: string
+          installdir?: string | null
           name: string
         }
         Update: {
           app_id?: number
           created_at?: string
+          installdir?: string | null
           name?: string
         }
         Relationships: []
@@ -472,6 +484,33 @@ export type Database = {
           last_sync_at?: string | null
           sync_status?: string | null
           total_apps?: number | null
+        }
+        Relationships: []
+      }
+      user_threads: {
+        Row: {
+          created_at: string | null
+          first_name: string | null
+          is_banned: boolean | null
+          thread_id: number
+          user_id: number
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          first_name?: string | null
+          is_banned?: boolean | null
+          thread_id: number
+          user_id: number
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          first_name?: string | null
+          is_banned?: boolean | null
+          thread_id?: number
+          user_id?: number
+          username?: string | null
         }
         Relationships: []
       }
@@ -526,10 +565,34 @@ export type Database = {
         Args: { p_game_id: string; p_user_identifier: string }
         Returns: undefined
       }
-      increment_game_downloads: {
-        Args: { p_game_id: string; p_user_identifier: string }
-        Returns: undefined
+      check_download_rate_limit: {
+        Args: {
+          p_game_id: string
+          p_max_downloads?: number
+          p_size_threshold_mb?: number
+          p_time_window_hours?: number
+          p_user_identifier: string
+        }
+        Returns: {
+          allowed: boolean
+          downloads_today: number
+          max_allowed: number
+          next_available_at: string
+        }[]
       }
+      increment_game_downloads:
+        | {
+            Args: { p_game_id: string; p_user_identifier: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_game_id: string
+              p_machine_id?: string
+              p_user_identifier: string
+            }
+            Returns: undefined
+          }
       is_admin: { Args: never; Returns: boolean }
       is_verified_user: { Args: never; Returns: boolean }
       remove_game_subscription: {
@@ -540,6 +603,7 @@ export type Database = {
         Args: { limit_val?: number; offset_val?: number; search_query: string }
         Returns: {
           app_id: number
+          installdir: string
           name: string
         }[]
       }
