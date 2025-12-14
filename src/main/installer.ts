@@ -2,14 +2,66 @@ import { app, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { promisify } from 'util';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { createHash } from 'crypto';
 import got from 'got';
 import { extractFull } from 'node-7z';
-import { path7z as originalPath7z } from '7zip-bin-full';
+import { path7z as originalPath7z, path7zzs } from '7zip-bin-full';
 
 // Fix for ASAR: replace .asar with .asar.unpacked for spawnable binaries
-const path7z = originalPath7z.replace('app.asar', 'app.asar.unpacked');
+const bundled7z = originalPath7z.replace('app.asar', 'app.asar.unpacked');
+const bundled7zzs = path7zzs.replace('app.asar', 'app.asar.unpacked');
+
+/**
+ * Check if system 7z is available (for Linux/Steam Deck compatibility)
+ */
+function getSystem7zPath(): string | null {
+  if (process.platform !== 'linux') return null;
+
+  try {
+    // Try common 7z command names
+    for (const cmd of ['7zz', '7z', '7za']) {
+      try {
+        const result = execSync(`which ${cmd}`, { encoding: 'utf-8', timeout: 5000 }).trim();
+        if (result) {
+          console.log(`[7z] Found system 7z: ${result}`);
+          return result;
+        }
+      } catch {
+        // Command not found, try next
+      }
+    }
+  } catch (error) {
+    console.log('[7z] No system 7z found');
+  }
+  return null;
+}
+
+/**
+ * Get the best available 7z binary path
+ * Priority: system 7z > static 7zzs > bundled 7zz
+ */
+function get7zPath(): string {
+  // On Linux, prefer system 7z for better compatibility (especially Steam Deck)
+  if (process.platform === 'linux') {
+    const system7z = getSystem7zPath();
+    if (system7z) {
+      return system7z;
+    }
+
+    // Fallback to static binary (no dynamic library dependencies)
+    if (fs.existsSync(bundled7zzs)) {
+      console.log(`[7z] Using static bundled 7zzs: ${bundled7zzs}`);
+      return bundled7zzs;
+    }
+  }
+
+  // Default: use bundled 7zz
+  console.log(`[7z] Using bundled 7z: ${bundled7z}`);
+  return bundled7z;
+}
+
+const path7z = get7zPath();
 import { getFirstAvailableGamePath, getSteamPath } from './game-detector';
 import type { InstallationInfo, Game, DownloadProgress, InstallationStatus, InstallOptions } from '../shared/types';
 import { formatBytes } from '../shared/formatters';

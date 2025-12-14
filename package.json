@@ -20,6 +20,7 @@
     "dist:linux": "electron-builder --linux --config electron-builder.config.cjs",
     "dist:mac": "electron-builder --mac --config electron-builder.config.cjs",
     "dist:win:local": "env-cmd pnpm build && pnpm dist:win",
+    "dist:linux:local": "env-cmd pnpm build && pnpm dist:linux",
     "dist:mac:local": "env-cmd pnpm build && pnpm dist:mac",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
