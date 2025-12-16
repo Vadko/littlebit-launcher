@@ -56,6 +56,7 @@ export interface InstallOptions {
 export interface GetGamesParams {
   searchQuery?: string;
   filter?: string;
+  team?: string;
   showAdultGames?: boolean;
 }
 
@@ -77,6 +78,7 @@ export interface LaunchGameResult {
 
 export interface ElectronAPI {
   fetchGames: (params?: GetGamesParams) => Promise<GetGamesResult>;
+  fetchTeams: () => Promise<string[]>;
   fetchGamesByIds: (gameIds: string[]) => Promise<Game[]>;
   getAllInstalledGamePaths: () => Promise<string[]>;
   getAllInstalledSteamGames: () => Promise<Record<string, string>>;

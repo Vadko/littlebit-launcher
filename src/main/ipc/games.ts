@@ -1,5 +1,5 @@
 import { app, ipcMain } from 'electron';
-import { fetchGames, fetchGamesByIds, findGamesByInstallPaths } from '../api';
+import { fetchGames, fetchGamesByIds, findGamesByInstallPaths, fetchTeams } from '../api';
 import { GetGamesParams, Game } from '../../shared/types';
 import {
   getFirstAvailableGamePath,
@@ -43,6 +43,16 @@ export function setupGamesHandlers(): void {
       return fetchGamesByIds(gameIds);
     } catch (error) {
       console.error('Error fetching games by IDs:', error);
+      return [];
+    }
+  });
+
+  // Fetch unique teams - SYNC
+  ipcMain.handle('fetch-teams', () => {
+    try {
+      return fetchTeams();
+    } catch (error) {
+      console.error('Error fetching teams:', error);
       return [];
     }
   });

@@ -36,7 +36,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(
     }, [isOpen]);
 
     return (
-      <div className="relative px-4 pb-4" ref={menuRef}>
+      <div className="relative flex-1 min-w-0" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
@@ -45,12 +45,12 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(
               : 'bg-glass text-text-muted border border-transparent hover:bg-glass-hover hover:text-white'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <ListFilter size={14} />
-            {currentLabel}
+          <span className="flex items-center gap-2 truncate">
+            <ListFilter size={14} className="flex-shrink-0" />
+            <span className="truncate">{currentLabel}</span>
           </span>
           <svg
-            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -71,7 +71,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-full left-4 right-4 -mt-2 py-1 bg-bg-dark border border-border rounded-lg shadow-xl z-50 overflow-hidden filter-dropdown"
+              className="absolute top-full left-0 mt-1 py-1 w-[calc(200%+0.5rem)] bg-bg-dark border border-border rounded-lg shadow-xl z-50 overflow-hidden filter-dropdown"
             >
               {FILTER_OPTIONS.map((f, index) => (
                 <React.Fragment key={f.value}>

@@ -6,6 +6,7 @@ import { useStore } from '../store/useStore';
 interface UseGamesParams {
   filter: string;
   searchQuery: string;
+  team?: string | null;
 }
 
 interface UseGamesResult {
@@ -20,7 +21,7 @@ interface UseGamesResult {
  * Хук для отримання ігор з локальної бази даних
  * Оскільки це local-first додаток, завантажуємо всі ігри одразу
  */
-export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResult {
+export function useGames({ filter, searchQuery, team }: UseGamesParams): UseGamesResult {
   // Note: showAdultGames is handled in UI (blur effect), not filtering here
   const checkSubscribedGamesStatus = useStore(
     (state) => state.checkSubscribedGamesStatus
@@ -121,6 +122,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
       const params: GetGamesParams = {
         searchQuery,
         filter,
+        team: team || undefined,
       };
 
       const result = await window.electronAPI.fetchGames(params);
@@ -152,7 +154,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
         setIsLoading(false);
       }
     }
-  }, [filter, searchQuery]);
+  }, [filter, searchQuery, team]);
 
   /**
    * Перезавантажити
@@ -246,8 +248,11 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
           (filter === 'in-progress' && updatedGame.status === 'in-progress') ||
           (filter === 'planned' && updatedGame.status === 'planned');
 
+        // Перевірити чи гра відповідає фільтру команди
+        const matchesTeam = !team || updatedGame.team === team;
+
         // Adult games are always shown in list (with blur overlay in UI)
-        const shouldBeInList = matchesSearch && matchesFilter && updatedGame.approved;
+        const shouldBeInList = matchesSearch && matchesFilter && matchesTeam && updatedGame.approved;
 
         if (index === -1) {
           // Гра не в списку
@@ -277,7 +282,7 @@ export function useGames({ filter, searchQuery }: UseGamesParams): UseGamesResul
 
     const unsubscribe = window.electronAPI.onGameUpdated(handleGameUpdate);
     return unsubscribe;
-  }, [searchQuery, filter]);
+  }, [searchQuery, filter, team]);
 
   // Слухати realtime видалення ігор
   useEffect(() => {

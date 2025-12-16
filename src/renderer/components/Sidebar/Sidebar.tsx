@@ -4,6 +4,7 @@ import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
 import { FilterDropdown } from './FilterDropdown';
+import { TeamFilterDropdown } from './TeamFilterDropdown';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarFooter } from './SidebarFooter';
 import { GameGroupItem } from './GameGroupItem';
@@ -23,9 +24,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
   const {
     selectedGame,
     filter,
+    teamFilter,
     searchQuery,
     setSelectedGame,
     setFilter,
+    setTeamFilter,
     setSearchQuery,
     gamesWithUpdates,
     isGameDetected,
@@ -36,6 +39,24 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
+  // Fetch teams list
+  const [teams, setTeams] = useState<string[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const fetchedTeams = await window.electronAPI.fetchTeams();
+        setTeams(fetchedTeams);
+      } catch (error) {
+        console.error('[Sidebar] Error fetching teams:', error);
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+    loadTeams();
+  }, []);
+
   const {
     games: visibleGames,
     total: totalGames,
@@ -43,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
   } = useGames({
     filter,
     searchQuery: debouncedSearchQuery,
+    team: teamFilter,
   });
 
   // Group games by slug
@@ -107,7 +129,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({ onOpenHistory }) =>
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
       </div>
 
-      <FilterDropdown value={filter} onChange={setFilter} />
+      {/* Filters row */}
+      <div className="flex gap-2 px-4 pb-4">
+        <FilterDropdown value={filter} onChange={setFilter} />
+        <TeamFilterDropdown
+          value={teamFilter}
+          onChange={setTeamFilter}
+          teams={teams}
+          isLoading={teamsLoading}
+        />
+      </div>
 
       {/* Games list */}
       <div className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar">

@@ -27,6 +27,7 @@ interface Store {
   // UI State
   selectedGame: Game | null;
   filter: FilterType;
+  teamFilter: string | null;
   searchQuery: string;
   isInitialLoad: boolean;
 
@@ -43,6 +44,7 @@ interface Store {
   // UI Actions
   setSelectedGame: (game: Game | null) => void;
   setFilter: (filter: FilterType) => void;
+  setTeamFilter: (team: string | null) => void;
   setSearchQuery: (query: string) => void;
   setInitialLoadComplete: () => void;
 
@@ -80,6 +82,7 @@ export const useStore = create<Store>((set, get) => ({
   // UI State
   selectedGame: null,
   filter: 'all',
+  teamFilter: null,
   searchQuery: '',
   isInitialLoad: true,
 
@@ -97,6 +100,8 @@ export const useStore = create<Store>((set, get) => ({
   setSelectedGame: (game) => set({ selectedGame: game }),
 
   setFilter: (filter) => set({ filter }),
+
+  setTeamFilter: (teamFilter) => set({ teamFilter }),
 
   setSearchQuery: (searchQuery) => set({ searchQuery }),
 

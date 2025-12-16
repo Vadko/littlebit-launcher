@@ -116,7 +116,7 @@ export class GamesRepository {
    * Оскільки це local-first додаток, повертаємо всі ігри одразу
    */
   getGames(params: GetGamesParams = {}): GetGamesResult {
-    const { searchQuery = '', filter = 'all' } = params;
+    const { searchQuery = '', filter = 'all', team } = params;
     // Note: showAdultGames is now handled in UI (blur effect) instead of filtering here
 
     const whereConditions: string[] = ['approved = 1'];
@@ -130,6 +130,12 @@ export class GamesRepository {
     if (searchQuery) {
       whereConditions.push('name LIKE ?');
       queryParams.push(`%${searchQuery}%`);
+    }
+
+    if (team) {
+      // Partial match - "Team A" matches "Team A & Team B"
+      whereConditions.push('team LIKE ?');
+      queryParams.push(`%${team}%`);
     }
 
     // Adult games are always returned, UI will show blur overlay when setting is off
@@ -148,6 +154,21 @@ export class GamesRepository {
     const total = games.length;
 
     return { games, total };
+  }
+
+  /**
+   * Отримати унікальні команди (автори)
+   */
+  getUniqueTeams(): string[] {
+    const stmt = this.db.prepare(`
+      SELECT DISTINCT team
+      FROM games
+      WHERE approved = 1 AND team IS NOT NULL AND team != ''
+      ORDER BY team ASC
+    `);
+
+    const rows = stmt.all() as { team: string }[];
+    return rows.map((row) => row.team);
   }
 
   /**
