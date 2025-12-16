@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { EyeOff } from 'lucide-react';
-import { Game } from '../../types/game';
+import type { Game } from '../../types/game';
 import { getGameImageUrl } from '../../utils/imageUrl';
 import { Loader } from '../ui/Loader';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -12,10 +12,11 @@ interface GameListItemProps {
   onClick: () => void;
   hasUpdate?: boolean;
   isGameDetected?: boolean;
+  showTeamName?: boolean;
 }
 
 export const GameListItem: React.FC<GameListItemProps> = React.memo(
-  ({ game, isSelected, onClick, hasUpdate = false, isGameDetected = false }) => {
+  ({ game, isSelected, onClick, hasUpdate = false, isGameDetected = false, showTeamName = false }) => {
     const [imageLoading, setImageLoading] = useState(true);
     const [imageError, setImageError] = useState(false);
     const showAdultGames = useSettingsStore((state) => state.showAdultGames);
@@ -103,13 +104,20 @@ export const GameListItem: React.FC<GameListItemProps> = React.memo(
           )}
         </div>
         <div className={`flex-1 min-w-0 ${isAdultBlurred ? 'blur-md' : ''}`}>
-          <h4 className="font-semibold text-sm text-white mb-1 truncate">{game.name}</h4>
-          <div className="h-1 bg-glass-hover rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-neon-blue to-neon-purple rounded-full transition-all duration-500"
-              style={{ width: `${averageProgress}%` }}
-            />
-          </div>
+          <h4 className="font-semibold text-sm text-white mb-1 truncate">
+            {showTeamName ? game.team : game.name}
+          </h4>
+          {showTeamName && (
+            <p className="text-xs text-text-muted mb-1 truncate">{averageProgress}%</p>
+          )}
+          {!showTeamName && (
+            <div className="h-1 bg-glass-hover rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-neon-blue to-neon-purple rounded-full transition-all duration-500"
+                style={{ width: `${averageProgress}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
     );

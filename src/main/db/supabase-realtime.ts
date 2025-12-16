@@ -121,6 +121,37 @@ export class SupabaseRealtimeManager {
       .on(
         'postgres_changes',
         {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'games',
+        },
+        (payload) => {
+          console.log('[SupabaseRealtime] Game inserted:', payload);
+          const newGame = payload.new as Game;
+
+          // Тільки approved ігри додаємо
+          if (!newGame.approved) {
+            console.log(
+              '[SupabaseRealtime] New game not approved, skipping:',
+              newGame.name
+            );
+            return;
+          }
+
+          // Додати в локальну БД через callback
+          onUpdate(newGame);
+
+          // Відправити в renderer process
+          const mainWindow = getMainWindow();
+          if (mainWindow) {
+            mainWindow.webContents.send('game-updated', newGame);
+            console.log('[SupabaseRealtime] Sent new game to renderer:', newGame.name);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'UPDATE',
           schema: 'public',
           table: 'games',
