@@ -60,7 +60,7 @@ export const Modal: React.FC<ModalProps> = ({
                   <button
                     onClick={onClose}
                     data-gamepad-cancel
-                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors flex-shrink-0 ml-2 focus:outline-none focus:ring-2 focus:ring-neon-blue"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-glass-hover transition-colors flex-shrink-0 ml-2"
                   >
                     <X size={18} className="text-text-muted" />
                   </button>

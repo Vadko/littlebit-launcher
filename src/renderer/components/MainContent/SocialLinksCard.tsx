@@ -54,14 +54,14 @@ const SteamStoreButton: React.FC<{ steamAppId: number }> = ({ steamAppId }) => {
     <button
       onClick={handleClick}
       data-nav-group="main-links"
-      className="group flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#1b2838] to-[#2a475e] hover:from-[#2a475e] hover:to-[#3d6a8a] border border-[#66c0f4]/30 hover:border-[#66c0f4]/60 transition-all duration-300"
+      className="group flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1b2838] hover:bg-[#2a475e] border border-[#66c0f4]/30 hover:border-[#66c0f4]/60 hover:shadow-lg hover:shadow-[#66c0f4]/20 transform hover:scale-[1.02] transition-all duration-200 ease-out"
       title="Відкрити в Steam Store"
     >
       <SteamIcon
         size={18}
-        className="text-[#66c0f4] group-hover:text-white transition-colors duration-300"
+        className="text-[#66c0f4] group-hover:text-white transition-colors duration-200 ease-out"
       />
-      <span className="text-sm text-white font-medium">Steam Store</span>
+      <span className="text-sm text-white font-medium">Магазин Steam</span>
     </button>
   );
 };

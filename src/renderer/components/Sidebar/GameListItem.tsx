@@ -53,7 +53,7 @@ export const GameListItem: React.FC<GameListItemProps> = React.memo(
           onClick={onClick}
           onKeyDown={handleKeyDown}
           data-gamepad-card
-          className={`game-list-item relative w-[200px] rounded-xl cursor-pointer transition-all duration-300 outline-none focus:ring-2 focus:ring-neon-blue focus:shadow-[0_0_20px_rgba(0,242,255,0.4)] ${
+          className={`game-list-item relative w-[200px] rounded-xl cursor-pointer transition-all duration-300 outline-none ${
             isSelected
               ? 'ring-2 ring-neon-blue shadow-[0_0_20px_rgba(0,242,255,0.4)]'
               : 'ring-1 ring-white/10 hover:ring-white/30'

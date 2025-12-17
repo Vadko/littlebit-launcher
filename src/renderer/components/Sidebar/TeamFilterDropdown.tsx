@@ -143,7 +143,7 @@ export const TeamFilterDropdown: React.FC<TeamFilterDropdownProps> = React.memo(
                           value === null
                             ? 'bg-glass-hover text-white'
                             : 'text-text-muted hover:bg-glass hover:text-white'
-                        } focus:outline-none focus:bg-glass-hover focus:text-white`}
+                        }`}
                       >
                         Усі автори
                         {value === null && <Check size={14} />}
@@ -164,7 +164,7 @@ export const TeamFilterDropdown: React.FC<TeamFilterDropdownProps> = React.memo(
                             value === team
                               ? 'bg-glass-hover text-white'
                               : 'text-text-muted hover:bg-glass hover:text-white'
-                          } focus:outline-none focus:bg-glass-hover focus:text-white`}
+                          }`}
                         >
                           <span className="truncate">{team}</span>
                           {value === team && <Check size={14} />}

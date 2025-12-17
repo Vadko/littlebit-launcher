@@ -68,29 +68,36 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100vh',
-            width: '100vw',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: '#0a0e14',
             color: '#e0e0e0',
-            padding: '40px',
             fontFamily: 'system-ui, -apple-system, sans-serif',
             overflow: 'auto',
           }}
         >
           <div
             style={{
-              maxWidth: '800px',
-              width: '100%',
-              backgroundColor: '#141922',
-              borderRadius: '12px',
-              padding: '32px',
-              border: '1px solid #1e2530',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              padding: '40px',
+              boxSizing: 'border-box',
             }}
           >
+            <div
+              style={{
+                maxWidth: '800px',
+                width: '100%',
+                backgroundColor: '#141922',
+                borderRadius: '12px',
+                padding: '32px',
+                border: '1px solid #1e2530',
+              }}
+            >
             <h1
               style={{
                 fontSize: '24px',
@@ -268,6 +275,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
               </div>
             </details>
+            </div>
           </div>
         </div>
       );

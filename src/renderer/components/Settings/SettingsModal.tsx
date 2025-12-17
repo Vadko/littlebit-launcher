@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, RefreshCw, FolderOpen } from 'lucide-react';
+import { MessageCircle, RefreshCw, FolderOpen, Trash2 } from 'lucide-react';
 import { Modal } from '../Modal/Modal';
 import { Switch } from '../ui/Switch';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -68,8 +68,12 @@ export const SettingsModal: React.FC = () => {
     window.electronAPI?.openExternal('https://t.me/lb_launcher_bot');
   }, []);
 
-  const handleClearCacheAndRestart = useCallback(async () => {
-    await window.windowControls?.clearCacheAndRestart();
+  const handleClearCacheOnly = useCallback(async () => {
+    await window.api?.clearCacheOnly();
+  }, []);
+
+  const handleClearAllData = useCallback(async () => {
+    await window.api?.clearAllData();
   }, []);
 
   const handleToggleSaveLogsToFile = useCallback(async () => {
@@ -196,20 +200,36 @@ export const SettingsModal: React.FC = () => {
           onChange={toggleShowAdultGames}
         />
 
-        {/* Clear cache and restart */}
+        {/* Clear cache only */}
         <button
-          onClick={handleClearCacheAndRestart}
+          onClick={handleClearCacheOnly}
           className="w-full flex items-center gap-3 p-4 rounded-xl bg-glass border border-border hover:bg-glass-hover hover:border-border-hover transition-all duration-300"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center flex-shrink-0">
             <RefreshCw size={20} className="text-white" />
           </div>
           <div className="flex-1 text-left">
+            <h4 className="text-sm font-semibold text-white">Очистити кеш</h4>
+            <p className="text-xs text-text-muted">
+              Видалити тимчасові файли (зберігає налаштування)
+            </p>
+          </div>
+        </button>
+
+        {/* Clear all data */}
+        <button
+          onClick={handleClearAllData}
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-glass border border-border hover:bg-glass-hover hover:border-red-500/50 transition-all duration-300"
+        >
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center flex-shrink-0">
+            <Trash2 size={20} className="text-white" />
+          </div>
+          <div className="flex-1 text-left">
             <h4 className="text-sm font-semibold text-white">
-              Очистити кеш і перезапустити
+              Очистити всі дані
             </h4>
             <p className="text-xs text-text-muted">
-              Видалити тимчасові дані та перезавантажити додаток
+              Видалити налаштування, підписки та всі дані
             </p>
           </div>
         </button>

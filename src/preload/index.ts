@@ -26,6 +26,8 @@ const electronAPI: ElectronAPI = {
     game: Game,
     componentsToRemove: { voice?: boolean; achievements?: boolean }
   ) => ipcRenderer.invoke('remove-components', game, componentsToRemove),
+  checkPlatformCompatibility: (game: Game) =>
+    ipcRenderer.invoke('check-platform-compatibility', game),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
   selectGameFolder: () => ipcRenderer.invoke('select-game-folder'),
   onInstallProgress: (callback: (progress: number) => void) => {

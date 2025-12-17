@@ -91,7 +91,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = React.memo(
                       value === f.value
                         ? 'bg-glass-hover text-white'
                         : 'text-text-muted hover:bg-glass hover:text-white'
-                    } focus:outline-none focus:bg-glass-hover focus:text-white`}
+                    }`}
                   >
                     {f.label}
                     {value === f.value && <Check size={14} />}

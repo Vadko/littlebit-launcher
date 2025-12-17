@@ -172,6 +172,13 @@ export async function installTranslation(
     );
     console.log(`[Installer] Requested platform: ${platform}`);
 
+    // 1. Check platform compatibility for installer-based translations
+    const platformError = checkPlatformCompatibility(game);
+    if (platformError) {
+      console.error(`[Installer] Platform incompatible: ${platformError}`);
+      throw new Error(platformError);
+    }
+
     // 2. Detect game installation path
     const gamePath = customGamePath
       ? { platform, path: customGamePath, exists: true }
@@ -512,15 +519,24 @@ export async function installTranslation(
     const isExeInstaller = hasExecutableInstaller(game);
 
     if (installerFileName && isExeInstaller) {
-      // Game has its own executable installer - let it handle the installation
-      // We don't copy files or create backups since the installer manages everything
+      // Game has its own executable installer
+      // First copy all files to game folder, then run installer from there
       console.log(`[Installer] Found executable installer: ${installerFileName}`);
-      console.log(
-        `[Installer] Skipping backup and file copy - installer will handle installation`
-      );
 
+      const fullTargetPath = gamePath.path;
+      console.log(`[Installer] Copying files to game folder before running installer: ${fullTargetPath}`);
+
+      // Copy all extracted files to game folder first
+      onStatus?.({ message: 'Копіювання файлів українізатора...' });
+      await copyDirectory(extractDir, fullTargetPath);
+
+      // Cleanup temp files (files are now in game folder)
+      onStatus?.({ message: 'Очищення тимчасових файлів...' });
+      await cleanupDownloadDir(downloadDir);
+
+      // Run installer from game folder
       try {
-        await runInstaller(extractDir, installerFileName);
+        await runInstaller(fullTargetPath, installerFileName);
         console.log(
           `[Installer] Installer launched successfully. User needs to complete installation.`
         );
@@ -528,10 +544,6 @@ export async function installTranslation(
         console.error('[Installer] Failed to launch installer:', error);
         throw new Error('Не вдалося запустити інсталятор українізатора');
       }
-
-      // Cleanup temp files
-      onStatus?.({ message: 'Очищення тимчасових файлів...' });
-      await cleanupDownloadDir(downloadDir);
 
       // Save minimal installation info (no file tracking since installer handles it)
       const installationInfo: InstallationInfo = {
@@ -558,23 +570,31 @@ export async function installTranslation(
     }
 
     // 6. Backup original files and copy translation files (only for non-installer translations)
+    // Only copy to game path if text or voice is being installed (achievements go to Steam folder)
     const fullTargetPath = gamePath.path;
     console.log(`[Installer] Installing to: ${fullTargetPath}`);
 
-    // Get list of all files that will be installed
-    const installedFiles = await getAllFiles(extractDir);
-    console.log(`[Installer] Will install ${installedFiles.length} files`);
+    // Get list of all files that will be installed to game folder
+    let installedFiles: string[] = [];
 
-    // Create backup of files that will be overwritten (if enabled)
-    if (createBackup) {
-      onStatus?.({ message: 'Створення резервної копії...' });
-      await backupFiles(extractDir, fullTargetPath);
+    // Only process game folder installation if text or voice is being installed
+    if (installText || installVoice) {
+      installedFiles = await getAllFiles(extractDir);
+      console.log(`[Installer] Will install ${installedFiles.length} files to game folder`);
+
+      // Create backup of files that will be overwritten (if enabled)
+      if (createBackup) {
+        onStatus?.({ message: 'Створення резервної копії...' });
+        await backupFiles(extractDir, fullTargetPath);
+      } else {
+        console.log('[Installer] Backup creation disabled by user');
+      }
+
+      onStatus?.({ message: 'Копіювання файлів українізатора...' });
+      await copyDirectory(extractDir, fullTargetPath);
     } else {
-      console.log('[Installer] Backup creation disabled by user');
+      console.log('[Installer] Skipping game folder installation (only achievements selected)');
     }
-
-    onStatus?.({ message: 'Копіювання файлів українізатора...' });
-    await copyDirectory(extractDir, fullTargetPath);
 
     // 7. Cleanup
     onStatus?.({ message: 'Очищення тимчасових файлів...' });
@@ -590,8 +610,9 @@ export async function installTranslation(
       isCustomPath: !!customGamePath, // Track if installed via manual folder selection
       installedFiles, // Legacy field for backward compatibility
       components: {
+        // Only mark text as installed if it was actually installed
         text: {
-          installed: true,
+          installed: installText,
           files: textFiles,
         },
         ...(installVoice && voiceFiles.length > 0
@@ -1250,17 +1271,58 @@ function isExecutableInstaller(fileName: string): boolean {
 }
 
 /**
+ * Check if game requires a platform-specific installer and if current platform is supported
+ * Returns null if compatible, or an error message if not
+ */
+export function checkPlatformCompatibility(game: Game): string | null {
+  const hasWindowsInstaller = !!game.installation_file_windows_path;
+  const hasLinuxInstaller = !!game.installation_file_linux_path;
+
+  // If no installers required, compatible with all platforms
+  if (!hasWindowsInstaller && !hasLinuxInstaller) {
+    return null;
+  }
+
+  const isWindowsOS = isWindows();
+  const isLinuxOS = isLinux();
+  const isMacOS = !isWindowsOS && !isLinuxOS;
+
+  // Windows: needs Windows installer
+  if (isWindowsOS && !hasWindowsInstaller) {
+    return 'Цей українізатор доступний тільки для Linux. Встановлення на Windows неможливе.';
+  }
+
+  // Linux: needs Linux installer
+  if (isLinuxOS && !hasLinuxInstaller) {
+    return 'Цей українізатор доступний тільки для Windows. Встановлення на Linux неможливе.';
+  }
+
+  // macOS: can run Linux shell scripts, but not Windows installers
+  if (isMacOS) {
+    // If only Windows installer available - block
+    if (hasWindowsInstaller && !hasLinuxInstaller) {
+      return 'Цей українізатор доступний тільки для Windows. Встановлення на macOS неможливе.';
+    }
+    // If Linux installer available - allow (macOS can run shell scripts)
+  }
+
+  return null;
+}
+
+/**
  * Get installer file name based on platform
  */
 function getInstallerFileName(game: Game): string | null {
   const isWindowsOS = isWindows();
   const isLinuxOS = isLinux();
+  const isMacOS = !isWindowsOS && !isLinuxOS;
 
   if (isWindowsOS && game.installation_file_windows_path) {
     return game.installation_file_windows_path;
   }
 
-  if (isLinuxOS && game.installation_file_linux_path) {
+  // Linux and macOS can both run shell scripts
+  if ((isLinuxOS || isMacOS) && game.installation_file_linux_path) {
     return game.installation_file_linux_path;
   }
 

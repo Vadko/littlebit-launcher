@@ -17,7 +17,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = React.memo(
           onClick={onSwitchToDesktop}
           data-nav-group="sidebar-actions"
           data-gamepad-header-item
-          className="p-2 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-neon-blue"
+          className="p-2 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"
           title="Десктопний режим"
         >
           <Monitor size={20} className="mx-auto text-text-muted" />
@@ -27,7 +27,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = React.memo(
         onClick={onOpenHistory}
         data-nav-group="sidebar-actions"
         data-gamepad-header-item={isCompact ? true : undefined}
-        className={`relative glass-button rounded-xl hover:bg-glass-hover transition-all duration-300 ${isCompact ? 'p-2 focus:outline-none focus:ring-2 focus:ring-neon-blue' : 'flex-1 p-3'}`}
+        className={`relative glass-button rounded-xl hover:bg-glass-hover transition-all duration-300 ${isCompact ? 'p-2' : 'flex-1 p-3'}`}
         title="Сповіщення"
       >
         <Bell size={20} className="mx-auto text-text-muted" />
@@ -41,7 +41,7 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = React.memo(
         onClick={onOpenSettings}
         data-nav-group="sidebar-actions"
         data-gamepad-header-item={isCompact ? true : undefined}
-        className={`glass-button rounded-xl hover:bg-glass-hover transition-all duration-300 ${isCompact ? 'p-2 focus:outline-none focus:ring-2 focus:ring-neon-blue' : 'flex-1 p-3'}`}
+        className={`glass-button rounded-xl hover:bg-glass-hover transition-all duration-300 ${isCompact ? 'p-2' : 'flex-1 p-3'}`}
         title="Налаштування"
       >
         <Settings size={20} className="mx-auto text-text-muted" />

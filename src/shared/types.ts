@@ -102,6 +102,7 @@ export interface ElectronAPI {
     game: Game,
     componentsToRemove: { voice?: boolean; achievements?: boolean }
   ) => Promise<InstallResult>;
+  checkPlatformCompatibility: (game: Game) => Promise<string | null>;
   openExternal: (url: string) => Promise<void>;
   selectGameFolder: () => Promise<string | null>;
   onInstallProgress: (callback: (progress: number) => void) => () => void;

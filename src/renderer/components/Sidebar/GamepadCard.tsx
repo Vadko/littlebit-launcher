@@ -48,7 +48,6 @@ export const GamepadCard: React.FC<GamepadCardProps> = ({
           ? 'ring-2 ring-neon-blue shadow-[0_0_20px_rgba(0,242,255,0.5)] scale-105 z-10'
           : 'ring-1 ring-white/10 hover:ring-white/30 hover:scale-102'
         }
-        focus:ring-2 focus:ring-neon-blue focus:shadow-[0_0_20px_rgba(0,242,255,0.5)]
       `}
     >
       {/* Adult blur overlay */}

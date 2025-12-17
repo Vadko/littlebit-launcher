@@ -9,6 +9,7 @@ import {
   abortCurrentDownload,
   removeOrphanedInstallationMetadata,
   removeComponents,
+  checkPlatformCompatibility,
 } from '../installer';
 import { getMainWindow } from '../window';
 import type { Game, InstallOptions } from '../../shared/types';
@@ -153,4 +154,8 @@ export function setupInstallerHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle('check-platform-compatibility', async (_, game: Game) => {
+    return checkPlatformCompatibility(game);
+  });
 }

@@ -10,6 +10,7 @@ import {
   Download,
   Volume2,
   Trophy,
+  Bell,
 } from 'lucide-react';
 
 interface InfoCardProps {
@@ -44,6 +45,7 @@ const formatDate = (dateString: string | null | undefined): string => {
 export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
   const platformsText = game.platforms.join(', ').toUpperCase();
   const downloadsText = game.downloads?.toLocaleString('uk-UA') || '0';
+  const subscriptionsText = game.subscriptions?.toLocaleString('uk-UA') || '0';
   const isPlanned = game.status === 'planned';
 
   return (
@@ -78,7 +80,13 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
             value={game.achievements_archive_size}
           />
         )}
-        {!isPlanned && (
+        {isPlanned ? (
+          <InfoItem
+            icon={<Bell size={18} />}
+            label="Підписників"
+            value={subscriptionsText}
+          />
+        ) : (
           <InfoItem
             icon={<Download size={18} />}
             label="Завантажень"

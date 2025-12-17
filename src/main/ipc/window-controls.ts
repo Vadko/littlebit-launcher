@@ -208,10 +208,38 @@ export function setupWindowControls(): void {
     }
   });
 
-  // Legacy handler - kept for backwards compatibility
+  // Clear cache and restart (same as clear-all-data)
   ipcMain.handle('clear-cache-and-restart', async () => {
-    // Redirect to clear-all-data for backwards compatibility
-    return ipcMain.emit('clear-all-data-and-restart');
+    try {
+      console.log('[ClearCache] Clearing cache and restarting...');
+
+      // Clear all session data
+      await session.defaultSession.clearCache();
+      await session.defaultSession.clearStorageData({
+        storages: [
+          'cookies',
+          'filesystem',
+          'indexdb',
+          'localstorage',
+          'shadercache',
+          'websql',
+          'serviceworkers',
+          'cachestorage',
+        ],
+      });
+
+      // Close database before restart
+      closeDatabase();
+
+      // Relaunch the app
+      app.relaunch();
+      app.exit(0);
+
+      return { success: true };
+    } catch (error) {
+      console.error('[ClearCache] Error clearing cache:', error);
+      return { success: false, error: String(error) };
+    }
   });
 
   // Logger handlers
