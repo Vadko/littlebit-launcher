@@ -759,6 +759,14 @@ function detectGamePaths(installPaths: InstallPath[]): GamePath[] {
         path: '',
         exists: false,
       });
+    } else if (installPath.type === 'other') {
+      // Other platform requires manual path selection, skip auto-detection
+      // Path will be empty until user selects it manually
+      results.push({
+        platform: 'other',
+        path: '',
+        exists: false,
+      });
     }
   }
 

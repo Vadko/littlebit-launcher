@@ -755,7 +755,13 @@ export type Database = {
     }
     Enums: {
       game_status: "completed" | "in-progress" | "planned"
-      install_source: "steam" | "gog" | "emulator" | "epic" | "rockstar"
+      install_source:
+        | "steam"
+        | "gog"
+        | "emulator"
+        | "epic"
+        | "rockstar"
+        | "other"
       user_role: "admin" | "moderator" | "translator" | "user"
     }
     CompositeTypes: {
@@ -888,7 +894,7 @@ export const Constants = {
   public: {
     Enums: {
       game_status: ["completed", "in-progress", "planned"],
-      install_source: ["steam", "gog", "emulator", "epic", "rockstar"],
+      install_source: ["steam", "gog", "emulator", "epic", "rockstar", "other"],
       user_role: ["admin", "moderator", "translator", "user"],
     },
   },
