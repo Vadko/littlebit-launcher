@@ -13,6 +13,7 @@
 ### Windows
 [![Windows Setup](https://img.shields.io/badge/Setup-завантажити-00f2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-win-Setup.exe)
 [![Windows Portable](https://img.shields.io/badge/Portable-завантажити-00a2ff.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij4KPHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTYsNmgxN3YxN0g2VjZ6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LjA0MiwyMi45NThWNkg0MnYxNi45NThIMjUuMDQyeiI+PC9wYXRoPjxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik02LDI1aDE3djE3SDZWMjV6Ij48L3BhdGg+PHBhdGggZmlsbD0iI2ZmZmZmZiIgZD0iTTI1LDQyVjI1aDE3djE3SDI1eiI+PC9wYXRoPgo8L3N2Zz4=&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-win-Portable.exe)
+[![Інструкція](https://img.shields.io/badge/Інструкція-📖-gray)](https://github.com/Vadko/littlebit-launcher#windows)
 
 <details>
 <summary>⚠️ Браузер або Windows можуть заблокувати завантаження/встановлення</summary>
@@ -56,6 +57,7 @@ Microsoft вимагає, щоб програми були підписані ц
 ### macOS
 [![macOS Apple Silicon](https://img.shields.io/badge/Apple_Silicon-завантажити-a855f7?logo=apple&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-1.19.4-arm64.dmg)
 [![macOS Intel](https://img.shields.io/badge/Intel-завантажити-9333ea?logo=apple&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-1.19.4-x64.dmg)
+[![Інструкція](https://img.shields.io/badge/Інструкція-📖-gray)](https://github.com/Vadko/littlebit-launcher#macos)
 
 <details>
 <summary>⚠️ macOS може показати, що додаток «пошкоджено»</summary>
@@ -93,6 +95,7 @@ xattr -cr /Applications/LB\ Launcher.app
 
 ### Steam Deck
 [![Steam Deck](https://img.shields.io/badge/Steam_Deck-завантажити-1a9fff?logo=steam&logoColor=white)](https://github.com/Vadko/littlebit-launcher/releases/latest/download/LB-Launcher-linux.AppImage)
+[![Інструкція](https://img.shields.io/badge/Інструкція-📖-gray)](https://github.com/Vadko/littlebit-launcher#steam-deck)
 
 <details>
 <summary>📖 Інструкція з встановлення на Steam Deck</summary>

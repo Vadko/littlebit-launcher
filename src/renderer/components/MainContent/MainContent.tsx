@@ -330,7 +330,7 @@ export const MainContent: React.FC = () => {
               />
             )}
             <Button variant="pink" icon={<Heart size={20} />} onClick={handleSupport} data-gamepad-action>
-              Підтримати
+              Підтримати переклад
             </Button>
           </div>
         </div>
