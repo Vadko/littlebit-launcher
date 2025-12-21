@@ -8,6 +8,7 @@ interface TeamSubscribeButtonProps extends React.ButtonHTMLAttributes<HTMLButton
   variant?: 'primary' | 'secondary' | 'glass' | 'amber';
   className?: string;
   showTeamName?: boolean;
+  multipleAuthors?: boolean;
 }
 
 export const TeamSubscribeButton: React.FC<TeamSubscribeButtonProps> = ({
@@ -15,10 +16,12 @@ export const TeamSubscribeButton: React.FC<TeamSubscribeButtonProps> = ({
   variant = 'glass',
   className = '',
   showTeamName = false,
+  multipleAuthors,
   ...rest
 }) => {
   const { isSubscribedToTeam, subscribeToTeam, unsubscribeFromTeam } = useSubscriptionsStore();
   const subscribed = isSubscribedToTeam(teamName);
+  const isMultiple = multipleAuthors ?? teamName.includes(',');
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -37,19 +40,19 @@ export const TeamSubscribeButton: React.FC<TeamSubscribeButtonProps> = ({
       title={
         subscribed
           ? `Ви підписані на оновлення від "${teamName}"`
-          : `Слідкувати за автором "${teamName}"`
+          : `Слідкувати за ${isMultiple ? 'авторами' : 'автором'} "${teamName}"`
       }
       {...rest}
     >
       {subscribed ? (
         <>
           <BellOff className="w-4 h-4" />
-          <span>Відписатися від {showTeamName ? teamName : 'автора'}</span>
+          <span>Відписатися від {showTeamName ? teamName : isMultiple ? 'авторів' : 'автора'}</span>
         </>
       ) : (
         <>
           <Users className="w-4 h-4" />
-          <span>Слідкувати за {showTeamName ? teamName : 'автором'}</span>
+          <span>Слідкувати за {showTeamName ? teamName : isMultiple ? 'авторами' : 'автором'}</span>
         </>
       )}
     </Button>

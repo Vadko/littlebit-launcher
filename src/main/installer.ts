@@ -45,6 +45,7 @@ import {
   removeOrphanedInstallationMetadata,
   getAllInstalledGameIds,
   deleteCachedInstallationInfo,
+  getConflictingTranslation,
   INSTALLATION_INFO_FILE,
   parseSizeToBytes,
   checkDiskSpace,
@@ -67,6 +68,7 @@ export {
   invalidateInstalledGameIdsCache,
   removeOrphanedInstallationMetadata,
   getAllInstalledGameIds,
+  getConflictingTranslation,
 };
 
 /**

@@ -24,6 +24,14 @@ export interface InstallationInfo {
   };
 }
 
+export interface ConflictingTranslation {
+  gameId: string;
+  gameName: string;
+  team: string | null;
+  version: string;
+  gamePath: string;
+}
+
 export interface DownloadProgress {
   percent: number;
   downloadedBytes: number;
@@ -113,6 +121,7 @@ export interface ElectronAPI {
   getPausedDownload: (gameId: string) => Promise<PausedDownloadState | null>;
   cancelPausedDownload: (gameId: string) => Promise<{ success: boolean; error?: string }>;
   checkInstallation: (game: Game) => Promise<InstallationInfo | null>;
+  getConflictingTranslation: (game: Game) => Promise<ConflictingTranslation | null>;
   getAllInstalledGameIds: () => Promise<string[]>;
   removeOrphanedMetadata: (gameIds: string[]) => Promise<{ success: boolean }>;
   removeComponents: (

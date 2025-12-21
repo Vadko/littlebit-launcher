@@ -23,6 +23,8 @@ const electronAPI: ElectronAPI = {
   getPausedDownload: (gameId: string) => ipcRenderer.invoke('get-paused-download', gameId),
   cancelPausedDownload: (gameId: string) => ipcRenderer.invoke('cancel-paused-download', gameId),
   checkInstallation: (game: Game) => ipcRenderer.invoke('check-installation', game),
+  getConflictingTranslation: (game: Game) =>
+    ipcRenderer.invoke('get-conflicting-translation', game),
   getAllInstalledGameIds: () => ipcRenderer.invoke('get-all-installed-game-ids'),
   removeOrphanedMetadata: (gameIds: string[]) =>
     ipcRenderer.invoke('remove-orphaned-metadata', gameIds),

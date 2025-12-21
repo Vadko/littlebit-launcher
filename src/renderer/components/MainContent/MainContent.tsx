@@ -30,7 +30,8 @@ import { InstallOptionsDialog } from '../Modal/InstallOptionsDialog';
 import { Button } from '../ui/Button';
 import { SubscribeButton } from '../ui/SubscribeButton';
 import { TeamSubscribeButton } from '../ui/TeamSubscribeButton';
-import { isSpecialTranslator } from '../../constants/specialTranslators';
+import { Tooltip } from '../ui/Tooltip';
+import { isSpecialTranslator, getSpecialTranslatorInfo } from '../../constants/specialTranslators';
 import type { LaunchGameResult } from '../../../shared/types';
 
 export const MainContent: React.FC = () => {
@@ -387,14 +388,33 @@ export const MainContent: React.FC = () => {
                   <Users size={20} className={isSpecialTranslator(selectedGame.team) ? 'text-yellow-400' : 'text-neon-blue'} />
                 </div>
                 <div>
-                  <div className="text-xs text-text-muted">Автор локалізації</div>
-                  <div className={`font-medium ${isSpecialTranslator(selectedGame.team) ? 'text-yellow-400' : 'text-text-main'}`}>
-                    {selectedGame.team}
-                    {isSpecialTranslator(selectedGame.team) && <Star size={12} className="inline ml-1 fill-yellow-400" />}
+                  <div className="text-xs text-text-muted">
+                    {selectedGame.team.includes(',') ? 'Автори локалізації' : 'Автор локалізації'}
+                  </div>
+                  <div className="font-medium text-text-main">
+                    {selectedGame.team.split(',').map((author, index, arr) => {
+                      const trimmedAuthor = author.trim();
+                      const specialInfo = getSpecialTranslatorInfo(trimmedAuthor);
+                      const isSpecial = specialInfo !== null;
+
+                      return (
+                        <span key={trimmedAuthor}>
+                          <span className={isSpecial ? 'text-yellow-400' : ''}>
+                            {trimmedAuthor}
+                            {isSpecial && specialInfo && (
+                              <Tooltip content={specialInfo.description}>
+                                <Star size={12} className="ml-1 fill-yellow-400 text-yellow-400 cursor-help" />
+                              </Tooltip>
+                            )}
+                          </span>
+                          {index < arr.length - 1 && <span className="text-text-main">, </span>}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-              <TeamSubscribeButton teamName={selectedGame.team} />
+              <TeamSubscribeButton teamName={selectedGame.team} data-gamepad-action />
             </div>
           </div>
         )}

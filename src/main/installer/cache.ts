@@ -2,8 +2,9 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import type { InstallationInfo, Game } from '../../shared/types';
+import type { InstallationInfo, Game, ConflictingTranslation } from '../../shared/types';
 import { getFirstAvailableGamePath } from '../game-detector';
+import { GamesRepository } from '../db/games-repository';
 
 const mkdir = promisify(fs.mkdir);
 const readdir = promisify(fs.readdir);
@@ -64,6 +65,16 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
         // Read installation info from library path
         const infoContent = await fs.promises.readFile(infoPath, 'utf-8');
         const info: InstallationInfo = JSON.parse(infoContent);
+
+        // IMPORTANT: Verify that the installed translation matches this game
+        // Multiple translations of the same game share the same install path,
+        // so we must check gameId to avoid showing wrong version info
+        if (info.gameId !== game.id) {
+          console.log(
+            `[Installer] Different translation installed (${info.gameId}), not ${game.id}`
+          );
+          return null;
+        }
 
         console.log(
           `[Installer] Translation found in library path: ${gamePath.path}, version ${info.version}`
@@ -133,6 +144,26 @@ export async function checkInstallation(game: Game): Promise<InstallationInfo | 
         // Verify the path still exists AND the installation info file exists in game folder
         const gameInfoPath = path.join(info.gamePath, INSTALLATION_INFO_FILE);
         if (fs.existsSync(info.gamePath) && fs.existsSync(gameInfoPath)) {
+          // Read the actual file from game folder to verify it's still this translation
+          try {
+            const actualInfoContent = await fs.promises.readFile(gameInfoPath, 'utf-8');
+            const actualInfo: InstallationInfo = JSON.parse(actualInfoContent);
+
+            // Check if the installed translation matches this game
+            if (actualInfo.gameId !== game.id) {
+              console.log(
+                `[Installer] Different translation now installed (${actualInfo.gameId}), clearing cache for ${game.id}`
+              );
+              await unlink(previousInstallInfoPath);
+              return null;
+            }
+          } catch {
+            // If we can't read actual file, cache is stale
+            console.log('[Installer] Cannot read actual installation file, cache is stale');
+            await unlink(previousInstallInfoPath);
+            return null;
+          }
+
           // Additional check: if this cached path is NOT a library path, use it
           // (library paths were already checked above and didn't have translation)
           console.log(
@@ -277,5 +308,54 @@ export async function deleteCachedInstallationInfo(gameId: string): Promise<void
     }
   } catch (error) {
     console.warn('[Installer] Failed to delete cached installation info:', error);
+  }
+}
+
+/**
+ * Check if there's a different translation installed in the same game folder
+ * Returns info about the conflicting translation, or null if no conflict
+ */
+export async function getConflictingTranslation(
+  game: Game
+): Promise<ConflictingTranslation | null> {
+  try {
+    const gamePath = getFirstAvailableGamePath(game.install_paths || []);
+
+    if (!gamePath || !gamePath.exists) {
+      return null;
+    }
+
+    const infoPath = path.join(gamePath.path, INSTALLATION_INFO_FILE);
+
+    if (!fs.existsSync(infoPath)) {
+      return null;
+    }
+
+    const infoContent = await fs.promises.readFile(infoPath, 'utf-8');
+    const info: InstallationInfo = JSON.parse(infoContent);
+
+    // If it's the same game, no conflict
+    if (info.gameId === game.id) {
+      return null;
+    }
+
+    // Different translation is installed - get game info from DB
+    const gamesRepo = new GamesRepository();
+    const conflictingGame = gamesRepo.getGameById(info.gameId);
+
+    console.log(
+      `[Installer] Conflicting translation found: ${info.gameId} (installed) vs ${game.id} (requested)`
+    );
+
+    return {
+      gameId: info.gameId,
+      gameName: conflictingGame?.name || 'Невідома локалізація',
+      team: conflictingGame?.team || null,
+      version: info.version,
+      gamePath: gamePath.path,
+    };
+  } catch (error) {
+    console.error('[Installer] Error checking for conflicting translation:', error);
+    return null;
   }
 }

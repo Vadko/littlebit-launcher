@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from './Modal';
 import { Users, Bell, Star } from 'lucide-react';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
-import { isSpecialTranslator } from '../../constants/specialTranslators';
+import { getSpecialTranslatorInfo } from '../../constants/specialTranslators';
+import { Tooltip } from '../ui/Tooltip';
 
 interface AuthorSubscriptionModalProps {
   isOpen: boolean;
@@ -109,7 +110,8 @@ export const AuthorSubscriptionModal: React.FC<AuthorSubscriptionModalProps> = (
           {authors.map((author) => {
             const isAlreadySubscribed = isSubscribedToTeam(author);
             const isSelected = selectedAuthors.has(author);
-            const isSpecial = isSpecialTranslator(author);
+            const specialInfo = getSpecialTranslatorInfo(author);
+            const isSpecial = specialInfo !== null;
 
             return (
               <label
@@ -154,8 +156,10 @@ export const AuthorSubscriptionModal: React.FC<AuthorSubscriptionModalProps> = (
                     >
                       {author}
                     </span>
-                    {isSpecial && (
-                      <Star size={14} className="text-yellow-400 fill-yellow-400 flex-shrink-0" />
+                    {isSpecial && specialInfo && (
+                      <Tooltip content={specialInfo.description}>
+                        <Star size={14} className="text-yellow-400 fill-yellow-400 cursor-help flex-shrink-0" />
+                      </Tooltip>
                     )}
                     {isAlreadySubscribed && (
                       <span className="flex items-center gap-1 text-xs text-green-400 flex-shrink-0">

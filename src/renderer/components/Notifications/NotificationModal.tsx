@@ -197,6 +197,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                 onClick={() => setShowSettings(true)}
                 className="p-2 hover:bg-glass rounded-lg transition-colors"
                 title="Налаштування сповіщень"
+                data-gamepad-skip={showConfirmClear || undefined}
               >
                 <Settings className="w-5 h-5 text-text-muted" />
               </button>
@@ -205,6 +206,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               onClick={onClose}
               data-gamepad-cancel
               className="p-2 hover:bg-glass rounded-lg transition-colors"
+              data-gamepad-skip={showConfirmClear || undefined}
             >
               <X className="w-5 h-5 text-text-muted" />
             </button>
@@ -280,6 +282,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       onClick={markAllNotificationsAsRead}
                       disabled={notifications.filter((n) => !n.read).length === 0}
                       className="text-sm px-4 py-2"
+                      data-gamepad-skip={showConfirmClear || undefined}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Прочитати всі
@@ -288,6 +291,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       variant="glass"
                       onClick={() => setShowConfirmClear(true)}
                       className="text-sm px-4 py-2"
+                      data-gamepad-skip={showConfirmClear || undefined}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Очистити всі
@@ -357,6 +361,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10"
             >
               <motion.div
+                role="dialog"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -379,6 +384,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                     variant="glass"
                     onClick={() => setShowConfirmClear(false)}
                     data-gamepad-cancel
+                    data-gamepad-modal-item
                     className="flex-1"
                   >
                     Скасувати
@@ -390,6 +396,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                       setShowConfirmClear(false);
                     }}
                     data-gamepad-confirm
+                    data-gamepad-modal-item
                     className="flex-1 !bg-red-500 hover:!bg-red-600"
                   >
                     Видалити

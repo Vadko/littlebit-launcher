@@ -34,10 +34,12 @@ const InfoItem: React.FC<InfoItemProps> = ({ icon, label, value }) => (
 
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('uk-UA', {
+  return new Date(dateString).toLocaleString('uk-UA', {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 

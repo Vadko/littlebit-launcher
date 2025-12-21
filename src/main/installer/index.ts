@@ -26,6 +26,7 @@ export {
   removeOrphanedInstallationMetadata,
   getAllInstalledGameIds,
   deleteCachedInstallationInfo,
+  getConflictingTranslation,
   INSTALLATION_INFO_FILE
 } from './cache';
 export { parseSizeToBytes, checkDiskSpace } from './disk';

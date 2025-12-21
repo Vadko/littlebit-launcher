@@ -12,6 +12,7 @@ import {
   removeComponents,
   checkPlatformCompatibility,
   resumeDownload,
+  getConflictingTranslation,
 } from '../installer';
 import {
   pauseCurrentDownload,
@@ -76,6 +77,15 @@ export function setupInstallerHandlers(): void {
       return await checkInstallation(game);
     } catch (error) {
       console.error('Error checking installation:', error);
+      return null;
+    }
+  });
+
+  ipcMain.handle('get-conflicting-translation', async (_, game: Game) => {
+    try {
+      return await getConflictingTranslation(game);
+    } catch (error) {
+      console.error('Error checking conflicting translation:', error);
       return null;
     }
   });

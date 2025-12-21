@@ -232,7 +232,9 @@ export function useGamepadModeNavigation(enabled: boolean = true) {
   // Handle modal navigation
   const handleModalNavigation = useCallback(
     (gp: Gamepad) => {
-      const modal = document.querySelector('[role="dialog"]');
+      // Get the last (topmost) dialog in case of nested modals
+      const modals = document.querySelectorAll('[role="dialog"]');
+      const modal = modals[modals.length - 1];
       if (!modal) return;
 
       // Get all focusable elements in modal
@@ -253,28 +255,16 @@ export function useGamepadModeNavigation(enabled: boolean = true) {
         return true;
       });
 
-      // Sort: inputs/checkboxes first (in DOM order), then confirm button, then cancel button last
+      // Sort: inputs/checkboxes first (in DOM order), then buttons in DOM order
       const focusableElements = [...allFocusable].sort((a, b) => {
         const aIsInput = a.tagName === 'INPUT' || a.tagName === 'SELECT' || a.tagName === 'TEXTAREA';
         const bIsInput = b.tagName === 'INPUT' || b.tagName === 'SELECT' || b.tagName === 'TEXTAREA';
-        const aIsConfirm = a.hasAttribute('data-gamepad-confirm');
-        const bIsConfirm = b.hasAttribute('data-gamepad-confirm');
-        const aIsCancel = a.hasAttribute('data-gamepad-cancel');
-        const bIsCancel = b.hasAttribute('data-gamepad-cancel');
 
         // Inputs/checkboxes come first
         if (aIsInput && !bIsInput) return -1;
         if (!aIsInput && bIsInput) return 1;
 
-        // Cancel button goes to the end
-        if (aIsCancel && !bIsCancel) return 1;
-        if (!aIsCancel && bIsCancel) return -1;
-
-        // Confirm button comes before other non-input buttons
-        if (aIsConfirm && !bIsConfirm && !bIsInput) return -1;
-        if (!aIsConfirm && bIsConfirm && !aIsInput) return 1;
-
-        // Keep DOM order for same type
+        // Keep DOM order for buttons
         return 0;
       });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { EyeOff } from 'lucide-react';
 import { Loader } from '../ui/Loader';
 import { getGameImageUrl } from '../../utils/imageUrl';
@@ -26,10 +26,45 @@ export const GamepadCard: React.FC<GamepadCardProps> = ({
   const hasMultipleTranslations = translations.length > 1;
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [useBanner, setUseBanner] = useState(false);
   const showAdultGames = useSettingsStore((state) => state.showAdultGames);
 
   const thumbnailUrl = getGameImageUrl(game.thumbnail_path);
+  const bannerUrl = getGameImageUrl(game.banner_path);
+  const imageUrl = useBanner ? bannerUrl : thumbnailUrl;
   const isAdultBlurred = game.is_adult && !showAdultGames;
+
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Reset state when game changes
+  useEffect(() => {
+    setImageLoading(true);
+    setImageError(false);
+    setUseBanner(false);
+  }, [game.id]);
+
+  // Check if image is already cached/loaded
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      // Image already loaded from cache
+      if (!useBanner && img.naturalWidth < 300 && bannerUrl) {
+        setUseBanner(true);
+      } else {
+        setImageLoading(false);
+      }
+    }
+  }, [imageUrl, useBanner, bannerUrl]);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    // If thumbnail is low quality (small), switch to banner
+    if (!useBanner && img.naturalWidth > 0 && img.naturalWidth < 300 && bannerUrl) {
+      setUseBanner(true);
+      return;
+    }
+    setImageLoading(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -63,7 +98,7 @@ export const GamepadCard: React.FC<GamepadCardProps> = ({
 
       {/* Image */}
       <div className={`relative aspect-[3/4] bg-glass ${isAdultBlurred ? 'blur-lg' : ''}`}>
-        {thumbnailUrl && !imageError ? (
+        {imageUrl && !imageError ? (
           <>
             {imageLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-glass">
@@ -71,13 +106,14 @@ export const GamepadCard: React.FC<GamepadCardProps> = ({
               </div>
             )}
             <img
-              src={thumbnailUrl}
+              ref={imgRef}
+              src={imageUrl}
               alt={game.name}
               draggable={false}
               className={`w-full h-full object-cover transition-opacity duration-200 ${
                 imageLoading ? 'opacity-0' : 'opacity-100'
-              }`}
-              onLoad={() => setImageLoading(false)}
+              } ${useBanner ? 'object-[left_center]' : ''}`}
+              onLoad={handleImageLoad}
               onError={() => {
                 setImageError(true);
                 setImageLoading(false);
