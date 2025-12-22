@@ -1,6 +1,7 @@
 import { app, session } from 'electron';
 import { isLinux, isMacOS, isWindows } from './utils/platform';
 import { initLogger } from './utils/logger';
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 
 // Deep link handling
 const PROTOCOL = 'littlebit';
@@ -142,6 +143,16 @@ if (!gotTheLock) {
 
   // App lifecycle
   app.whenReady().then(async () => {
+    // Install React DevTools in development
+    if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+      try {
+        const name = await installExtension(REACT_DEVELOPER_TOOLS);
+        console.log(`[DevTools] Installed: ${name}`);
+      } catch (err) {
+        console.error('[DevTools] Failed to install extension:', err);
+      }
+    }
+
     // Ініціалізувати локальну базу даних
     console.log('[Main] Initializing local database...');
     initDatabase();

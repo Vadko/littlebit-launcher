@@ -482,7 +482,11 @@ export function useGamepadModeNavigation(enabled = true) {
         if (dropdownItems.length === 0) return;
 
         const currentFocused = document.activeElement as HTMLElement;
-        const currentIndex = dropdownItems.indexOf(currentFocused);
+        // Check if the focused element is inside a dropdown item (e.g., input inside search container)
+        let currentIndex = dropdownItems.indexOf(currentFocused);
+        if (currentIndex === -1) {
+          currentIndex = dropdownItems.findIndex((item) => item.contains(currentFocused));
+        }
 
         // If nothing focused in dropdown, focus first item
         if (currentIndex === -1) {

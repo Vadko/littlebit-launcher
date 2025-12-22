@@ -121,7 +121,12 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
               data-gamepad-dropdown
             >
               {/* Search input */}
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+              <div
+                className="flex items-center gap-2 px-3 py-2 border-b border-border focus:bg-glass-hover"
+                data-gamepad-dropdown-item
+                tabIndex={0}
+                onFocus={() => searchInputRef.current?.focus()}
+              >
                 <Search size={14} className="text-text-muted flex-shrink-0" />
                 <input
                   ref={searchInputRef}

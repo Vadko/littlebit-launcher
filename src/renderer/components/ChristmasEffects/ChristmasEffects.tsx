@@ -19,11 +19,11 @@ export const ChristmasEffects: React.FC = () => {
           width: '100%',
           height: '100%',
           pointerEvents: 'none',
-          zIndex: 9999,
+          zIndex: 1,
         }}
       >
         <Snowfall
-          snowflakeCount={35}
+          snowflakeCount={25}
           speed={[0.5, 2]}
           wind={[-0.5, 1]}
           radius={[1, 4]}

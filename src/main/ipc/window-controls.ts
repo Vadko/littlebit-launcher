@@ -8,10 +8,11 @@ import {
   session,
   shell,
 } from 'electron';
+import { existsSync, mkdirSync } from 'fs';
 import { getMainWindow } from '../window';
 import { join } from 'path';
 import { isLinux, isMacOS } from '../utils/platform';
-import { closeDatabase } from '../db/database';
+import { closeDatabase, clearGamesTable } from '../db/database';
 import {
   setSaveLogsEnabled,
   isSaveLogsEnabled,
@@ -160,6 +161,9 @@ export function setupWindowControls(): void {
         storages: ['cookies', 'filesystem', 'shadercache', 'cachestorage'],
       });
 
+      // Clear games table to force re-sync
+      clearGamesTable();
+
       // Close database before restart
       closeDatabase();
 
@@ -254,7 +258,16 @@ export function setupWindowControls(): void {
   ipcMain.handle('logger:open-logs-folder', async () => {
     try {
       const logsDir = getLogFileDirectory();
-      await shell.openPath(logsDir);
+      // Ensure the logs directory exists before trying to open it
+      if (!existsSync(logsDir)) {
+        mkdirSync(logsDir, { recursive: true });
+      }
+      const result = await shell.openPath(logsDir);
+      // shell.openPath returns an empty string on success, or an error message
+      if (result) {
+        console.error('[Logger] Failed to open logs folder:', result);
+        return { success: false, error: result };
+      }
       return { success: true };
     } catch (error) {
       console.error('[Logger] Failed to open logs folder:', error);

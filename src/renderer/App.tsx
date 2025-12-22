@@ -264,7 +264,7 @@ export const App: React.FC = () => {
       {/* Main layout - changes based on gamepad mode */}
       {isGamepadMode ? (
         /* Gamepad layout: Header + Games strip on top, MainContent below */
-        <div className="flex flex-col h-full pt-8">
+        <div className="flex flex-col h-full pt-8 relative z-10">
           {/* Sidebar - hides when in main-content mode */}
           <div
             className={`transition-all duration-300 ease-in-out relative z-20 ${
@@ -284,7 +284,7 @@ export const App: React.FC = () => {
         </div>
       ) : (
         /* Normal layout: Vertical sidebar on left, MainContent on right */
-        <div className="flex h-full pt-8 px-2 pb-2 gap-2">
+        <div className="flex h-full pt-8 px-2 pb-2 gap-2 relative z-10">
           <Sidebar
             onOpenHistory={() => setShowNotificationHistory(true)}
             isHorizontal={false}

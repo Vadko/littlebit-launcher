@@ -285,7 +285,7 @@ export async function installTranslation(
         voiceExtractDir,
         getSignedDownloadUrl,
         onDownloadProgress,
-        (status) => onStatus?.({ message: `Озвучка: ${status.message}` })
+        (status) => onStatus?.({ message: `Озвучення: ${status.message}` })
       );
       // Copy voice files to main extract directory
       await copyDirectory(voiceExtractDir, extractDir);

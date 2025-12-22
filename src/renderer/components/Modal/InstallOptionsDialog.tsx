@@ -299,7 +299,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
               <span
                 className={`font-medium transition-colors ${hasVoiceArchive ? 'text-text-main group-hover:text-purple-400' : 'text-text-muted'}`}
               >
-                Озвучка
+                Озвучення
               </span>
               {!hasVoiceArchive && (
                 <span className="text-xs text-text-muted">(недоступно)</span>
@@ -312,7 +312,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
               )}
             </div>
             <div className="text-sm text-text-muted mt-1">
-              <p>Українська озвучка.</p>
+              <p>Українське озвучення.</p>
               {game.voice_archive_size && (
                 <p className="flex items-center gap-1 mt-1 text-purple-400">
                   <Archive size={14} />
@@ -432,7 +432,7 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
                 <Trash2 size={16} className="text-red-400" />
                 <span className="text-red-400">
                   Буде видалено:{' '}
-                  {[willRemoveVoice && 'озвучка', willRemoveAchievements && 'досягнення']
+                  {[willRemoveVoice && 'озвучення', willRemoveAchievements && 'досягнення']
                     .filter(Boolean)
                     .join(', ')}
                 </span>

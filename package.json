@@ -62,6 +62,7 @@
     "autoprefixer": "^10.4.16",
     "electron": "39.2.4",
     "electron-builder": "26.0.12",
+    "electron-devtools-installer": "^4.0.0",
     "electron-vite": "4.0.1",
     "env-cmd": "^11.0.0",
     "eslint": "^8.56.0",

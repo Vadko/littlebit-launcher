@@ -21,7 +21,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => (
           <ProgressBar label="Текстури" value={game.textures_progress} color="#10b981" />
         )}
         {game.voice_progress !== null && game.voice_progress !== undefined && (
-          <ProgressBar label="Озвучка" value={game.voice_progress} color="#06b6d4" />
+          <ProgressBar label="Озвучення" value={game.voice_progress} color="#06b6d4" />
         )}
       </div>
     </div>

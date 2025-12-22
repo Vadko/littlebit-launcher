@@ -61,7 +61,7 @@ const SteamStoreButton: React.FC<{ steamAppId: number }> = ({ steamAppId }) => {
         size={18}
         className="text-[#66c0f4] group-hover:brightness-125 transition-all duration-200 ease-out"
       />
-      <span className="text-sm text-text-main font-medium">Магазин Steam</span>
+      <span className="text-sm text-text-main font-medium">Крамниця Steam</span>
     </button>
   );
 };

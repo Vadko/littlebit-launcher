@@ -174,3 +174,13 @@ export function initDatabase(): Database.Database {
 export function closeDatabase(): void {
   DatabaseManager.getInstance().close();
 }
+
+/**
+ * Helper функція для очищення таблиці ігор
+ */
+export function clearGamesTable(): void {
+  const db = getDatabase();
+  db.exec('DELETE FROM games');
+  db.exec('DELETE FROM sync_metadata');
+  console.log('[Database] Games and sync_metadata tables cleared');
+}

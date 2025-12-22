@@ -13,6 +13,7 @@ export const SPECIAL_TRANSLATORS: SpecialTranslator[] = [
   { name: 'Віталій', team: 'GameGlobe Localization', description: SPECIAL_DESCRIPTION },
   { name: 'Євгеній', description: SPECIAL_DESCRIPTION },
   { name: 'Костянтин', team: 'KostyanChek8', description: SPECIAL_DESCRIPTION },
+  { name: 'Little Bit', team: 'Little Bit', description: 'Команда лаунчера' },
 ];
 
 // Get all team names for matching

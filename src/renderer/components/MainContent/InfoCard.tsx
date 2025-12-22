@@ -67,7 +67,7 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
         {game.voice_archive_size && (
           <InfoItem
             icon={<Volume2 size={18} />}
-            label="Озвучка"
+            label="Озвучення"
             value={game.voice_archive_size}
           />
         )}
