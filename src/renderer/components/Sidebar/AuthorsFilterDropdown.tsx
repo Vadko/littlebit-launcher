@@ -15,6 +15,7 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
     const [search, setSearch] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const isComposingRef = useRef(false);
 
     // Determine current label
     const currentLabel = useMemo(() => {
@@ -132,7 +133,18 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
                   ref={searchInputRef}
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    if (!isComposingRef.current) {
+                      setSearch(e.target.value);
+                    }
+                  }}
+                  onCompositionStart={() => {
+                    isComposingRef.current = true;
+                  }}
+                  onCompositionEnd={(e) => {
+                    isComposingRef.current = false;
+                    setSearch(e.currentTarget.value);
+                  }}
                   placeholder="Пошук автора..."
                   className="flex-1 bg-transparent text-sm text-text-main placeholder-text-muted outline-none"
                 />

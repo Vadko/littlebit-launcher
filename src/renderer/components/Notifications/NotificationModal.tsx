@@ -147,7 +147,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
           </>
         );
       case 'app-update':
-        return <>Доступна нова версія додатку: {notification.newValue}</>;
+        return <>Доступна нова версія застосунку: {notification.newValue}</>;
       case 'progress-change':
         return <>{notification.newValue}</>;
       case 'team-new-game':

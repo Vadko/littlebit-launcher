@@ -14,7 +14,6 @@ import { TranslationPickerModal } from '../Modal/TranslationPickerModal';
 import { useStore } from '../../store/useStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
-import { useGamepadModeStore } from '../../store/useGamepadModeStore';
 import { useGames } from '../../hooks/useGames';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { GameGroup } from './types';
@@ -49,7 +48,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   } = useStore();
   const { openSettingsModal, sidebarWidth, setSidebarWidth } = useSettingsStore();
   const unreadCount = useSubscriptionsStore((state) => state.unreadCount);
-  const { setGamepadMode, setUserDisabledGamepadMode } = useGamepadModeStore();
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -229,10 +227,6 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
             onOpenSettings={openSettingsModal}
             unreadCount={unreadCount}
             isCompact={true}
-            onSwitchToDesktop={() => {
-              setGamepadMode(false);
-              setUserDisabledGamepadMode(true);
-            }}
           />
         </div>
 

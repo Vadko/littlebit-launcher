@@ -185,6 +185,15 @@ export async function installTranslation(
     }
 
     // 2. Detect game installation path
+    // If license_only is enabled, don't allow custom path selection
+    if (game.license_only && customGamePath) {
+      console.error(`[Installer] Manual selection not allowed for license-only game: ${game.id}`);
+      throw new Error(
+        `Встановлення цього перекладу доступне тільки для ліцензійної версії гри.\n\n` +
+          `Ручний вибір папки заборонено.`
+      );
+    }
+
     const gamePath = customGamePath
       ? { platform, path: customGamePath, exists: true }
       : getFirstAvailableGamePath(game.install_paths || []);
@@ -194,6 +203,14 @@ export async function installTranslation(
       const platformPath = (game.install_paths || []).find(
         (p) => p.type === platform
       )?.path;
+
+      // If license_only, show a different error message
+      if (game.license_only) {
+        throw new Error(
+          `Встановлення цього перекладу доступне тільки для ліцензійної версії гри.\n\n` +
+            `Гру не знайдено автоматично. Переконайтеся, що ліцензійна версія гри встановлена через Steam, GOG чи Epic Games.`
+        );
+      }
 
       throw new ManualSelectionError(
         `Гру не знайдено автоматично.\n\n` +
@@ -294,6 +311,12 @@ export async function installTranslation(
     // 4.3 Download achievements archive if requested (Steam only)
     let achievementsFiles: string[] = [];
     let achievementsInstallPath: string | null = null;
+    console.log(`[Installer] Achievements check:`, {
+      installAchievements,
+      hasArchivePath: !!game.achievements_archive_path,
+      archivePath: game.achievements_archive_path,
+      platform,
+    });
     if (installAchievements && game.achievements_archive_path && platform === 'steam') {
       const achievementsExtractDir = path.join(downloadDir, `${game.id}_achievements_extract`);
       achievementsFiles = await downloadAndExtractArchive(
@@ -548,7 +571,7 @@ function handleInstallationError(error: unknown): never {
       throw new Error('Не вдалося підключитися до сервера.\n\nПеревірте підключення до Інтернету.');
     }
     if (message.includes('eacces') || message.includes('eperm')) {
-      throw new Error('Недостатньо прав для встановлення.\n\nЗапустіть додаток від імені адміністратора.');
+      throw new Error('Недостатньо прав для встановлення.\n\nЗапустіть застосунок від імені адміністратора.');
     }
     if (message.includes('enospc')) {
       throw new Error('Недостатньо місця на диску.\n\nЗвільніть місце та спробуйте знову.');

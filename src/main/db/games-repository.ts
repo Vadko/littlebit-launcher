@@ -27,7 +27,7 @@ type GameInsertParams = {
   [K in keyof Omit<
     SupabaseDatabase['public']['Tables']['games']['Row'],
     ExcludedLocalFields
-  >]: K extends 'approved' | 'is_adult'
+  >]: K extends 'approved' | 'is_adult' | 'license_only'
     ? number // boolean перетворюється на 0/1 для SQLite
     : K extends 'platforms' | 'install_paths'
       ? string | null // JSON.stringify для SQLite
@@ -60,6 +60,7 @@ export class GamesRepository {
       ...row,
       approved: Boolean(row.approved),
       is_adult: Boolean(row.is_adult),
+      license_only: Boolean(row.license_only),
       platforms,
       install_paths,
     } as Game;
@@ -93,6 +94,7 @@ export class GamesRepository {
       installation_file_linux_path: game.installation_file_linux_path ?? null,
       installation_file_windows_path: game.installation_file_windows_path ?? null,
       is_adult: game.is_adult ? 1 : 0,
+      license_only: game.license_only ? 1 : 0,
       logo_path: game.logo_path ?? null,
       name: game.name,
       platforms: JSON.stringify(game.platforms),
@@ -290,7 +292,7 @@ export class GamesRepository {
         id, approved, approved_at, approved_by, archive_hash, archive_path, archive_size,
         banner_path, created_at, created_by, description, discord, downloads, subscriptions, editing_progress,
         fonts_progress, fundraising_current, fundraising_goal, game_description, install_paths,
-        installation_file_linux_path, installation_file_windows_path, is_adult, logo_path,
+        installation_file_linux_path, installation_file_windows_path, is_adult, license_only, logo_path,
         name, platforms, project_id, slug, status, support_url, team, telegram, textures_progress,
         thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
         voice_archive_hash, voice_archive_path, voice_archive_size,
@@ -301,7 +303,7 @@ export class GamesRepository {
         @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
         @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
         @fonts_progress, @fundraising_current, @fundraising_goal, @game_description, @install_paths,
-        @installation_file_linux_path, @installation_file_windows_path, @is_adult, @logo_path,
+        @installation_file_linux_path, @installation_file_windows_path, @is_adult, @license_only, @logo_path,
         @name, @platforms, @project_id, @slug, @status, @support_url, @team, @telegram, @textures_progress,
         @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
         @voice_archive_hash, @voice_archive_path, @voice_archive_size,
@@ -324,7 +326,7 @@ export class GamesRepository {
           id, approved, approved_at, approved_by, archive_hash, archive_path, archive_size,
           banner_path, created_at, created_by, description, discord, downloads, subscriptions, editing_progress,
           fonts_progress, fundraising_current, fundraising_goal, game_description, install_paths,
-          installation_file_linux_path, installation_file_windows_path, is_adult, logo_path,
+          installation_file_linux_path, installation_file_windows_path, is_adult, license_only, logo_path,
           name, platforms, project_id, slug, status, support_url, team, telegram, textures_progress,
           thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
           voice_archive_hash, voice_archive_path, voice_archive_size,
@@ -335,7 +337,7 @@ export class GamesRepository {
           @id, @approved, @approved_at, @approved_by, @archive_hash, @archive_path, @archive_size,
           @banner_path, @created_at, @created_by, @description, @discord, @downloads, @subscriptions, @editing_progress,
           @fonts_progress, @fundraising_current, @fundraising_goal, @game_description, @install_paths,
-          @installation_file_linux_path, @installation_file_windows_path, @is_adult, @logo_path,
+          @installation_file_linux_path, @installation_file_windows_path, @is_adult, @license_only, @logo_path,
           @name, @platforms, @project_id, @slug, @status, @support_url, @team, @telegram, @textures_progress,
           @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
           @voice_archive_hash, @voice_archive_path, @voice_archive_size,

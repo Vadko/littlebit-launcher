@@ -13,7 +13,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ game }) => (
       </h3>
       <div>
         <ProgressBar label="Переклад" value={game.translation_progress} color="#00f2ff" />
-        <ProgressBar label="Редагування" value={game.editing_progress} color="#bd00ff" />
+        <ProgressBar label="Редактура" value={game.editing_progress} color="#bd00ff" />
         {game.fonts_progress !== null && game.fonts_progress !== undefined && (
           <ProgressBar label="Шрифти" value={game.fonts_progress} color="#ff0055" />
         )}

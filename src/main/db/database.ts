@@ -94,6 +94,7 @@ export class DatabaseManager {
         installation_file_linux_path TEXT,
         installation_file_windows_path TEXT,
         is_adult INTEGER NOT NULL DEFAULT 0,
+        license_only INTEGER NOT NULL DEFAULT 0,
         logo_path TEXT,
         name TEXT NOT NULL,
         platforms TEXT NOT NULL, -- JSON array

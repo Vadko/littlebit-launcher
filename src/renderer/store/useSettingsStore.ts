@@ -13,6 +13,7 @@ interface SettingsStore {
   showAdultGames: boolean;
   liquidGlassEnabled: boolean;
   christmasEffectsEnabled: boolean;
+  gamepadSoundsEnabled: boolean;
   isSettingsModalOpen: boolean;
   saveLogsToFile: boolean;
   sidebarWidth: number;
@@ -25,6 +26,7 @@ interface SettingsStore {
   toggleShowAdultGames: () => void;
   toggleLiquidGlass: () => void;
   toggleChristmasEffects: () => void;
+  toggleGamepadSounds: () => void;
   toggleSaveLogsToFile: () => void;
   setSidebarWidth: (width: number) => void;
   openSettingsModal: () => void;
@@ -43,6 +45,7 @@ export const useSettingsStore = create<SettingsStore>()(
       showAdultGames: false,
       liquidGlassEnabled: true,
       christmasEffectsEnabled: true,
+      gamepadSoundsEnabled: true,
       isSettingsModalOpen: false,
       saveLogsToFile: false,
       sidebarWidth: 320,
@@ -76,6 +79,9 @@ export const useSettingsStore = create<SettingsStore>()(
 
       toggleChristmasEffects: () =>
         set((state) => ({ christmasEffectsEnabled: !state.christmasEffectsEnabled })),
+
+      toggleGamepadSounds: () =>
+        set((state) => ({ gamepadSoundsEnabled: !state.gamepadSoundsEnabled })),
 
       toggleSaveLogsToFile: () =>
         set((state) => ({ saveLogsToFile: !state.saveLogsToFile })),

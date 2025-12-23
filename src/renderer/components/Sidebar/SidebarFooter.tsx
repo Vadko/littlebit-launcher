@@ -1,26 +1,33 @@
 import React from 'react';
-import { Settings, Bell, Monitor } from 'lucide-react';
+import { Settings, Bell, Volume2, VolumeX } from 'lucide-react';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 interface SidebarFooterProps {
   onOpenHistory: () => void;
   onOpenSettings: () => void;
   unreadCount: number;
   isCompact?: boolean;
-  onSwitchToDesktop?: () => void;
 }
 
 export const SidebarFooter: React.FC<SidebarFooterProps> = React.memo(
-  ({ onOpenHistory, onOpenSettings, unreadCount, isCompact = false, onSwitchToDesktop }) => (
+  ({ onOpenHistory, onOpenSettings, unreadCount, isCompact = false }) => {
+    const { gamepadSoundsEnabled, toggleGamepadSounds } = useSettingsStore();
+
+    return (
     <div className={`flex gap-2 ${isCompact ? '' : 'pt-3 border-t border-border p-4'}`}>
-      {isCompact && onSwitchToDesktop && (
+      {isCompact && (
         <button
-          onClick={onSwitchToDesktop}
+          onClick={toggleGamepadSounds}
           data-nav-group="sidebar-actions"
           data-gamepad-header-item
           className="p-2 glass-button rounded-xl hover:bg-glass-hover transition-all duration-300"
-          title="Десктопний режим"
+          title={gamepadSoundsEnabled ? 'Вимкнути звуки геймпада' : 'Увімкнути звуки геймпада'}
         >
-          <Monitor size={20} className="mx-auto text-text-muted" />
+          {gamepadSoundsEnabled ? (
+            <Volume2 size={20} className="mx-auto text-text-muted" />
+          ) : (
+            <VolumeX size={20} className="mx-auto text-text-muted opacity-50" />
+          )}
         </button>
       )}
       <button
@@ -47,5 +54,6 @@ export const SidebarFooter: React.FC<SidebarFooterProps> = React.memo(
         <Settings size={20} className="mx-auto text-text-muted" />
       </button>
     </div>
-  )
+    );
+  }
 );

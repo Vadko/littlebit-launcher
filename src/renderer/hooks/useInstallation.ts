@@ -298,7 +298,7 @@ export function useInstallation({
       if (!window.electronAPI) {
         showModal({
           title: 'Недоступно',
-          message: 'Встановлення доступне тільки в десктопній версії додатку',
+          message: 'Встановлення доступне тільки в десктопній версії застосунку',
           type: 'error',
         });
         return;

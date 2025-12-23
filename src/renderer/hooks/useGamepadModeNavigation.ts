@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useGamepads } from 'react-ts-gamepads';
 import { useGamepadModeStore } from '../store/useGamepadModeStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useStore } from '../store/useStore';
 
 // Gamepad button mapping (Xbox layout)
 const BUTTON = {
@@ -49,6 +51,7 @@ function getAudioContext(): AudioContext {
 
 function playNavigateSound(): void {
   if (!document.hasFocus()) return;
+  if (!useSettingsStore.getState().gamepadSoundsEnabled) return;
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
@@ -68,6 +71,7 @@ function playNavigateSound(): void {
 
 function playConfirmSound(): void {
   if (!document.hasFocus()) return;
+  if (!useSettingsStore.getState().gamepadSoundsEnabled) return;
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
@@ -88,6 +92,7 @@ function playConfirmSound(): void {
 
 function playBackSound(): void {
   if (!document.hasFocus()) return;
+  if (!useSettingsStore.getState().gamepadSoundsEnabled) return;
   try {
     const ctx = getAudioContext();
     const oscillator = ctx.createOscillator();
@@ -656,12 +661,12 @@ export function useGamepadModeNavigation(enabled = true) {
         setNavigationArea('header');
       }
 
-      // Down - switch to main content scrolling
+      // Down - switch to main content scrolling (only if a game is selected)
       const downPressed =
         (gp.buttons[BUTTON.DPAD_DOWN]?.pressed && canInput('games-down')) ||
         (gp.axes[AXIS.LEFT_Y] > DEADZONE && canInput('games-stick-down'));
 
-      if (downPressed) {
+      if (downPressed && useStore.getState().selectedGame) {
         playNavigateSound();
         setNavigationArea('main-content');
       }

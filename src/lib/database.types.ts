@@ -230,6 +230,7 @@ export type Database = {
           installation_file_windows_path: string | null
           is_active: boolean
           is_adult: boolean
+          license_only: boolean
           logo_path: string | null
           name: string
           platforms: string[]
@@ -287,6 +288,7 @@ export type Database = {
           installation_file_windows_path?: string | null
           is_active?: boolean
           is_adult?: boolean
+          license_only?: boolean
           logo_path?: string | null
           name: string
           platforms?: string[]
@@ -344,6 +346,7 @@ export type Database = {
           installation_file_windows_path?: string | null
           is_active?: boolean
           is_adult?: boolean
+          license_only?: boolean
           logo_path?: string | null
           name?: string
           platforms?: string[]
@@ -426,6 +429,7 @@ export type Database = {
           installation_file_linux_path: string | null
           installation_file_windows_path: string | null
           is_adult: boolean
+          license_only: boolean
           logo_path: string | null
           name: string
           platforms: string[]
@@ -486,6 +490,7 @@ export type Database = {
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
           is_adult?: boolean
+          license_only?: boolean
           logo_path?: string | null
           name: string
           platforms?: string[]
@@ -546,6 +551,7 @@ export type Database = {
           installation_file_linux_path?: string | null
           installation_file_windows_path?: string | null
           is_adult?: boolean
+          license_only?: boolean
           logo_path?: string | null
           name?: string
           platforms?: string[]

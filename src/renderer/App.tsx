@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useGamepads } from 'react-ts-gamepads';
 import { AmbientBackground } from './components/Layout/AmbientBackground';
 import { TitleBar } from './components/Layout/TitleBar';
 import { Sidebar } from './components/Sidebar/Sidebar';
@@ -28,7 +29,7 @@ export const App: React.FC = () => {
   } = useStore();
   const { animationsEnabled, autoDetectInstalledGames, theme, liquidGlassEnabled } =
     useSettingsStore();
-  const { isGamepadMode, setGamepadMode, navigationArea, userDisabledGamepadMode, setUserDisabledGamepadMode } = useGamepadModeStore();
+  const { isGamepadMode, setGamepadMode, navigationArea } = useGamepadModeStore();
   const [online, setOnline] = useState(navigator.onLine);
   const [liquidGlassSupported, setLiquidGlassSupported] = useState(false);
   const [showNotificationHistory, setShowNotificationHistory] = useState(false);
@@ -43,37 +44,65 @@ export const App: React.FC = () => {
   useGamepadModeNavigation(isGamepadMode);
 
   
-  // Auto-enable gamepad mode when gamepad is connected
+  // Track gamepad input to switch back to gamepad mode
+  const lastMouseMoveRef = useRef(0);
+
+  useGamepads((gamepads) => {
+    // If already in gamepad mode, nothing to do here
+    if (useGamepadModeStore.getState().isGamepadMode) return;
+
+    const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+    if (!gp) return;
+
+    const anyButtonPressed = gp.buttons.some((b) => b.pressed);
+    const anyAxisMoved = gp.axes.some((axis) => Math.abs(axis) > 0.5);
+
+    if (anyButtonPressed || anyAxisMoved) {
+      setGamepadMode(true);
+    }
+  });
+
+  // Mouse movement and gamepad connect/disconnect events
   useEffect(() => {
+    const MOUSE_THROTTLE_MS = 500;
+
+    // Gamepad connected → gamepad mode
     const handleGamepadConnected = () => {
       console.log('[App] Gamepad connected');
-      if (!isGamepadMode && !userDisabledGamepadMode) {
-        setGamepadMode(true);
-      }
+      setGamepadMode(true);
     };
 
+    // Gamepad disconnected → mouse mode
     const handleGamepadDisconnected = () => {
       console.log('[App] Gamepad disconnected');
       const gamepads = navigator.getGamepads();
       const stillConnected = !!(gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3]);
-
       if (!stillConnected) {
-        if (isGamepadMode) {
-          setGamepadMode(false);
-        }
-        // Reset user preference when gamepad disconnected
-        setUserDisabledGamepadMode(false);
+        setGamepadMode(false);
+      }
+    };
+
+    // Mouse movement → mouse mode (throttled)
+    const handleMouseMove = () => {
+      const now = Date.now();
+      if (now - lastMouseMoveRef.current < MOUSE_THROTTLE_MS) return;
+      lastMouseMoveRef.current = now;
+
+      if (useGamepadModeStore.getState().isGamepadMode) {
+        setGamepadMode(false);
       }
     };
 
     window.addEventListener('gamepadconnected', handleGamepadConnected);
     window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
+    window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
       window.removeEventListener('gamepadconnected', handleGamepadConnected);
       window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
+      window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [setGamepadMode, isGamepadMode, userDisabledGamepadMode, setUserDisabledGamepadMode]);
+  }, [setGamepadMode]);
 
   // Apply liquid glass effect
   useEffect(() => {

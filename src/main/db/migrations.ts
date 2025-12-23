@@ -186,6 +186,46 @@ const migrations: Migration[] = [
       );
     },
   },
+  {
+    name: 'add_license_only_column',
+    up: (db) => {
+      const hasColumn = db
+        .prepare(
+          "SELECT COUNT(*) as count FROM pragma_table_info('games') WHERE name='license_only'"
+        )
+        .get() as { count: number };
+
+      if (hasColumn.count === 0) {
+        console.log('[Migrations] Running: add_license_only_column');
+        db.exec(`ALTER TABLE games ADD COLUMN license_only INTEGER NOT NULL DEFAULT 0;`);
+        console.log('[Migrations] Completed: add_license_only_column');
+      }
+    },
+  },
+  {
+    name: 'resync_for_license_only',
+    up: (db) => {
+      const migrationDone = db
+        .prepare(
+          "SELECT COUNT(*) as count FROM sync_metadata WHERE key = 'migration_resync_license_only_done'"
+        )
+        .get() as { count: number };
+
+      if (migrationDone.count > 0) {
+        return;
+      }
+
+      console.log('[Migrations] Running: resync_for_license_only');
+      db.exec(`DELETE FROM sync_metadata WHERE key = 'last_sync_timestamp'`);
+      db.exec(`
+        INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
+        VALUES ('migration_resync_license_only_done', '1', datetime('now'))
+      `);
+      console.log(
+        '[Migrations] Completed: resync_for_license_only - will resync on next startup'
+      );
+    },
+  },
 ];
 
 /**

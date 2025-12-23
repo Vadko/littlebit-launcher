@@ -11,10 +11,6 @@ interface GamepadModeStore {
   lastInputMethod: 'gamepad' | 'keyboard' | 'mouse';
   setLastInputMethod: (method: 'gamepad' | 'keyboard' | 'mouse') => void;
 
-  // Track if user manually disabled gamepad mode (to prevent auto-enable)
-  userDisabledGamepadMode: boolean;
-  setUserDisabledGamepadMode: (disabled: boolean) => void;
-
   // Navigation state
   focusedGameIndex: number;
   setFocusedGameIndex: (index: number) => void;
@@ -40,9 +36,6 @@ export const useGamepadModeStore = create<GamepadModeStore>((set) => ({
 
   lastInputMethod: 'mouse',
   setLastInputMethod: (method) => set({ lastInputMethod: method }),
-
-  userDisabledGamepadMode: false,
-  setUserDisabledGamepadMode: (disabled) => set({ userDisabledGamepadMode: disabled }),
 
   focusedGameIndex: 0,
   setFocusedGameIndex: (index) => set({ focusedGameIndex: index }),

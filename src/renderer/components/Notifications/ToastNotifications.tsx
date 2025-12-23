@@ -55,7 +55,7 @@ const getToastTitle = (type: ToastNotification['type']) => {
     case 'version-update':
       return 'Доступне оновлення';
     case 'app-update':
-      return 'Оновлення додатку';
+      return 'Оновлення застосунку';
     case 'progress-change':
       return 'Оновлення прогресу';
     default:

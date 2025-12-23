@@ -389,7 +389,7 @@ export const useStore = create<Store>((set, get) => ({
     // Progress type labels
     const progressLabels: Record<string, string> = {
       translation_progress: 'Переклад',
-      editing_progress: 'Редагування',
+      editing_progress: 'Редактура',
       voice_progress: 'Озвучення',
       textures_progress: 'Текстури',
       fonts_progress: 'Шрифти',
