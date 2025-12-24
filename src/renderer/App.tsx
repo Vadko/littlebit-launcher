@@ -41,6 +41,38 @@ function isValidGamepad(gp: Gamepad | null): gp is Gamepad {
   // Filter out known phantom/non-standard devices by checking ID
   const id = gp.id.toLowerCase();
 
+  // Blacklist: devices that are NOT gamepads (joysticks, HOTAS, racing wheels, etc.)
+  const nonGamepadPatterns = [
+    // Flight sim devices
+    'joystick',
+    'stick',
+    'flight',
+    'hotas',
+    'throttle',
+    'rudder',
+    'pedals',
+    'yoke',
+    't16000', // Thrustmaster T.16000M
+    't.16000',
+    // Flight sim brands (primarily make non-gamepad controllers)
+    'thrustmaster',
+    'saitek',
+    'ch products',
+    'vkb',
+    'virpil',
+    'winwing',
+    // Racing wheels
+    'wheel',
+    'racing',
+    'fanatec',
+    'moza',
+  ];
+
+  if (nonGamepadPatterns.some((pattern) => id.includes(pattern))) {
+    console.log('[Gamepad] Rejecting non-gamepad device:', gp.id);
+    return false;
+  }
+
   // Known valid gamepad patterns (brands and types)
   const validGamepadPatterns = [
     'xbox',
@@ -53,7 +85,8 @@ function isValidGamepad(gp: Gamepad | null): gp is Gamepad {
     'sony',
     'microsoft',
     '8bitdo',
-    'logitech',
+    'logitech gamepad',
+    'logitech dual',
     'steelseries',
     'razer',
     'hori',

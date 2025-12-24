@@ -30,29 +30,36 @@ jobs:
           mode: "COMMIT"
           configurationJson: |
             {
-              "template": "## Що нового у версії #{{TO_TAG}}\n\n#{{CHANGELOG}}",
-              "pr_template": "- #{{TITLE}}",
+              "template": "## Що нового у версії #{{TO_TAG}}\n\n#{{CHANGELOG}}\n#{{UNCATEGORIZED}}",
+              "commit_template": "- #{{TITLE}}",
               "categories": [
                 {
-                  "title": "### ✨ Нові можливості",
+                  "title": "### ✨ Нові можливості\n",
                   "labels": ["feat"]
                 },
                 {
-                  "title": "### 🐛 Виправлення",
+                  "title": "### 🐛 Виправлення\n",
                   "labels": ["fix"]
                 },
                 {
-                  "title": "### 🔧 Інші зміни",
+                  "title": "### 🔧 Інші зміни\n",
                   "labels": ["refactor", "perf", "docs", "style", "test"]
                 }
               ],
               "label_extractor": [
                 {
-                  "pattern": "^(feat|fix|refactor|perf|docs|style|test|chore|ci|build)(\\(.+\\))?:",
-                  "target": "$1"
+                  "pattern": "^(feat|fix|refactor|perf|docs|style|test|chore|ci|build)(\\(.*\\))?!?:",
+                  "target": "$1",
+                  "on_property": "title"
+                },
+                {
+                  "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                  "target": "chore",
+                  "on_property": "title"
                 }
               ],
               "ignore_labels": ["chore", "ci", "build"],
+              "trim_values": true,
               "empty_template": "Немає змін"
             }
         env:
