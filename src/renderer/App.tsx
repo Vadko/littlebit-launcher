@@ -21,6 +21,69 @@ import { useRealtimeGames } from './hooks/useRealtimeGames';
 import { useGamepadModeNavigation } from './hooks/useGamepadModeNavigation';
 import { useDeepLink } from './hooks/useDeepLink';
 
+// Higher deadzone for mode switching to prevent accidental triggers from stick drift
+const MODE_SWITCH_DEADZONE = 0.8;
+
+/**
+ * Validate that the gamepad is a real controller, not a phantom device.
+ * Some USB devices (multimedia keyboards, special mice, racing wheels without proper drivers, etc.)
+ * can be incorrectly detected as gamepads by the browser.
+ */
+function isValidGamepad(gp: Gamepad | null): gp is Gamepad {
+  if (!gp) return false;
+
+  // Must have standard button layout (at least 12 buttons like Xbox/PS controllers)
+  if (gp.buttons.length < 12) return false;
+
+  // Must have at least 2 axes (left stick)
+  if (gp.axes.length < 2) return false;
+
+  // Filter out known phantom/non-standard devices by checking ID
+  const id = gp.id.toLowerCase();
+
+  // Known valid gamepad patterns (brands and types)
+  const validGamepadPatterns = [
+    'xbox',
+    'xinput',
+    'playstation',
+    'dualshock',
+    'dualsense',
+    'switch',
+    'nintendo',
+    'sony',
+    'microsoft',
+    '8bitdo',
+    'logitech',
+    'steelseries',
+    'razer',
+    'hori',
+    'powera',
+    'pdp',
+    'hyperkin',
+    'mayflash',
+    'brook',
+    'gamesir',
+  ];
+
+  // Check if it matches a known gamepad brand
+  if (validGamepadPatterns.some((pattern) => id.includes(pattern))) {
+    return true;
+  }
+
+  // For generic devices, check if they have typical gamepad characteristics
+  // Standard gamepads have 4 axes (2 sticks) and 16+ buttons
+  if (gp.axes.length >= 4 && gp.buttons.length >= 16) {
+    return true;
+  }
+
+  // Reject unknown devices that don't match gamepad patterns
+  console.log('[Gamepad] Rejecting unrecognized device:', gp.id, {
+    buttons: gp.buttons.length,
+    axes: gp.axes.length,
+  });
+  return false;
+}
+
 export const App: React.FC = () => {
   const {
     setInitialLoadComplete,
@@ -110,19 +173,19 @@ export const App: React.FC = () => {
   // Простий скрол геймпадом (тільки в геймпад-режимі)
   useGamepadModeNavigation(isGamepadMode);
 
-  
-  // Track gamepad input to switch back to gamepad mode
+  // Track mouse movement for mode switching
   const lastMouseMoveRef = useRef(0);
 
   useGamepads((gamepads) => {
     // If already in gamepad mode, nothing to do here
     if (useGamepadModeStore.getState().isGamepadMode) return;
 
-    const gp = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+    // Find first valid gamepad (filter out phantom devices)
+    const gp = Object.values(gamepads).find(isValidGamepad);
     if (!gp) return;
 
     const anyButtonPressed = gp.buttons.some((b) => b.pressed);
-    const anyAxisMoved = gp.axes.some((axis) => Math.abs(axis) > 0.5);
+    const anyAxisMoved = gp.axes.some((axis) => Math.abs(axis) > MODE_SWITCH_DEADZONE);
 
     if (anyButtonPressed || anyAxisMoved) {
       setGamepadMode(true);
@@ -133,17 +196,20 @@ export const App: React.FC = () => {
   useEffect(() => {
     const MOUSE_THROTTLE_MS = 500;
 
-    // Gamepad connected → gamepad mode
-    const handleGamepadConnected = () => {
-      console.log('[App] Gamepad connected');
+    // Gamepad connected → gamepad mode (only for valid gamepads)
+    const handleGamepadConnected = (e: GamepadEvent) => {
+      if (!isValidGamepad(e.gamepad)) {
+        return;
+      }
+      console.log('[App] Gamepad connected:', e.gamepad.id);
       setGamepadMode(true);
     };
 
-    // Gamepad disconnected → mouse mode
-    const handleGamepadDisconnected = () => {
-      console.log('[App] Gamepad disconnected');
+    // Gamepad disconnected → mouse mode (if no valid gamepads remain)
+    const handleGamepadDisconnected = (e: GamepadEvent) => {
+      console.log('[App] Gamepad disconnected:', e.gamepad.id);
       const gamepads = navigator.getGamepads();
-      const stillConnected = !!(gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3]);
+      const stillConnected = Array.from(gamepads).some(isValidGamepad);
       if (!stillConnected) {
         setGamepadMode(false);
       }

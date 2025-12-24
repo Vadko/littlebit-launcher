@@ -57,6 +57,7 @@ export function useInstallation({
     clearInstallationProgress,
     checkInstallationStatus,
   } = useStore();
+
   const { showModal } = useModalStore();
   const { showConfirm } = useConfirmStore();
   const { createBackupBeforeInstall } = useSettingsStore();
