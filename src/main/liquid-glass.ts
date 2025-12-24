@@ -40,7 +40,7 @@ export async function applyLiquidGlass(
     // Apply liquid glass effect
     const glassId = liquidGlass.addView(handle, {
       cornerRadius: 12,
-      tintColor: '#00000015', // Very subtle dark tint for glossy look
+      tintColor: '#ffffff20', // Light tint for brighter glass look
       opaque: false, // Ensure transparency
     });
 

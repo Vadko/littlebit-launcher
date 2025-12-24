@@ -23,7 +23,7 @@ export const AppLoader = ({ status }: AppLoaderProps) => {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="fixed inset-0 bg-bg-dark flex flex-col items-center justify-center z-[9999] overflow-hidden"
+      className="app-loader fixed inset-0 bg-[#0a0a0f] flex flex-col items-center justify-center z-[9999] overflow-hidden"
     >
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-neon-blue/10" />

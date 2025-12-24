@@ -45,9 +45,9 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
   const platformsText = game.platforms.join(', ').toUpperCase();
-  const downloadsText = game.downloads?.toLocaleString('uk-UA') || '0';
-  const subscriptionsText = game.subscriptions?.toLocaleString('uk-UA') || '0';
   const isPlanned = game.status === 'planned';
+  const hasDownloads = !!game.downloads && game.downloads > 0;
+  const hasSubscriptions = !!game.subscriptions && game.subscriptions > 0;
 
   return (
     <div className="glass-card">
@@ -78,17 +78,18 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
             value={game.achievements_archive_size}
           />
         )}
-        {isPlanned ? (
+        {isPlanned && hasSubscriptions && (
           <InfoItem
             icon={<Bell size={18} />}
             label="Підписників"
-            value={subscriptionsText}
+            value={game.subscriptions!.toLocaleString('uk-UA')}
           />
-        ) : (
+        )}
+        {!isPlanned && hasDownloads && (
           <InfoItem
             icon={<Download size={18} />}
             label="Завантажень"
-            value={downloadsText}
+            value={game.downloads!.toLocaleString('uk-UA')}
           />
         )}
         {game.created_at && (

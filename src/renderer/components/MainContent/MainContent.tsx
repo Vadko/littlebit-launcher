@@ -203,13 +203,15 @@ export const MainContent: React.FC = () => {
   if (!selectedGame) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
-        <Gamepad2 size={64} className="text-text-muted mb-4 opacity-50" />
-        <h2 className="text-2xl font-head font-semibold text-text-main mb-2">
-          Виберіть гру зі списку
-        </h2>
-        <p className="text-text-muted max-w-md">
-          Виберіть гру, щоб побачити деталі та встановити українізатор
-        </p>
+        <div className="glass-card p-8 rounded-2xl">
+          <Gamepad2 size={64} className="text-text-muted mb-4 opacity-50 mx-auto" />
+          <h2 className="text-2xl font-head font-semibold text-text-main mb-2">
+            Виберіть гру зі списку
+          </h2>
+          <p className="text-text-muted max-w-md">
+            Виберіть гру, щоб побачити деталі та встановити українізатор
+          </p>
+        </div>
       </div>
     );
   }

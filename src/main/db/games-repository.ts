@@ -276,7 +276,7 @@ export class GamesRepository {
       });
     });
 
-    matchedGames.sort((a, b) => a.name.localeCompare(b.name));
+    matchedGames.sort((a, b) => a.name.localeCompare(b.name, 'uk'));
 
     const total = matchedGames.length;
 
