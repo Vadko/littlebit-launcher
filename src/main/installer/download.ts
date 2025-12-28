@@ -347,7 +347,7 @@ async function downloadFileAttempt(
       },
     });
 
-    // Handle response to check for Range support
+    // Handle response to check for Range support and get Content-Length
     downloadStream.on('response', (response) => {
       if (startByte > 0) {
         if (response.statusCode === 200) {
@@ -361,12 +361,19 @@ async function downloadFileAttempt(
           throw new Error('Файл на сервері змінився, потрібно перезапустити завантаження');
         }
       }
+
       // Extract total size from Content-Range or Content-Length
       const contentRange = response.headers['content-range'];
       if (contentRange) {
         const match = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (match) {
           actualTotalBytes = parseInt(match[1], 10);
+        }
+      } else {
+        // For non-range requests, use Content-Length directly
+        const contentLength = response.headers['content-length'];
+        if (contentLength) {
+          actualTotalBytes = parseInt(contentLength, 10);
         }
       }
     });
