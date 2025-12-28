@@ -7,6 +7,37 @@ import type { DownloadProgress, InstallationStatus, PausedDownloadState, Install
 
 const unlink = promisify(fs.unlink);
 
+/**
+ * Get file size via HEAD request
+ * Returns 0 if size cannot be determined
+ */
+async function getFileSizeViaHead(url: string): Promise<number> {
+  try {
+    const response = await got.head(url, {
+      followRedirect: true,
+      headers: {
+        'Accept-Encoding': 'identity',
+      },
+      timeout: {
+        lookup: 5000,
+        connect: 5000,
+        secureConnect: 5000,
+        response: 10000,
+      },
+    });
+
+    const contentLength = response.headers['content-length'];
+    if (contentLength) {
+      return parseInt(contentLength, 10);
+    }
+
+    return 0;
+  } catch (error) {
+    console.warn('[Downloader] HEAD request failed:', error);
+    return 0;
+  }
+}
+
 // Global AbortController for cancelling current download
 let currentDownloadAbortController: AbortController | null = null;
 
@@ -25,12 +56,10 @@ let currentDownloadState: {
 /**
  * Abort current download
  */
-export function abortCurrentDownload(): void {
+export function abortCurrentDownload(reason = 'Завантаження скасовано'): void {
   if (currentDownloadAbortController) {
-    console.log('[Installer] Aborting current download due to connection loss');
-    currentDownloadAbortController.abort(
-      'Завантаження скасовано через відсутність підключення до Інтернету'
-    );
+    console.log('[Installer] Aborting current download:', reason);
+    currentDownloadAbortController.abort(reason);
     currentDownloadAbortController = null;
   }
 }
@@ -186,6 +215,10 @@ export async function downloadFile(
     console.log(`[Downloader] Found partial file with ${currentStartByte} bytes`);
   }
 
+  // Get file size via HEAD request (before download starts)
+  const expectedTotalBytes = await getFileSizeViaHead(url);
+  console.log(`[Downloader] Expected total bytes from HEAD: ${expectedTotalBytes}`);
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     // Check if cancelled
     if (signal?.aborted) {
@@ -213,7 +246,7 @@ export async function downloadFile(
           onStatus?.({ message: 'Завантаження українізатора...' });
         }
 
-      await downloadFileAttempt(url, partialPath, onProgress, onStatus, signal, currentStartByte);
+      await downloadFileAttempt(url, partialPath, onProgress, onStatus, signal, currentStartByte, expectedTotalBytes);
 
       // Download complete - rename .part to final file
       if (fs.existsSync(outputPath)) {
@@ -308,7 +341,8 @@ async function downloadFileAttempt(
   onProgress?: (progress: DownloadProgress) => void,
   onStatus?: (status: InstallationStatus) => void,
   signal?: AbortSignal,
-  startByte = 0
+  startByte = 0,
+  expectedTotalBytes = 0
 ): Promise<void> {
   console.log(`[Downloader] Starting download: ${url}${startByte > 0 ? ` (resuming from byte ${startByte})` : ''}`);
 
@@ -319,7 +353,8 @@ async function downloadFileAttempt(
   const startTime = Date.now();
   let lastUpdateTime = Date.now();
   let serverSupportsRange = true;
-  let actualTotalBytes = 0;
+  // Use expectedTotalBytes from HEAD request as the source of truth
+  let actualTotalBytes = expectedTotalBytes;
 
   // Abort handler
   const abortHandler = () => {
@@ -347,7 +382,7 @@ async function downloadFileAttempt(
       },
     });
 
-    // Handle response to check for Range support and get Content-Length
+    // Handle response to check for Range support
     downloadStream.on('response', (response) => {
       if (startByte > 0) {
         if (response.statusCode === 200) {
@@ -362,18 +397,13 @@ async function downloadFileAttempt(
         }
       }
 
-      // Extract total size from Content-Range or Content-Length
+      // Try to get size from Content-Range (for resumed downloads)
       const contentRange = response.headers['content-range'];
       if (contentRange) {
         const match = contentRange.match(/bytes \d+-\d+\/(\d+)/);
         if (match) {
           actualTotalBytes = parseInt(match[1], 10);
-        }
-      } else {
-        // For non-range requests, use Content-Length directly
-        const contentLength = response.headers['content-length'];
-        if (contentLength) {
-          actualTotalBytes = parseInt(contentLength, 10);
+          console.log('[Downloader] Got total size from Content-Range:', actualTotalBytes);
         }
       }
     });
@@ -387,7 +417,7 @@ async function downloadFileAttempt(
     }
 
     downloadStream.on('downloadProgress', (progress) => {
-      const { transferred, total, percent } = progress;
+      const { transferred } = progress;
 
       // Throttle updates to every 500ms
       const now = Date.now();
@@ -398,8 +428,8 @@ async function downloadFileAttempt(
 
       // Calculate actual progress considering already downloaded bytes
       const actualTransferred = serverSupportsRange ? startByte + transferred : transferred;
-      const actualTotal = actualTotalBytes || (serverSupportsRange ? startByte + (total || 0) : total || 0);
-      const actualPercent = actualTotal > 0 ? actualTransferred / actualTotal : percent;
+      const actualTotal = actualTotalBytes;
+      const actualPercent = actualTotal > 0 ? actualTransferred / actualTotal : 0;
 
       // Update current download state for pause functionality
       updateCurrentDownloadedBytes(actualTransferred, actualTotal);

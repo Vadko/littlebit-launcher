@@ -134,7 +134,7 @@ export const MainContent: React.FC = () => {
       // Don't abort if paused - download is already stopped
       if (selectedGame && isInstalling && !isPaused) {
         console.log('[MainContent] Aborting download due to connection loss');
-        await window.electronAPI?.abortDownload();
+        await window.electronAPI?.abortDownload('Завантаження скасовано через відсутність підключення до Інтернету');
         setInstallationProgress(selectedGame.id, {
           statusMessage:
             '❌ Завантаження скасовано через відсутність підключення до Інтернету',

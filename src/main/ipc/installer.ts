@@ -136,9 +136,9 @@ export function setupInstallerHandlers(): void {
     }
   });
 
-  ipcMain.handle('abort-download', async () => {
+  ipcMain.handle('abort-download', async (_, reason?: string) => {
     try {
-      abortCurrentDownload();
+      abortCurrentDownload(reason);
       return { success: true };
     } catch (error) {
       console.error('Error aborting download:', error);
