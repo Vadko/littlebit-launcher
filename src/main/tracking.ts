@@ -74,7 +74,7 @@ export async function getSignedDownloadUrl(
       `[Tracking] Requesting signed URL for game: ${gameId}, type: ${archiveType}`
     );
 
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/get-download-url-r2`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/get-download-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

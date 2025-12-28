@@ -1,11 +1,10 @@
 /**
- * R2 public URL for images (via custom domain)
+ * Storage public URL for images
  */
-const R2_IMAGES_URL =
-  import.meta.env.VITE_R2_IMAGES_URL || 'https://images.lblauncher.com';
+const STORAGE_IMAGES_URL = import.meta.env.VITE_STORAGE_IMAGES_URL;
 
 /**
- * Отримати URL зображення з R2
+ * Отримати URL зображення зі Storage
  * @param imagePath - шлях до зображення
  * @param updatedAt - timestamp останнього оновлення для cache-busting
  */
@@ -27,7 +26,7 @@ export function getImageUrl(
   // Remove leading slash if present
   const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
 
-  const baseUrl = `${R2_IMAGES_URL}/${cleanPath}`;
+  const baseUrl = `${STORAGE_IMAGES_URL}/${cleanPath}`;
 
   // Cache-busting: додати timestamp щоб браузер завантажив нову версію при оновленні
   if (updatedAt) {
