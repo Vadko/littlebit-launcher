@@ -693,6 +693,18 @@ body.liquid-glass-enabled .glass-input:focus {
   outline: 3px solid var(--gamepad-focus) !important;
 }
 
+/* Gamepad selected state (visual selection without focus, for text inputs) */
+[data-gamepad-mode] [data-gamepad-selected] {
+  outline: 3px solid var(--gamepad-focus) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.3), 0 0 20px rgba(251, 191, 36, 0.4) !important;
+}
+
+:root[data-theme='light'] [data-gamepad-mode] [data-gamepad-selected] {
+  outline: 3px solid var(--gamepad-focus) !important;
+  box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.3), 0 0 20px rgba(245, 158, 11, 0.4) !important;
+}
+
 /* ==========================================================================
    11. LIGHT THEME - SIDEBAR & DROPDOWN BORDERS
    ========================================================================== */

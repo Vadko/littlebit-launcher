@@ -2,9 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
+import { useGamepadModeStore } from '../../store/useGamepadModeStore';
+import { Modal } from '../Modal/Modal';
 
 export const UpdateNotification = () => {
   const { appUpdateNotificationsEnabled } = useSettingsStore();
+  const isGamepadMode = useGamepadModeStore((s) => s.isGamepadMode);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -70,6 +73,78 @@ export const UpdateNotification = () => {
   if (!appUpdateNotificationsEnabled || (!updateAvailable && !updateDownloaded))
     return null;
 
+  const content = (
+    <>
+      <p className="text-gray-400 text-sm mb-3">
+        {updateDownloaded
+          ? 'Оновлення завантажено та готове до встановлення'
+          : `Версія ${(updateInfo as { version?: string })?.version || 'нова'} доступна для завантаження`}
+      </p>
+      {downloading && (
+        <div className="mb-3">
+          <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <span>Завантаження...</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const buttons = (
+    <div className="flex gap-2">
+      {updateDownloaded ? (
+        <button
+          onClick={handleInstall}
+          data-gamepad-confirm
+          className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+        >
+          Перезапустити
+        </button>
+      ) : (
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          data-gamepad-confirm
+          className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+        >
+          {downloading ? 'Завантаження...' : 'Завантажити'}
+        </button>
+      )}
+      {!updateDownloaded && (
+        <button
+          onClick={() => setUpdateAvailable(false)}
+          data-gamepad-cancel
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+        >
+          Пізніше
+        </button>
+      )}
+    </div>
+  );
+
+  // In gamepad mode, show as modal for better navigation
+  if (isGamepadMode) {
+    return (
+      <Modal
+        isOpen={true}
+        onClose={() => setUpdateAvailable(false)}
+        title={updateDownloaded ? 'Оновлення готове!' : 'Доступне оновлення'}
+        footer={buttons}
+        showCloseButton={!updateDownloaded}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  // Normal floating toast notification
   return (
     <div className="fixed bottom-4 right-4 glass-panel notification-toast border border-neon-blue rounded-xl p-4 shadow-xl max-w-sm z-50">
       <div className="flex items-start gap-3">
@@ -84,51 +159,8 @@ export const UpdateNotification = () => {
           <h3 className="text-white font-semibold mb-1">
             {updateDownloaded ? 'Оновлення готове!' : 'Доступне оновлення'}
           </h3>
-          <p className="text-gray-400 text-sm mb-3">
-            {updateDownloaded
-              ? 'Оновлення завантажено та готове до встановлення'
-              : `Версія ${(updateInfo as { version?: string })?.version || 'нова'} доступна для завантаження`}
-          </p>
-          {downloading && (
-            <div className="mb-3">
-              <div className="flex justify-between text-xs text-gray-400 mb-1">
-                <span>Завантаження...</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-          )}
-          <div className="flex gap-2">
-            {updateDownloaded ? (
-              <button
-                onClick={handleInstall}
-                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-              >
-                Перезапустити
-              </button>
-            ) : (
-              <button
-                onClick={handleDownload}
-                disabled={downloading}
-                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-              >
-                {downloading ? 'Завантаження...' : 'Завантажити'}
-              </button>
-            )}
-            {!updateDownloaded && (
-              <button
-                onClick={() => setUpdateAvailable(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Пізніше
-              </button>
-            )}
-          </div>
+          {content}
+          {buttons}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Check, Search, X } from 'lucide-react';
+import { useGamepadModeStore } from '../../store/useGamepadModeStore';
 
 interface AuthorsFilterDropdownProps {
   selectedAuthors: string[];
@@ -16,6 +17,7 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
     const menuRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const isComposingRef = useRef(false);
+    const isGamepadMode = useGamepadModeStore((s) => s.isGamepadMode);
 
     // Determine current label
     const currentLabel = useMemo(() => {
@@ -51,12 +53,12 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
       };
     }, [isOpen]);
 
-    // Focus search input when dropdown opens
+    // Focus search input when dropdown opens (skip in gamepad mode)
     useEffect(() => {
-      if (isOpen && searchInputRef.current) {
+      if (isOpen && searchInputRef.current && !isGamepadMode) {
         searchInputRef.current.focus();
       }
-    }, [isOpen]);
+    }, [isOpen, isGamepadMode]);
 
     // Toggle author selection
     const handleAuthorToggle = useCallback(
@@ -126,7 +128,7 @@ export const AuthorsFilterDropdown: React.FC<AuthorsFilterDropdownProps> = React
                 className="flex items-center gap-2 px-3 py-2 border-b border-border focus:bg-glass-hover"
                 data-gamepad-dropdown-item
                 tabIndex={0}
-                onFocus={() => searchInputRef.current?.focus()}
+                onFocus={() => !isGamepadMode && searchInputRef.current?.focus()}
               >
                 <Search size={14} className="text-text-muted flex-shrink-0" />
                 <input

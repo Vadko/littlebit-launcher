@@ -234,6 +234,49 @@ export function useGamepadModeNavigation(enabled = true) {
     });
   }, []);
 
+  // Check if element is a text input (not checkbox/radio)
+  const isTextInput = useCallback((el: HTMLElement): boolean => {
+    if (el.tagName === 'TEXTAREA') return true;
+    if (el.tagName === 'INPUT') {
+      const type = (el as HTMLInputElement).type?.toLowerCase();
+      return !['checkbox', 'radio', 'button', 'submit', 'reset'].includes(type);
+    }
+    return false;
+  }, []);
+
+  // Set gamepad-selected attribute on element (visual selection without focus)
+  const setGamepadSelected = useCallback((el: HTMLElement | null) => {
+    // Clear previous selection
+    document.querySelectorAll('[data-gamepad-selected]').forEach((e) => {
+      e.removeAttribute('data-gamepad-selected');
+    });
+    if (el) {
+      el.setAttribute('data-gamepad-selected', 'true');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, []);
+
+  // Get currently selected element (either focused or gamepad-selected)
+  const getSelectedElement = useCallback((elements: HTMLElement[]): { element: HTMLElement | null; index: number } => {
+    // First check for actual focus
+    const focused = document.activeElement as HTMLElement;
+    const focusedIndex = elements.indexOf(focused);
+    if (focusedIndex !== -1) {
+      return { element: focused, index: focusedIndex };
+    }
+
+    // Then check for gamepad-selected
+    const selected = document.querySelector<HTMLElement>('[data-gamepad-selected]');
+    if (selected) {
+      const selectedIndex = elements.indexOf(selected);
+      if (selectedIndex !== -1) {
+        return { element: selected, index: selectedIndex };
+      }
+    }
+
+    return { element: null, index: -1 };
+  }, []);
+
   // Handle modal navigation
   const handleModalNavigation = useCallback(
     (gp: Gamepad) => {
@@ -275,12 +318,43 @@ export function useGamepadModeNavigation(enabled = true) {
 
       if (focusableElements.length === 0) return;
 
-      const currentFocused = document.activeElement as HTMLElement;
-      const currentIndex = focusableElements.indexOf(currentFocused);
+      const { element: currentElement, index: currentIndex } = getSelectedElement(focusableElements);
+      const activeElement = document.activeElement as HTMLElement;
+      const isInputActive = isTextInput(activeElement) && focusableElements.includes(activeElement);
 
-      // If nothing focused in modal, focus first element
+      // If nothing selected in modal, select first element
       if (currentIndex === -1) {
-        focusableElements[0]?.focus();
+        const firstEl = focusableElements[0];
+        if (isTextInput(firstEl)) {
+          setGamepadSelected(firstEl);
+        } else {
+          firstEl.focus();
+        }
+        return;
+      }
+
+      // B button - if input is focused, blur it; otherwise cancel/close
+      if (isButtonJustPressed(gp, BUTTON.B) && canInput('modal-button-b')) {
+        if (isInputActive) {
+          // Exit input editing mode - blur and set as selected
+          playBackSound();
+          activeElement.blur();
+          setGamepadSelected(activeElement);
+          return;
+        }
+
+        // Find cancel button by data attribute
+        const cancelButton =
+          modal.querySelector<HTMLButtonElement>('[data-gamepad-cancel]');
+        if (cancelButton) {
+          playBackSound();
+          cancelButton.click();
+        }
+        return;
+      }
+
+      // If text input is actively focused, don't handle navigation (let user type)
+      if (isInputActive) {
         return;
       }
 
@@ -300,54 +374,58 @@ export function useGamepadModeNavigation(enabled = true) {
         (gp.buttons[BUTTON.DPAD_RIGHT]?.pressed && canInput('modal-right')) ||
         (gp.axes[AXIS.LEFT_X] > DEADZONE && canInput('modal-stick-right'));
 
+      // Navigate to element (use selection for text inputs, focus for others)
+      const navigateToElement = (el: HTMLElement) => {
+        if (isTextInput(el)) {
+          // For text inputs, use visual selection instead of focus
+          (document.activeElement as HTMLElement)?.blur?.();
+          setGamepadSelected(el);
+        } else {
+          // For buttons and other elements, use regular focus
+          setGamepadSelected(null);
+          el.focus();
+        }
+        playNavigateSound();
+      };
+
       if (upPressed) {
         const nextIndex =
           currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
-        focusableElements[nextIndex].focus();
-        focusableElements[nextIndex].scrollIntoView({ block: 'nearest' });
-        playNavigateSound();
+        navigateToElement(focusableElements[nextIndex]);
       }
 
       if (downPressed) {
         const nextIndex =
           currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
-        focusableElements[nextIndex].focus();
-        focusableElements[nextIndex].scrollIntoView({ block: 'nearest' });
-        playNavigateSound();
+        navigateToElement(focusableElements[nextIndex]);
       }
 
       // Left/Right for switching between cancel/confirm buttons
       if (leftPressed && currentIndex > 0) {
-        focusableElements[currentIndex - 1].focus();
-        playNavigateSound();
+        navigateToElement(focusableElements[currentIndex - 1]);
       }
 
       if (rightPressed && currentIndex < focusableElements.length - 1) {
-        focusableElements[currentIndex + 1].focus();
-        playNavigateSound();
+        navigateToElement(focusableElements[currentIndex + 1]);
       }
 
       // A button - confirm/click (only on button press, not hold)
       if (isButtonJustPressed(gp, BUTTON.A) && canInput('modal-button-a')) {
-        const focused = document.activeElement as HTMLElement;
-        if (focused && focusableElements.includes(focused)) {
-          playConfirmSound();
-          focused.click();
-        }
-      }
-
-      // B button - cancel/close (only on button press, not hold)
-      if (isButtonJustPressed(gp, BUTTON.B) && canInput('modal-button-b')) {
-        // Find cancel button by data attribute
-        const cancelButton =
-          modal.querySelector<HTMLButtonElement>('[data-gamepad-cancel]');
-        if (cancelButton) {
-          playBackSound();
-          cancelButton.click();
+        if (currentElement) {
+          if (isTextInput(currentElement) && !focusableElements.includes(document.activeElement as HTMLElement)) {
+            // Text input is selected but not focused - activate it
+            playConfirmSound();
+            setGamepadSelected(null);
+            currentElement.focus();
+          } else {
+            // Regular element - click it
+            playConfirmSound();
+            currentElement.click();
+          }
         }
       }
     },
-    [canInput, isButtonJustPressed]
+    [canInput, isButtonJustPressed, isTextInput, setGamepadSelected, getSelectedElement]
   );
 
   // Get action buttons from MainContent
@@ -478,9 +556,77 @@ export function useGamepadModeNavigation(enabled = true) {
   // Check if dropdown is open
   const isDropdownOpen = useCallback((): boolean => !!document.querySelector('[data-gamepad-dropdown]'), []);
 
+  // Get current selected/focused element in header context
+  const getHeaderSelectedElement = useCallback((items: HTMLElement[]): { element: HTMLElement | null; index: number } => {
+    // Check for actual focus
+    const focused = document.activeElement as HTMLElement;
+    const focusedIndex = items.findIndex((item) => item.contains(focused) || item === focused);
+    if (focusedIndex !== -1) {
+      return { element: focused, index: focusedIndex };
+    }
+
+    // Check for gamepad-selected
+    const selected = document.querySelector<HTMLElement>('[data-gamepad-selected]');
+    if (selected) {
+      const selectedIndex = items.findIndex((item) => item.contains(selected) || item === selected);
+      if (selectedIndex !== -1) {
+        return { element: selected, index: selectedIndex };
+      }
+    }
+
+    return { element: null, index: -1 };
+  }, []);
+
   // Handle header navigation
   const handleHeaderNavigation = useCallback(
     (gp: Gamepad) => {
+      const activeElement = document.activeElement as HTMLElement;
+      const isInputActive = isTextInput(activeElement);
+
+      // B button - if input is focused, blur it; otherwise handle normally
+      if (isButtonJustPressed(gp, BUTTON.B) && canInput('button-b')) {
+        if (isInputActive) {
+          // Exit input editing mode - blur and return focus to parent dropdown item
+          playBackSound();
+          activeElement.blur();
+          // Find parent dropdown item to focus
+          const parentDropdownItem = activeElement.closest<HTMLElement>('[data-gamepad-dropdown-item]');
+          if (parentDropdownItem) {
+            parentDropdownItem.focus();
+          } else {
+            setGamepadSelected(activeElement);
+          }
+          return;
+        }
+
+        // If dropdown is open, close it
+        if (isDropdownOpen()) {
+          playBackSound();
+          const event = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+          });
+          document.body.dispatchEvent(event);
+          return;
+        }
+
+        // Go to games
+        playBackSound();
+        setGamepadSelected(null);
+        setNavigationArea('games');
+        const cards = getGameCards();
+        if (cards[focusedGameIndex]) {
+          cards[focusedGameIndex].focus();
+        }
+        return;
+      }
+
+      // If text input is actively focused, don't handle navigation (let user type)
+      if (isInputActive) {
+        return;
+      }
+
       // Check if dropdown is open - handle dropdown navigation
       if (isDropdownOpen()) {
         const dropdownItems = getDropdownItems();
@@ -519,25 +665,21 @@ export function useGamepadModeNavigation(enabled = true) {
           playNavigateSound();
         }
 
-        // A button - select item
-        if (gp.buttons[BUTTON.A]?.pressed && canInput('button-a')) {
+        // A button - select item or activate input
+        if (isButtonJustPressed(gp, BUTTON.A) && canInput('button-a')) {
           const focused = document.activeElement as HTMLElement;
           if (focused && dropdownItems.includes(focused)) {
-            playConfirmSound();
-            focused.click();
+            // Check if this dropdown item contains an input
+            const innerInput = focused.querySelector<HTMLInputElement>('input, textarea');
+            if (innerInput) {
+              // Focus the input inside
+              playConfirmSound();
+              innerInput.focus();
+            } else {
+              playConfirmSound();
+              focused.click();
+            }
           }
-        }
-
-        // B button - close dropdown
-        if (gp.buttons[BUTTON.B]?.pressed && canInput('button-b')) {
-          playBackSound();
-          // Dispatch mousedown event to trigger outside click handler
-          const event = new MouseEvent('mousedown', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-          });
-          document.body.dispatchEvent(event);
         }
 
         return;
@@ -547,19 +689,34 @@ export function useGamepadModeNavigation(enabled = true) {
       const items = getHeaderItems();
       if (items.length === 0) return;
 
-      // Find currently focused item
-      const currentFocused = document.activeElement as HTMLElement;
-      const currentIndex = items.findIndex(
-        (item) => item.contains(currentFocused) || item === currentFocused
-      );
+      const { element: currentElement, index: currentIndex } = getHeaderSelectedElement(items);
 
-      // If nothing focused, focus first item
+      // If nothing focused/selected, select first item
       if (currentIndex === -1) {
-        const firstInput = items[0].querySelector<HTMLElement>('input, button, [tabindex]');
-        if (firstInput) firstInput.focus();
-        else items[0].focus();
+        const firstItem = items[0];
+        const firstTarget = firstItem.querySelector<HTMLElement>('input, button, [tabindex]');
+        const targetEl = firstTarget || firstItem;
+        if (isTextInput(targetEl)) {
+          setGamepadSelected(targetEl);
+        } else {
+          targetEl.focus();
+        }
         return;
       }
+
+      // Navigate to header item (use selection for text inputs, focus for others)
+      const navigateToHeaderItem = (item: HTMLElement) => {
+        const focusTarget = item.querySelector<HTMLElement>('input, button, [tabindex]');
+        const targetEl = focusTarget || item;
+        if (isTextInput(targetEl)) {
+          (document.activeElement as HTMLElement)?.blur?.();
+          setGamepadSelected(targetEl);
+        } else {
+          setGamepadSelected(null);
+          targetEl.focus();
+        }
+        playNavigateSound();
+      };
 
       // Left/Right - navigate between items
       const leftPressed =
@@ -570,19 +727,11 @@ export function useGamepadModeNavigation(enabled = true) {
         (gp.axes[AXIS.LEFT_X] > DEADZONE && canInput('header-stick-right'));
 
       if (leftPressed && currentIndex > 0) {
-        const prevItem = items[currentIndex - 1];
-        const focusTarget = prevItem.querySelector<HTMLElement>('input, button, [tabindex]');
-        if (focusTarget) focusTarget.focus();
-        else prevItem.focus();
-        playNavigateSound();
+        navigateToHeaderItem(items[currentIndex - 1]);
       }
 
       if (rightPressed && currentIndex < items.length - 1) {
-        const nextItem = items[currentIndex + 1];
-        const focusTarget = nextItem.querySelector<HTMLElement>('input, button, [tabindex]');
-        if (focusTarget) focusTarget.focus();
-        else nextItem.focus();
-        playNavigateSound();
+        navigateToHeaderItem(items[currentIndex + 1]);
       }
 
       // Down - go to games
@@ -592,6 +741,7 @@ export function useGamepadModeNavigation(enabled = true) {
 
       if (downPressed) {
         playNavigateSound();
+        setGamepadSelected(null);
         setNavigationArea('games');
         const cards = getGameCards();
         if (cards[focusedGameIndex]) {
@@ -599,26 +749,23 @@ export function useGamepadModeNavigation(enabled = true) {
         }
       }
 
-      // A button - activate (click dropdown button)
-      if (gp.buttons[BUTTON.A]?.pressed && canInput('button-a')) {
-        const focused = document.activeElement as HTMLElement;
-        if (focused) {
-          playConfirmSound();
-          focused.click();
-        }
-      }
-
-      // B button - go to games
-      if (gp.buttons[BUTTON.B]?.pressed && canInput('button-b')) {
-        playBackSound();
-        setNavigationArea('games');
-        const cards = getGameCards();
-        if (cards[focusedGameIndex]) {
-          cards[focusedGameIndex].focus();
+      // A button - activate element
+      if (isButtonJustPressed(gp, BUTTON.A) && canInput('button-a')) {
+        if (currentElement) {
+          if (isTextInput(currentElement) && currentElement !== document.activeElement) {
+            // Text input is selected but not focused - activate it
+            playConfirmSound();
+            setGamepadSelected(null);
+            currentElement.focus();
+          } else {
+            // Regular element - click it
+            playConfirmSound();
+            currentElement.click();
+          }
         }
       }
     },
-    [canInput, focusedGameIndex, getGameCards, getHeaderItems, getDropdownItems, isDropdownOpen, setNavigationArea]
+    [canInput, isButtonJustPressed, focusedGameIndex, getGameCards, getHeaderItems, getDropdownItems, isDropdownOpen, setNavigationArea, isTextInput, setGamepadSelected, getHeaderSelectedElement]
   );
 
   // Handle games navigation
@@ -686,6 +833,16 @@ export function useGamepadModeNavigation(enabled = true) {
     ]
   );
 
+  // Clear gamepad-selected when navigation area changes
+  useEffect(() => {
+    if (prevNavigationAreaRef.current !== null && prevNavigationAreaRef.current !== navigationArea) {
+      // Clear gamepad-selected when switching areas
+      document.querySelectorAll('[data-gamepad-selected]').forEach((e) => {
+        e.removeAttribute('data-gamepad-selected');
+      });
+    }
+  }, [navigationArea]);
+
   // Main gamepad polling effect
   useEffect(() => {
     if (!enabled) return;
@@ -699,10 +856,16 @@ export function useGamepadModeNavigation(enabled = true) {
 
     // Track modal open/close for focus restoration
     if (modalOpen && !wasModalOpenRef.current) {
-      // Modal just opened - save currently focused element
+      // Modal just opened - save currently focused element and clear selection
       previouslyFocusedRef.current = document.activeElement as HTMLElement;
+      document.querySelectorAll('[data-gamepad-selected]').forEach((e) => {
+        e.removeAttribute('data-gamepad-selected');
+      });
     } else if (!modalOpen && wasModalOpenRef.current) {
-      // Modal just closed - restore focus
+      // Modal just closed - restore focus and clear any modal selection
+      document.querySelectorAll('[data-gamepad-selected]').forEach((e) => {
+        e.removeAttribute('data-gamepad-selected');
+      });
       if (previouslyFocusedRef.current && document.body.contains(previouslyFocusedRef.current)) {
         previouslyFocusedRef.current.focus();
       } else {
