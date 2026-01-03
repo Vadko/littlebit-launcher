@@ -591,6 +591,31 @@ export type Database = {
           },
         ]
       }
+      kurin_imports: {
+        Row: {
+          game_id: string
+          imported_at: string
+          kurin_id: number
+        }
+        Insert: {
+          game_id: string
+          imported_at?: string
+          kurin_id: number
+        }
+        Update: {
+          game_id?: string
+          imported_at?: string
+          kurin_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kurin_imports_game_id_fkey"
+            columns: ["game_id"]
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       steam_apps: {
         Row: {
           app_id: number
