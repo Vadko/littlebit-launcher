@@ -7,6 +7,7 @@ import { StatusFilterDropdown } from './StatusFilterDropdown';
 import { AuthorsFilterDropdown } from './AuthorsFilterDropdown';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarFooter } from './SidebarFooter';
+import { AlphabetSidebar } from './AlphabetSidebar';
 import { GameGroupItem } from './GameGroupItem';
 import { GamepadCard } from './GamepadCard';
 import { Loader } from '../ui/Loader';
@@ -136,6 +137,149 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
   }, [visibleGames]);
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Alphabet Sidebar logic
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const sortedAlphabet = useMemo(() => {
+    const letters = new Set<string>();
+
+    gameGroups.forEach((group) => {
+      const firstChar = group.name.charAt(0).toUpperCase();
+      if (/[A-ZА-ЯҐЄІЇ]/.test(firstChar)) {
+        letters.add(firstChar);
+      } else {
+        letters.add('#');
+      }
+    });
+
+    return Array.from(letters).sort((a, b) => {
+      if (a === '#') return 1;
+      if (b === '#') return -1;
+
+      const isALatin = /[A-Z]/.test(a);
+      const isBLatin = /[A-Z]/.test(b);
+
+      if (isALatin && !isBLatin) return -1;
+      if (!isALatin && isBLatin) return 1;
+
+      return a.localeCompare(b);
+    });
+  }, [gameGroups]);
+
+  // Scroll Sync Logic
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  const activeLetterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (activeLetterTimeoutRef.current) {
+        clearTimeout(activeLetterTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const scrollTop = container.scrollTop;
+    const clientHeight = container.clientHeight;
+    const scrollHeight = container.scrollHeight;
+
+    // Clear existing timeout to keep highlight active while scrolling
+    if (activeLetterTimeoutRef.current) {
+      clearTimeout(activeLetterTimeoutRef.current);
+    }
+
+    let foundLetter: string | null = null;
+
+    // 1. Check if we are at the very bottom
+    // If so, highlight the last letter regardless of where it starts
+    if (Math.abs(scrollHeight - clientHeight - scrollTop) < 50) {
+      const lastGroup = gameGroups[gameGroups.length - 1];
+      if (lastGroup) {
+        const firstChar = lastGroup.name.charAt(0).toUpperCase();
+        foundLetter = /[A-ZА-ЯҐЄІЇ]/.test(firstChar) ? firstChar : '#';
+      }
+    } else {
+      // 2. Standard Spy Logic with "Middleish" Trigger
+      // Instead of top edge (scrollTop), we use a trigger line further down
+      // e.g. 1/3 of the viewport height. This feels more like "it's active when it enters the main area"
+      const triggerLine = scrollTop + (clientHeight / 3);
+
+      let activeGroup = null;
+
+      for (const group of gameGroups) {
+        const element = document.getElementById(`group-${group.slug}`);
+        if (!element) continue;
+
+        // If the group has started (offsetTop < triggerLine), it's a candidate.
+        if (element.offsetTop <= triggerLine) {
+          activeGroup = group;
+        } else {
+          // Since groups are ordered, once we cross the trigger line, stop.
+          break;
+        }
+      }
+
+      if (activeGroup) {
+        const firstChar = activeGroup.name.charAt(0).toUpperCase();
+        foundLetter = /[A-ZА-ЯҐЄІЇ]/.test(firstChar) ? firstChar : '#';
+      }
+    }
+
+    if (foundLetter) {
+      setActiveLetter(foundLetter);
+
+      // Hide highlight after 1 second of no scrolling
+      activeLetterTimeoutRef.current = setTimeout(() => {
+        setActiveLetter(null);
+      }, 1000);
+    }
+  }, [gameGroups]);
+
+  const smoothScrollTo = (target: number, duration: number) => {
+    const container = listRef.current;
+    if (!container) return;
+
+    const start = container.scrollTop;
+    const distance = target - start;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const timeElapsed = currentTime - startTime;
+      const progress = Math.min(timeElapsed / duration, 1);
+
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      container.scrollTop = start + (distance * ease);
+
+      if (timeElapsed < duration) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  const handleLetterClick = useCallback((letter: string) => {
+    const targetGroup = gameGroups.find((g) => {
+      const firstChar = g.name.charAt(0).toUpperCase();
+      return letter === '#'
+        ? !/[A-ZА-ЯҐЄІЇ]/.test(firstChar)
+        : firstChar === letter;
+    });
+
+    if (targetGroup) {
+      const element = document.getElementById(`group-${targetGroup.slug}`);
+      if (element && listRef.current) {
+        // Calculate target scroll position
+        const targetTop = element.offsetTop;
+        smoothScrollTo(targetTop, 200); // 300ms fast smooth scroll
+      }
+    }
+  }, [gameGroups]);
+
 
   // Resize state
   const [isResizing, setIsResizing] = useState(false);
@@ -338,80 +482,96 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         />
       </div>
 
-      {/* Games list */}
-      <div className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar">
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div
-              key="loader"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="flex items-center justify-center py-12"
-            >
-              <Loader size="md" />
-            </motion.div>
-          ) : totalGames === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="text-center text-text-muted py-8"
-            >
-              <p>Ігор не знайдено</p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key={`games-${specialFilter}-${selectedStatuses.join(',')}-${selectedAuthors.join(',')}-${debouncedSearchQuery}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
-              className="space-y-2"
-            >
-              {gameGroups.map((group, index) => {
-                const hasMultipleTranslations = group.translations.length > 1;
-                const primaryGame = group.translations[0];
+      {/* Games list with Alphabet Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        <div
+          ref={listRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 pt-0 custom-scrollbar relative"
+        >
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="flex items-center justify-center py-12"
+              >
+                <Loader size="md" />
+              </motion.div>
+            ) : totalGames === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="text-center text-text-muted py-8"
+              >
+                <p>Ігор не знайдено</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`games-${specialFilter}-${selectedStatuses.join(',')}-${selectedAuthors.join(',')}-${debouncedSearchQuery}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="space-y-2 relative"
+              >
+                {gameGroups.map((group, index) => {
+                  const hasMultipleTranslations = group.translations.length > 1;
+                  const primaryGame = group.translations[0];
 
-                return (
-                  <motion.div
-                    key={group.slug}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: Math.min(index * 0.03, 0.5),
-                      ease: [0.25, 0.46, 0.45, 0.94],
-                    }}
-                  >
-                    {hasMultipleTranslations ? (
-                      <GameGroupItem
-                        group={group}
-                        isExpanded={expandedGroups.has(group.slug)}
-                        onToggle={() => toggleGroupExpanded(group.slug)}
-                        selectedGameId={selectedGame?.id}
-                        onSelectGame={setSelectedGame}
-                        gamesWithUpdates={gamesWithUpdates}
-                        isGameDetected={isGameDetected}
-                      />
-                    ) : (
-                      <GameListItem
-                        game={primaryGame}
-                        isSelected={selectedGame?.id === primaryGame.id}
-                        onClick={() => setSelectedGame(primaryGame)}
-                        hasUpdate={gamesWithUpdates.has(primaryGame.id)}
-                        isGameDetected={isGameDetected(primaryGame.id)}
-                      />
-                    )}
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  return (
+                    <motion.div
+                      key={group.slug}
+                      id={`group-${group.slug}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: Math.min(index * 0.03, 0.5),
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      }}
+                    >
+                      {hasMultipleTranslations ? (
+                        <GameGroupItem
+                          group={group}
+                          isExpanded={expandedGroups.has(group.slug)}
+                          onToggle={() => toggleGroupExpanded(group.slug)}
+                          selectedGameId={selectedGame?.id}
+                          onSelectGame={setSelectedGame}
+                          gamesWithUpdates={gamesWithUpdates}
+                          isGameDetected={isGameDetected}
+                        />
+                      ) : (
+                        <GameListItem
+                          game={primaryGame}
+                          isSelected={selectedGame?.id === primaryGame.id}
+                          onClick={() => setSelectedGame(primaryGame)}
+                          hasUpdate={gamesWithUpdates.has(primaryGame.id)}
+                          isGameDetected={isGameDetected(primaryGame.id)}
+                        />
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Render alphabet sidebar if there are games */}
+        {!isLoading && totalGames > 0 && (
+          <AlphabetSidebar
+            alphabet={sortedAlphabet}
+            onLetterClick={handleLetterClick}
+            activeHighlight={activeLetter || undefined}
+          />
+        )}
       </div>
 
       <SidebarFooter
@@ -422,9 +582,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
       {/* Resize handle */}
       <div
-        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize group hover:bg-primary/50 transition-colors ${
-          isResizing ? 'bg-primary/50' : 'bg-transparent'
-        }`}
+        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize group hover:bg-primary/50 transition-colors z-50 ${isResizing ? 'bg-primary/50' : 'bg-transparent'
+          }`}
         onMouseDown={handleResizeStart}
       >
         <div className="absolute top-1/2 right-0 -translate-y-1/2 w-1 h-12 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
