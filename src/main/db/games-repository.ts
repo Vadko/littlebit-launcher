@@ -28,10 +28,10 @@ type GameInsertParams = {
     SupabaseDatabase['public']['Tables']['games']['Row'],
     ExcludedLocalFields
   >]: K extends 'approved' | 'is_adult' | 'license_only' | 'ai' | 'hide'
-    ? number // boolean перетворюється на 0/1 для SQLite
-    : K extends 'platforms' | 'install_paths'
-      ? string | null // JSON.stringify для SQLite
-      : SupabaseDatabase['public']['Tables']['games']['Row'][K];
+  ? number // boolean перетворюється на 0/1 для SQLite
+  : K extends 'platforms' | 'install_paths'
+  ? string | null // JSON.stringify для SQLite
+  : SupabaseDatabase['public']['Tables']['games']['Row'][K];
 };
 
 /**
@@ -149,10 +149,7 @@ export class GamesRepository {
       queryParams.push(...statuses);
     }
 
-    if (searchQuery) {
-      whereConditions.push('name LIKE ?');
-      queryParams.push(`%${searchQuery}%`);
-    }
+
 
     // Adult games are always returned, UI will show blur overlay when setting is off
 
@@ -167,6 +164,12 @@ export class GamesRepository {
 
     const rows = gamesStmt.all(...queryParams) as Record<string, unknown>[];
     let games = rows.map((row) => this.rowToGame(row));
+
+    // Filter by search query (case-insensitive) - post-process for better Unicode support
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      games = games.filter((game) => game.name.toLowerCase().includes(query));
+    }
 
     // Filter by authors (multi-select) - post-process since team is comma-separated
     if (authors.length > 0) {
