@@ -175,6 +175,20 @@ export const MainContent: React.FC = () => {
         title: isUpdateAvailable ? 'Переклад оновлено' : 'Переклад встановлено',
         message,
         type: 'success',
+        actions: [
+          {
+            label: 'Перезапустити Steam',
+            onClick: () => {
+              window.electronAPI.restartSteam();
+            },
+            variant: 'primary',
+          },
+          {
+            label: 'Зрозуміло',
+            onClick: () => { },
+            variant: 'secondary',
+          },
+        ],
       });
     } catch (error) {
       console.error('Installation error:', error);

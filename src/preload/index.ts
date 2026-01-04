@@ -60,6 +60,8 @@ const electronAPI: ElectronAPI = {
   },
   // Game launcher
   launchGame: (game: Game) => ipcRenderer.invoke('launch-game', game),
+  // Steam integration
+  restartSteam: () => ipcRenderer.invoke('restart-steam'),
   // Version
   getVersion: () => ipcRenderer.sendSync('get-version'),
 };
