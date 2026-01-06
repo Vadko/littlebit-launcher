@@ -4,12 +4,25 @@ interface TooltipProps {
   content: string;
   children: React.ReactNode;
   className?: string;
+  align?: 'center' | 'left' | 'right';
 }
+
+const getAlignClass = (align: 'center' | 'left' | 'right') => {
+  switch (align) {
+    case 'left':
+      return 'right-0';
+    case 'right':
+      return 'left-0';
+    default:
+      return 'left-1/2 -translate-x-1/2';
+  }
+};
 
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
   children,
   className = '',
+  align = 'center',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom'>('top');
@@ -41,9 +54,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-md shadow-lg whitespace-nowrap pointer-events-none
+          className={`absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-md shadow-lg pointer-events-none whitespace-nowrap
             ${position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'}
-            left-1/2 -translate-x-1/2
+            ${getAlignClass(align)}
             animate-fade-in`}
         >
           {content}

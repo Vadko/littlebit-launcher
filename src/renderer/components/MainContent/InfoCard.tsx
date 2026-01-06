@@ -10,7 +10,10 @@ import {
   Volume2,
   Trophy,
   Bell,
+  Award,
 } from 'lucide-react';
+import { getFeaturedInfo } from '../../constants/featuredTranslations';
+import { Tooltip } from '../ui/Tooltip';
 
 interface InfoCardProps {
   game: Game;
@@ -48,10 +51,21 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
   const isPlanned = game.status === 'planned';
   const hasDownloads = !!game.downloads && game.downloads > 0;
   const hasSubscriptions = !!game.subscriptions && game.subscriptions > 0;
+  const featuredInfo = getFeaturedInfo(game.slug, game.team);
 
   return (
     <div className="glass-card">
-      <h3 className="text-lg font-head font-semibold text-text-main mb-4">Інформація</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-head font-semibold text-text-main">Інформація</h3>
+        {featuredInfo && (
+          <Tooltip content={featuredInfo.description} align="left">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 rounded text-amber-400 text-xs cursor-help">
+              <Award size={12} />
+              <span>Відзнака</span>
+            </div>
+          </Tooltip>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <InfoItem icon={<Gamepad2 size={18} />} label="Платформи" value={platformsText} />
         {game.version && (
