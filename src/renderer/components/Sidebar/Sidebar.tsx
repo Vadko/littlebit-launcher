@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SortAsc } from 'lucide-react';
 import { GlassPanel } from '../Layout/GlassPanel';
 import { SearchBar } from './SearchBar';
 import { GameListItem } from './GameListItem';
@@ -17,6 +18,7 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
 import { useGames } from '../../hooks/useGames';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useAlphabetNavigation } from '../../hooks/useAlphabetNavigation';
 import type { GameGroup } from './types';
 import type { Game } from '../../types/game';
 
@@ -51,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
     setSpecialFilter: setSpecialFilterRaw,
     selectedAuthors,
     setSelectedAuthors,
+    alphabetSidebarEnabled,
+    toggleAlphabetSidebar,
   } = useSettingsStore();
   const unreadCount = useSubscriptionsStore((state) => state.unreadCount);
 
@@ -138,148 +142,13 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Alphabet Sidebar logic
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const sortedAlphabet = useMemo(() => {
-    const letters = new Set<string>();
-
-    gameGroups.forEach((group) => {
-      const firstChar = group.name.charAt(0).toUpperCase();
-      if (/[A-ZА-ЯҐЄІЇ]/.test(firstChar)) {
-        letters.add(firstChar);
-      } else {
-        letters.add('#');
-      }
-    });
-
-    return Array.from(letters).sort((a, b) => {
-      if (a === '#') return 1;
-      if (b === '#') return -1;
-
-      const isALatin = /[A-Z]/.test(a);
-      const isBLatin = /[A-Z]/.test(b);
-
-      if (isALatin && !isBLatin) return -1;
-      if (!isALatin && isBLatin) return 1;
-
-      return a.localeCompare(b);
-    });
-  }, [gameGroups]);
-
-  // Scroll Sync Logic
-  const [activeLetter, setActiveLetter] = useState<string | null>(null);
-  const activeLetterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (activeLetterTimeoutRef.current) {
-        clearTimeout(activeLetterTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    const scrollTop = container.scrollTop;
-    const clientHeight = container.clientHeight;
-    const scrollHeight = container.scrollHeight;
-
-    // Clear existing timeout to keep highlight active while scrolling
-    if (activeLetterTimeoutRef.current) {
-      clearTimeout(activeLetterTimeoutRef.current);
-    }
-
-    let foundLetter: string | null = null;
-
-    // 1. Check if we are at the very bottom
-    // If so, highlight the last letter regardless of where it starts
-    if (Math.abs(scrollHeight - clientHeight - scrollTop) < 50) {
-      const lastGroup = gameGroups[gameGroups.length - 1];
-      if (lastGroup) {
-        const firstChar = lastGroup.name.charAt(0).toUpperCase();
-        foundLetter = /[A-ZА-ЯҐЄІЇ]/.test(firstChar) ? firstChar : '#';
-      }
-    } else {
-      // 2. Standard Spy Logic with "Top" Trigger
-      // Reverted to top tracking per user request.
-      // We add a small buffer (50px) so the switch happens just as the element enters the top area.
-      const triggerLine = scrollTop + 50;
-
-      let activeGroup = null;
-
-      for (const group of gameGroups) {
-        const element = document.getElementById(`group-${group.slug}`);
-        if (!element) continue;
-
-        // If the group has started (offsetTop < triggerLine), it's a candidate.
-        if (element.offsetTop <= triggerLine) {
-          activeGroup = group;
-        } else {
-          // Since groups are ordered, once we cross the trigger line, stop.
-          break;
-        }
-      }
-
-      if (activeGroup) {
-        const firstChar = activeGroup.name.charAt(0).toUpperCase();
-        foundLetter = /[A-ZА-ЯҐЄІЇ]/.test(firstChar) ? firstChar : '#';
-      }
-    }
-
-    if (foundLetter) {
-      setActiveLetter(foundLetter);
-
-      // Hide highlight after 1 second of no scrolling
-      activeLetterTimeoutRef.current = setTimeout(() => {
-        setActiveLetter(null);
-      }, 1000);
-    }
-  }, [gameGroups]);
-
-  const smoothScrollTo = (target: number, duration: number) => {
-    const container = listRef.current;
-    if (!container) return;
-
-    const start = container.scrollTop;
-    const distance = target - start;
-    const startTime = performance.now();
-
-    const animate = (currentTime: number) => {
-      const timeElapsed = currentTime - startTime;
-      const progress = Math.min(timeElapsed / duration, 1);
-
-      // Ease out cubic
-      const ease = 1 - Math.pow(1 - progress, 3);
-
-      container.scrollTop = start + (distance * ease);
-
-      if (timeElapsed < duration) {
-        requestAnimationFrame(animate);
-      }
-    };
-
-    requestAnimationFrame(animate);
-  };
-
-  const handleLetterClick = useCallback((letter: string) => {
-    const targetGroup = gameGroups.find((g) => {
-      const firstChar = g.name.charAt(0).toUpperCase();
-      return letter === '#'
-        ? !/[A-ZА-ЯҐЄІЇ]/.test(firstChar)
-        : firstChar === letter;
-    });
-
-    if (targetGroup) {
-      const element = document.getElementById(`group-${targetGroup.slug}`);
-      if (element && listRef.current) {
-        // Calculate target scroll position
-        const targetTop = element.offsetTop;
-        smoothScrollTo(targetTop, 200); // 300ms fast smooth scroll
-      }
-    }
-  }, [gameGroups]);
-
+  const {
+    listRef,
+    sortedAlphabet,
+    activeLetter,
+    handleScroll,
+    handleLetterClick,
+  } = useAlphabetNavigation(gameGroups);
 
   // Resize state
   const [isResizing, setIsResizing] = useState(false);
@@ -480,6 +349,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           authors={authors}
           isLoading={authorsLoading}
         />
+        <button
+          onClick={toggleAlphabetSidebar}
+          className={`p-1 flex-shrink-0 transition-all hover:scale-110 ${
+            alphabetSidebarEnabled ? 'text-[var(--text-main)]' : 'text-text-muted hover:text-[var(--text-main)]'
+          }`}
+          title={alphabetSidebarEnabled ? 'Сховати алфавіт' : 'Показати алфавіт'}
+        >
+          <SortAsc size={18} />
+        </button>
       </div>
 
       {/* Games list with Alphabet Sidebar */}
@@ -564,14 +442,15 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
           </AnimatePresence>
         </div>
 
-        {/* Render alphabet sidebar if there are games */}
-        {!isLoading && totalGames > 0 && (
+        {/* Alphabet sidebar */}
+        {!isLoading && totalGames > 0 && alphabetSidebarEnabled && (
           <AlphabetSidebar
             alphabet={sortedAlphabet}
             onLetterClick={handleLetterClick}
             activeHighlight={activeLetter || undefined}
           />
         )}
+
       </div>
 
       <SidebarFooter
@@ -582,8 +461,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
 
       {/* Resize handle */}
       <div
-        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize group hover:bg-primary/50 transition-colors z-50 ${isResizing ? 'bg-primary/50' : 'bg-transparent'
-          }`}
+        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize group hover:bg-primary/50 transition-colors z-50 ${isResizing ? 'bg-primary/50' : 'bg-transparent'}`}
         onMouseDown={handleResizeStart}
       >
         <div className="absolute top-1/2 right-0 -translate-y-1/2 w-1 h-12 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
