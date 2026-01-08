@@ -150,14 +150,6 @@ export class GamesRepository {
       queryParams.push(...statuses);
     }
 
-    // Filter by search query (case-insensitive via LOWER())
-    if (searchQuery) {
-      const variations = getSearchVariations(searchQuery);
-      const searchPlaceholders = variations.map(() => 'LOWER(name) LIKE ?').join(' OR ');
-      whereConditions.push(`(${searchPlaceholders})`);
-      queryParams.push(...variations.map((v) => `%${v}%`));
-    }
-
     // Adult games are always returned, UI will show blur overlay when setting is off
 
     const whereClause = whereConditions.join(' AND ');
@@ -171,6 +163,15 @@ export class GamesRepository {
 
     const rows = gamesStmt.all(...queryParams) as Record<string, unknown>[];
     let games = rows.map((row) => this.rowToGame(row));
+
+    // Filter by search query (case-insensitive in JS)
+    if (searchQuery) {
+      const variations = getSearchVariations(searchQuery);
+      games = games.filter((game) => {
+        const nameLower = game.name.toLowerCase();
+        return variations.some((v) => nameLower.includes(v));
+      });
+    }
 
     // Filter by authors (multi-select) - post-process since team is comma-separated
     if (authors.length > 0) {
