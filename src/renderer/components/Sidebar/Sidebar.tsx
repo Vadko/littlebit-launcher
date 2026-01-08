@@ -53,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
       setSelectedAuthors,
       alphabetSidebarEnabled,
       toggleAlphabetSidebar,
+      sortOrder,
+      setSortOrder,
     } = useSettingsStore();
     const unreadCount = useSubscriptionsStore((state) => state.unreadCount);
 
@@ -141,8 +143,36 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
         );
       }
 
-      return Array.from(groupMap.values());
-    }, [visibleGames]);
+      // Sort groups
+      const sortedGroups = Array.from(groupMap.values());
+
+      if (sortOrder === 'downloads') {
+        sortedGroups.sort((a, b) => {
+          // Get max downloads for each group
+          const maxDownloadsA = Math.max(...a.translations.map(t => t.downloads || 0));
+          const maxDownloadsB = Math.max(...b.translations.map(t => t.downloads || 0));
+
+          if (maxDownloadsA !== maxDownloadsB) {
+            return maxDownloadsB - maxDownloadsA; // Descending
+          }
+          // Fallback to name
+          return a.name.localeCompare(b.name);
+        });
+      } else {
+        // Default alphabetical sort (by name usually)
+        sortedGroups.sort((a, b) => {
+          const isALatin = /^[a-zA-Z]/.test(a.name);
+          const isBLatin = /^[a-zA-Z]/.test(b.name);
+
+          if (isALatin && !isBLatin) return -1;
+          if (!isALatin && isBLatin) return 1;
+
+          return a.name.localeCompare(b.name);
+        });
+      }
+
+      return sortedGroups;
+    }, [visibleGames, sortOrder]);
 
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -222,6 +252,85 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
       return () => clearTimeout(timer);
     }, [loadInstalledGamesFromSystem]);
 
+    // Load counts for special filters
+    const [filterCounts, setFilterCounts] = useState<Record<string, number>>({
+      'installed-translations': 0,
+      'installed-games': 0,
+      'with-achievements': 0,
+    });
+
+    const updateFilterCounts = useCallback(async () => {
+      try {
+        // Parallel requests for counts
+        const [installedIds, installedPaths, allGamesResult] = await Promise.all([
+          window.electronAPI.getAllInstalledGameIds(),
+          window.electronAPI.getAllInstalledGamePaths(),
+          window.electronAPI.fetchGames({}),
+        ]);
+
+        // Resolve installed paths to actual games to get correct count
+        // (installedPaths may contain items not in our DB or not supported)
+        const installedGamesResult =
+          installedPaths.length > 0
+            ? await window.electronAPI.findGamesByInstallPaths(installedPaths)
+            : { games: [], total: 0 };
+
+        const withAchievementsCount = allGamesResult.games.filter(
+          (g) => !!g.achievements_archive_path
+        ).length;
+
+        const plannedCount = allGamesResult.games.filter(
+          (g) => g.status === 'planned'
+        ).length;
+        const inProgressCount = allGamesResult.games.filter(
+          (g) => g.status === 'in-progress'
+        ).length;
+        const completedCount = allGamesResult.games.filter(
+          (g) => g.status === 'completed'
+        ).length;
+
+        setFilterCounts({
+          'installed-translations': installedIds.length,
+          'installed-games': installedGamesResult.games.length,
+          'with-achievements': withAchievementsCount,
+          planned: plannedCount,
+          'in-progress': inProgressCount,
+          completed: completedCount,
+        });
+      } catch (err) {
+        console.error('[Sidebar] Error fetching filter counts:', err);
+      }
+    }, []);
+
+    // Initial load and listen for updates
+    useEffect(() => {
+      updateFilterCounts();
+
+      // Listeners to update counts
+      const unsubInstalled = window.electronAPI?.onInstalledGamesChanged?.(() => {
+        updateFilterCounts();
+      });
+
+      const unsubSteam = window.electronAPI?.onSteamLibraryChanged?.(() => {
+        updateFilterCounts();
+      });
+
+      // Also listen for general game updates as achievements status might change
+      const unsubGame = window.electronAPI?.onGameUpdated((_game) => {
+        // Optimistic check to avoid full refetch every time?
+        // For now, simpler to just refetch logic (it's local DB)
+        // Or we could debounce this
+        updateFilterCounts();
+      });
+
+      return () => {
+        unsubInstalled?.();
+        unsubSteam?.();
+        unsubGame?.();
+      };
+    }, [updateFilterCounts]);
+
+
     if (isHorizontal) {
       // Horizontal gamepad mode
       return (
@@ -245,6 +354,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
                 onStatusesChange={setSelectedStatuses}
                 specialFilter={specialFilter}
                 onSpecialFilterChange={setSpecialFilter}
+                counts={filterCounts}
+                sortOrder={sortOrder}
+                onSortChange={setSortOrder}
               />
             </div>
             <div className="flex-1 min-w-0 max-w-[220px]" data-gamepad-header-item>
@@ -345,6 +457,9 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
             onStatusesChange={setSelectedStatuses}
             specialFilter={specialFilter}
             onSpecialFilterChange={setSpecialFilter}
+            counts={filterCounts}
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
           />
           <AuthorsFilterDropdown
             selectedAuthors={selectedAuthors}
@@ -352,17 +467,18 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
             authors={authors}
             isLoading={authorsLoading}
           />
-          <button
-            onClick={toggleAlphabetSidebar}
-            className={`p-1 flex-shrink-0 transition-all hover:scale-110 ${
-              alphabetSidebarEnabled
+          {sortOrder === 'name' && (
+            <button
+              onClick={toggleAlphabetSidebar}
+              className={`p-1 flex-shrink-0 transition-all hover:scale-110 ${alphabetSidebarEnabled
                 ? 'text-[var(--text-main)]'
                 : 'text-text-muted hover:text-[var(--text-main)]'
-            }`}
-            title={alphabetSidebarEnabled ? 'Сховати алфавіт' : 'Показати алфавіт'}
-          >
-            <SortAsc size={18} />
-          </button>
+                }`}
+              title={alphabetSidebarEnabled ? 'Сховати алфавіт' : 'Показати алфавіт'}
+            >
+              <SortAsc size={18} />
+            </button>
+          )}
         </div>
 
         {/* Games list with Alphabet Sidebar */}
@@ -447,8 +563,8 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
             </AnimatePresence>
           </div>
 
-          {/* Alphabet sidebar */}
-          {!isLoading && totalGames > 0 && alphabetSidebarEnabled && (
+          {/* Alphabet sidebar - only show when sorting by name */}
+          {!isLoading && totalGames > 0 && alphabetSidebarEnabled && sortOrder === 'name' && (
             <AlphabetSidebar
               alphabet={sortedAlphabet}
               onLetterClick={handleLetterClick}

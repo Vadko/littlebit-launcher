@@ -1,17 +1,28 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListFilter, Check, X } from 'lucide-react';
-import { STATUS_OPTIONS, SPECIAL_FILTER_OPTIONS, type SpecialFilterType } from './types';
+import { STATUS_OPTIONS, SPECIAL_FILTER_OPTIONS, SORT_OPTIONS, type SpecialFilterType, type SortOrderType } from './types';
 
 interface StatusFilterDropdownProps {
   selectedStatuses: string[];
   onStatusesChange: (statuses: string[]) => void;
   specialFilter: SpecialFilterType | null;
   onSpecialFilterChange: (filter: SpecialFilterType | null) => void;
+  counts?: Record<string, number>;
+  sortOrder: SortOrderType;
+  onSortChange: (order: SortOrderType) => void;
 }
 
 export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.memo(
-  ({ selectedStatuses, onStatusesChange, specialFilter, onSpecialFilterChange }) => {
+  ({
+    selectedStatuses,
+    onStatusesChange,
+    specialFilter,
+    onSpecialFilterChange,
+    counts,
+    sortOrder,
+    onSortChange,
+  }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -21,7 +32,7 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
         const option = SPECIAL_FILTER_OPTIONS.find((o) => o.value === specialFilter);
         return option?.label || specialFilter;
       }
-      if (selectedStatuses.length === 0) return 'Усі стани';
+      if (selectedStatuses.length === 0) return 'Всі стани';
       if (selectedStatuses.length === 1) {
         const option = STATUS_OPTIONS.find((o) => o.value === selectedStatuses[0]);
         return option?.label || selectedStatuses[0];
@@ -63,27 +74,36 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
     // Handle special filter selection
     const handleSpecialFilterSelect = useCallback(
       (filter: SpecialFilterType) => {
-        onSpecialFilterChange(filter);
+        if (specialFilter === filter) {
+          onSpecialFilterChange(null);
+        } else {
+          onSpecialFilterChange(filter);
+        }
         setIsOpen(false);
       },
-      [onSpecialFilterChange]
+      [onSpecialFilterChange, specialFilter]
     );
 
-    // Clear all filters
+    // Filter reset logic - resets only filtering, logic might be adjusted if sort reset is needed
+    // But usually sort is independent.
     const handleClearAll = useCallback(() => {
       onStatusesChange([]);
       onSpecialFilterChange(null);
     }, [onStatusesChange, onSpecialFilterChange]);
 
+    const handleSortChange = useCallback((order: SortOrderType) => {
+      onSortChange(order);
+      setIsOpen(false);
+    }, [onSortChange]);
+
     return (
       <div className="relative flex-1 min-w-0" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-            hasActiveFilter
-              ? 'bg-glass-hover text-text-main border border-border-hover'
-              : 'bg-glass text-text-muted border border-transparent hover:bg-glass-hover hover:text-text-main'
-          }`}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${hasActiveFilter
+            ? 'bg-glass-hover text-text-main border border-border-hover'
+            : 'bg-glass text-text-muted border border-transparent hover:bg-glass-hover hover:text-text-main'
+            }`}
         >
           <span className="flex items-center gap-2 truncate">
             <ListFilter size={14} className="flex-shrink-0" />
@@ -137,20 +157,23 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
                     key={option.value}
                     onClick={() => handleStatusToggle(option.value)}
                     data-gamepad-dropdown-item
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                      isSelected
-                        ? 'bg-glass-hover text-text-main'
-                        : 'text-text-muted hover:bg-glass hover:text-text-main'
-                    }`}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${isSelected
+                      ? 'bg-glass-hover text-text-main'
+                      : 'text-text-muted hover:bg-glass hover:text-text-main'
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 flex-shrink-0 flex items-center justify-center rounded border ${
-                        isSelected ? 'bg-neon-blue border-neon-blue' : 'border-text-muted'
-                      }`}
+                      className={`w-4 h-4 flex-shrink-0 flex items-center justify-center rounded border ${isSelected ? 'bg-neon-blue border-neon-blue' : 'border-text-muted'
+                        }`}
                     >
                       {isSelected && <Check size={12} className="text-white" />}
                     </span>
-                    <span>{option.label}</span>
+                    <span className="flex-1 text-left">{option.label}</span>
+                    {counts && counts[option.value] !== undefined && (
+                      <span className="px-1.5 py-0.5 text-xs rounded-full bg-glass text-text-muted">
+                        {counts[option.value]}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -162,21 +185,57 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
               {SPECIAL_FILTER_OPTIONS.map((option) => {
                 const isSelected = specialFilter === option.value;
                 return (
-                  <button
-                    key={option.value}
-                    onClick={() => handleSpecialFilterSelect(option.value)}
-                    data-gamepad-dropdown-item
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
-                      isSelected
+                  <React.Fragment key={option.value}>
+                    {option.value === 'with-achievements' && (
+                      <div className="border-t border-border my-1" />
+                    )}
+                    <button
+                      onClick={() => handleSpecialFilterSelect(option.value)}
+                      data-gamepad-dropdown-item
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${isSelected
                         ? 'bg-glass-hover text-text-main'
                         : 'text-text-muted hover:bg-glass hover:text-text-main'
-                    }`}
+                        }`}
+                    >
+                      <span>{option.label}</span>
+                      <span className="flex items-center gap-2">
+                        {counts && counts[option.value] !== undefined && (
+                          <span className="px-1.5 py-0.5 text-xs rounded-full bg-glass text-text-muted">
+                            {counts[option.value]}
+                          </span>
+                        )}
+                        {isSelected && <Check size={14} />}
+                      </span>
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+
+              {/* Sorting Separator */}
+              <div className="border-t border-border my-1" />
+              <div className="px-3 py-1 text-xs text-text-muted font-medium uppercase tracking-wider">
+                Сортування
+              </div>
+
+              {/* Sorting Options */}
+              {SORT_OPTIONS.map((option) => {
+                const isSelected = sortOrder === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => handleSortChange(option.value)}
+                    data-gamepad-dropdown-item
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${isSelected
+                      ? 'bg-glass-hover text-text-main'
+                      : 'text-text-muted hover:bg-glass hover:text-text-main'
+                      }`}
                   >
                     <span>{option.label}</span>
                     {isSelected && <Check size={14} />}
                   </button>
                 );
               })}
+
             </motion.div>
           )}
         </AnimatePresence>
