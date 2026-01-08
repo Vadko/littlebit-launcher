@@ -6,6 +6,7 @@ import type {
   Database as SupabaseDatabase,
 } from '../../shared/types';
 import { getDatabase } from './database';
+import { getSearchVariations } from '../../shared/search-utils';
 
 /**
  * Поля, які не зберігаються в локальній БД
@@ -151,8 +152,10 @@ export class GamesRepository {
 
     // Filter by search query (case-insensitive via LOWER())
     if (searchQuery) {
-      whereConditions.push('LOWER(name) LIKE ?');
-      queryParams.push(`%${searchQuery.toLowerCase()}%`);
+      const variations = getSearchVariations(searchQuery);
+      const searchPlaceholders = variations.map(() => 'LOWER(name) LIKE ?').join(' OR ');
+      whereConditions.push(`(${searchPlaceholders})`);
+      queryParams.push(...variations.map((v) => `%${v}%`));
     }
 
     // Adult games are always returned, UI will show blur overlay when setting is off

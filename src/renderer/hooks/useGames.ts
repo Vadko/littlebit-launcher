@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getSearchVariations } from '../../shared/search-utils';
 import type { Game, GetGamesParams } from '../types/game';
 import type { SpecialFilterType } from '../components/Sidebar/types';
 import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
@@ -79,10 +80,11 @@ export function useGames({
         // Застосувати пошук
         let filteredGames = installedGames;
         if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filteredGames = installedGames.filter((game) =>
-            game.name.toLowerCase().includes(query)
-          );
+          const variations = getSearchVariations(searchQuery);
+          filteredGames = installedGames.filter((game) => {
+            const nameLower = game.name.toLowerCase();
+            return variations.some((v) => nameLower.includes(v));
+          });
         }
 
         setGames(filteredGames);
@@ -112,10 +114,11 @@ export function useGames({
         // Застосувати пошук
         let filteredGames = result.games;
         if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filteredGames = result.games.filter((game) =>
-            game.name.toLowerCase().includes(query)
-          );
+          const variations = getSearchVariations(searchQuery);
+          filteredGames = result.games.filter((game) => {
+            const nameLower = game.name.toLowerCase();
+            return variations.some((v) => nameLower.includes(v));
+          });
         }
 
         setGames(filteredGames);
@@ -247,7 +250,9 @@ export function useGames({
         // Перевірити чи гра відповідає поточному фільтру пошуку
         const matchesSearch =
           !searchQuery ||
-          updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
+          getSearchVariations(searchQuery).some((v) =>
+            updatedGame.name.toLowerCase().includes(v)
+          );
 
         // Перевірити чи гра відповідає поточному фільтру статусу (multi-select)
         const matchesStatus =
