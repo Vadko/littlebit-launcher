@@ -434,6 +434,8 @@ export type Database = {
           license_only: boolean
           logo_path: string | null
           name: string
+          name_fts: unknown | null
+          name_search: string | null
           platforms: string[]
           project_id: string | null
           slug: string
@@ -499,6 +501,8 @@ export type Database = {
           license_only?: boolean
           logo_path?: string | null
           name: string
+          name_fts?: unknown | null
+          name_search?: string | null
           platforms?: string[]
           project_id?: string | null
           slug: string
@@ -564,6 +568,8 @@ export type Database = {
           license_only?: boolean
           logo_path?: string | null
           name?: string
+          name_fts?: unknown | null
+          name_search?: string | null
           platforms?: string[]
           project_id?: string | null
           slug?: string
@@ -832,6 +838,7 @@ export type Database = {
           is_adult: boolean | null
           latest_updated_at: string | null
           name: string | null
+          name_fts: unknown | null
           slug: string | null
           thumbnail_path: string | null
           translations: Json | null
