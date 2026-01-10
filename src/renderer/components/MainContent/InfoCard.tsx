@@ -86,11 +86,22 @@ export const InfoCard: React.FC<InfoCardProps> = ({ game }) => {
           />
         )}
         {game.achievements_archive_size && (
-          <InfoItem
-            icon={<Trophy size={18} />}
-            label="Досягнення"
-            value={game.achievements_archive_size}
-          />
+          <div className="flex items-start gap-3">
+            <div className="text-neon-blue mt-0.5">
+              <Trophy size={18} />
+            </div>
+            <div>
+              <div className="text-xs text-text-muted mb-1">Досягнення</div>
+              <div className="text-sm font-medium text-text-main">
+                {game.achievements_archive_size}
+              </div>
+              {game.achievements_third_party && (
+                <div className="text-xs text-text-muted mt-0.5">
+                  від {game.achievements_third_party}
+                </div>
+              )}
+            </div>
+          </div>
         )}
         {isPlanned && hasSubscriptions && (
           <InfoItem

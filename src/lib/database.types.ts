@@ -190,6 +190,7 @@ export type Database = {
           achievements_archive_hash: string | null
           achievements_archive_path: string | null
           achievements_archive_size: string | null
+          achievements_third_party: string | null
           additional_path: string | null
           ai: boolean
           approved_at: string | null
@@ -251,6 +252,7 @@ export type Database = {
           achievements_archive_hash?: string | null
           achievements_archive_path?: string | null
           achievements_archive_size?: string | null
+          achievements_third_party?: string | null
           additional_path?: string | null
           ai?: boolean
           approved_at?: string | null
@@ -312,6 +314,7 @@ export type Database = {
           achievements_archive_hash?: string | null
           achievements_archive_path?: string | null
           achievements_archive_size?: string | null
+          achievements_third_party?: string | null
           additional_path?: string | null
           ai?: boolean
           approved_at?: string | null
@@ -395,6 +398,7 @@ export type Database = {
           achievements_archive_hash: string | null
           achievements_archive_path: string | null
           achievements_archive_size: string | null
+          achievements_third_party: string | null
           additional_path: string | null
           ai: boolean
           approved: boolean
@@ -430,6 +434,8 @@ export type Database = {
           license_only: boolean
           logo_path: string | null
           name: string
+          name_fts: unknown | null
+          name_search: string | null
           platforms: string[]
           project_id: string | null
           slug: string
@@ -459,6 +465,7 @@ export type Database = {
           achievements_archive_hash?: string | null
           achievements_archive_path?: string | null
           achievements_archive_size?: string | null
+          achievements_third_party?: string | null
           additional_path?: string | null
           ai?: boolean
           approved?: boolean
@@ -494,6 +501,8 @@ export type Database = {
           license_only?: boolean
           logo_path?: string | null
           name: string
+          name_fts?: unknown | null
+          name_search?: string | null
           platforms?: string[]
           project_id?: string | null
           slug: string
@@ -523,6 +532,7 @@ export type Database = {
           achievements_archive_hash?: string | null
           achievements_archive_path?: string | null
           achievements_archive_size?: string | null
+          achievements_third_party?: string | null
           additional_path?: string | null
           ai?: boolean
           approved?: boolean
@@ -558,6 +568,8 @@ export type Database = {
           license_only?: boolean
           logo_path?: string | null
           name?: string
+          name_fts?: unknown | null
+          name_search?: string | null
           platforms?: string[]
           project_id?: string | null
           slug?: string
@@ -826,6 +838,7 @@ export type Database = {
           is_adult: boolean | null
           latest_updated_at: string | null
           name: string | null
+          name_fts: unknown | null
           slug: string | null
           thumbnail_path: string | null
           translations: Json | null

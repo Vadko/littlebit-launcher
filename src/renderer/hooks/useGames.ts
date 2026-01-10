@@ -70,23 +70,17 @@ export function useGames({
           return;
         }
 
-        // Отримати всі ігри зі встановленими українізаторами
-        const installedGames = await window.electronAPI.fetchGamesByIds(installedGameIds);
+        // Отримати ігри зі встановленими українізаторами (з SQL фільтрацією пошуку)
+        const installedGames = await window.electronAPI.fetchGamesByIds(
+          installedGameIds,
+          searchQuery || undefined
+        );
 
         // Перевірити чи запит ще актуальний
         if (signal.aborted) return;
 
-        // Застосувати пошук
-        let filteredGames = installedGames;
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filteredGames = installedGames.filter((game) =>
-            game.name.toLowerCase().includes(query)
-          );
-        }
-
-        setGames(filteredGames);
-        setTotal(filteredGames.length);
+        setGames(installedGames);
+        setTotal(installedGames.length);
         return;
       }
 
@@ -103,23 +97,17 @@ export function useGames({
           return;
         }
 
-        // Знайти ігри за шляхами встановлення
-        const result = await window.electronAPI.findGamesByInstallPaths(installPaths);
+        // Знайти ігри за шляхами встановлення (з SQL фільтрацією пошуку)
+        const result = await window.electronAPI.findGamesByInstallPaths(
+          installPaths,
+          searchQuery || undefined
+        );
 
         // Перевірити чи запит ще актуальний
         if (signal.aborted) return;
 
-        // Застосувати пошук
-        let filteredGames = result.games;
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filteredGames = result.games.filter((game) =>
-            game.name.toLowerCase().includes(query)
-          );
-        }
-
-        setGames(filteredGames);
-        setTotal(filteredGames.length);
+        setGames(result.games);
+        setTotal(result.total);
         return;
       }
 
@@ -288,9 +276,9 @@ export function useGames({
         }
 
         // Перевірити чи гра відповідає поточному фільтру пошуку
+        // Проста перевірка - повна фільтрація відбудеться при наступному reload
         const matchesSearch =
-          !searchQuery ||
-          updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
+          !searchQuery || updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
 
         // Перевірити чи гра відповідає поточному фільтру статусу (multi-select)
         const matchesStatus =
