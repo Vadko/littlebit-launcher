@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from './Modal';
-import { Volume2, Archive, Shield, Trophy, Check, Trash2, FileText, AlertTriangle } from 'lucide-react';
+import { Volume2, Archive, Shield, Trophy, Check, Trash2, FileText, Info } from 'lucide-react';
 import type { Game, InstallationInfo, InstallOptions } from '../../../shared/types';
 
 interface InstallOptionsDialogProps {
@@ -427,16 +427,14 @@ export const InstallOptionsDialog: React.FC<InstallOptionsDialogProps> = ({
           </label>
         )}
 
-        {/* Third-party achievements warning */}
+        {/* Third-party achievements info */}
         {hasAchievementsArchive && installAchievements && game.achievements_third_party && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-start gap-3">
-            <AlertTriangle size={20} className="text-yellow-500 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium text-yellow-500">Сторонні досягнення</p>
-              <p className="text-text-muted mt-1">
-                Переклад досягнень створено не автором основного перекладу, а сторонньою особою.
-              </p>
-            </div>
+          <div className="bg-glass rounded-xl p-3 border border-border flex items-center gap-2 text-sm">
+            <Info size={16} className="text-neon-blue shrink-0" />
+            <span className="text-text-muted">
+              Автор перекладу досягнень:{' '}
+              <span className="text-text-main">{game.achievements_third_party}</span>
+            </span>
           </div>
         )}
 

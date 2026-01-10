@@ -15,7 +15,8 @@ type ExcludedLocalFields =
   | 'archive_file_list'
   | 'voice_archive_file_list'
   | 'achievements_archive_file_list'
-  | 'epic_archive_file_list';
+  | 'epic_archive_file_list'
+  | 'name_fts'; // Generated column in Supabase for FTS
 
 /**
  * Параметри для вставки гри в БД (локальну SQLite)
@@ -28,7 +29,7 @@ type GameInsertParams = {
   [K in keyof Omit<
     SupabaseDatabase['public']['Tables']['games']['Row'],
     ExcludedLocalFields
-  >]: K extends 'approved' | 'is_adult' | 'license_only' | 'ai' | 'hide' | 'achievements_third_party'
+  >]: K extends 'approved' | 'is_adult' | 'license_only' | 'ai' | 'hide'
   ? number // boolean перетворюється на 0/1 для SQLite
   : K extends 'platforms' | 'install_paths'
   ? string | null // JSON.stringify для SQLite
@@ -67,7 +68,7 @@ export class GamesRepository {
       license_only: Boolean(row.license_only),
       ai: Boolean(row.ai),
       hide: Boolean(row.hide),
-      achievements_third_party: Boolean(row.achievements_third_party),
+      achievements_third_party: row.achievements_third_party || null,
       platforms,
       install_paths,
     } as Game;
@@ -126,7 +127,7 @@ export class GamesRepository {
       achievements_archive_hash: game.achievements_archive_hash ?? null,
       achievements_archive_path: game.achievements_archive_path ?? null,
       achievements_archive_size: game.achievements_archive_size ?? null,
-      achievements_third_party: game.achievements_third_party ? 1 : 0,
+      achievements_third_party: game.achievements_third_party ?? null,
       additional_path: game.additional_path ?? null,
       epic_archive_hash: game.epic_archive_hash ?? null,
       epic_archive_path: game.epic_archive_path ?? null,
@@ -349,6 +350,7 @@ export class GamesRepository {
         thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
         voice_archive_hash, voice_archive_path, voice_archive_size,
         voice_progress, achievements_archive_hash, achievements_archive_path, achievements_archive_size,
+        achievements_third_party, additional_path,
         epic_archive_hash, epic_archive_path, epic_archive_size,
         steam_app_id, website, youtube, ai, hide
       ) VALUES (
@@ -360,6 +362,7 @@ export class GamesRepository {
         @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
         @voice_archive_hash, @voice_archive_path, @voice_archive_size,
         @voice_progress, @achievements_archive_hash, @achievements_archive_path, @achievements_archive_size,
+        @achievements_third_party, @additional_path,
         @epic_archive_hash, @epic_archive_path, @epic_archive_size,
         @steam_app_id, @website, @youtube, @ai, @hide
       )
@@ -384,6 +387,7 @@ export class GamesRepository {
           thumbnail_path, translation_progress, twitter, updated_at, version, video_url,
           voice_archive_hash, voice_archive_path, voice_archive_size,
           voice_progress, achievements_archive_hash, achievements_archive_path, achievements_archive_size,
+          achievements_third_party, additional_path,
           epic_archive_hash, epic_archive_path, epic_archive_size,
           steam_app_id, website, youtube, ai, hide
         ) VALUES (
@@ -395,6 +399,7 @@ export class GamesRepository {
           @thumbnail_path, @translation_progress, @twitter, @updated_at, @version, @video_url,
           @voice_archive_hash, @voice_archive_path, @voice_archive_size,
           @voice_progress, @achievements_archive_hash, @achievements_archive_path, @achievements_archive_size,
+          @achievements_third_party, @additional_path,
           @epic_archive_hash, @epic_archive_path, @epic_archive_size,
           @steam_app_id, @website, @youtube, @ai, @hide
         )

@@ -311,47 +311,6 @@ const migrations: Migration[] = [
     },
   },
   {
-    name: 'add_achievements_third_party_column',
-    up: (db) => {
-      const hasColumn = db
-        .prepare(
-          "SELECT COUNT(*) as count FROM pragma_table_info('games') WHERE name='achievements_third_party'"
-        )
-        .get() as { count: number };
-
-      if (hasColumn.count === 0) {
-        console.log('[Migrations] Running: add_achievements_third_party_column');
-        db.exec(`ALTER TABLE games ADD COLUMN achievements_third_party INTEGER NOT NULL DEFAULT 0;`);
-        console.log('[Migrations] Completed: add_achievements_third_party_column');
-      }
-    },
-  },
-  {
-    name: 'resync_for_achievements_third_party',
-    up: (db) => {
-      const migrationDone = db
-        .prepare(
-          "SELECT COUNT(*) as count FROM sync_metadata WHERE key = 'migration_resync_achievements_third_party_done'"
-        )
-        .get() as { count: number };
-
-      if (migrationDone.count > 0) {
-        return;
-      }
-
-      console.log('[Migrations] Running: resync_for_achievements_third_party');
-      db.exec(`DELETE FROM sync_metadata WHERE key = 'last_sync_timestamp'`);
-      db.exec(`
-        INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
-        VALUES ('migration_resync_achievements_third_party_done', '1', datetime('now'))
-      `);
-      console.log(
-        '[Migrations] Completed: resync_for_achievements_third_party - will resync on next startup'
-      );
-    },
-  },
-
-  {
     name: 'add_name_search_column',
     up: (db) => {
       const hasColumn = db
@@ -418,6 +377,42 @@ const migrations: Migration[] = [
         VALUES ('migration_resync_fts5_done', '1', datetime('now'))
       `);
       console.log('[Migrations] Completed: resync_for_fts5 - will resync on next startup');
+    },
+  },
+  {
+    name: 'add_achievements_third_party_column',
+    up: (db) => {
+      const hasColumn = db
+        .prepare(
+          "SELECT COUNT(*) as count FROM pragma_table_info('games') WHERE name='achievements_third_party'"
+        )
+        .get() as { count: number };
+
+      if (hasColumn.count === 0) {
+        console.log('[Migrations] Running: add_achievements_third_party_column');
+        db.exec(`ALTER TABLE games ADD COLUMN achievements_third_party TEXT;`);
+        console.log('[Migrations] Completed: add_achievements_third_party_column');
+      }
+    },
+  },
+  {
+    name: 'resync_for_achievements_third_party',
+    up: (db) => {
+      const done = db
+        .prepare(
+          "SELECT value FROM sync_metadata WHERE key = 'migration_resync_achievements_third_party_done'"
+        )
+        .get() as { value: string } | undefined;
+
+      if (!done) {
+        console.log('[Migrations] Running: resync_for_achievements_third_party');
+        db.exec(`
+          UPDATE sync_metadata SET value = '' WHERE key = 'last_sync';
+          INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
+          VALUES ('migration_resync_achievements_third_party_done', '1', datetime('now'))
+        `);
+        console.log('[Migrations] Completed: resync_for_achievements_third_party');
+      }
     },
   },
 ];

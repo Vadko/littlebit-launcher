@@ -118,6 +118,7 @@ export class DatabaseManager {
         achievements_archive_hash TEXT,
         achievements_archive_path TEXT,
         achievements_archive_size TEXT,
+        achievements_third_party TEXT,
         steam_app_id INTEGER,
         website TEXT,
         youtube TEXT,
