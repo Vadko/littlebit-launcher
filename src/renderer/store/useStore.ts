@@ -1,12 +1,12 @@
 import { create } from 'zustand';
-import type { Game } from '../types/game';
 import type {
+  DetectedGameInfo,
   DownloadProgress,
   InstallationInfo,
-  DetectedGameInfo,
 } from '../../shared/types';
-import { useSubscriptionsStore } from './useSubscriptionsStore';
+import type { Game } from '../types/game';
 import { useSettingsStore } from './useSettingsStore';
+import { useSubscriptionsStore } from './useSubscriptionsStore';
 
 interface InstallationProgress {
   isInstalling: boolean;

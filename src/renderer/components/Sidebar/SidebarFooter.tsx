@@ -1,5 +1,5 @@
+import { Bell, Settings, Volume2, VolumeX } from 'lucide-react';
 import React from 'react';
-import { Settings, Bell, Volume2, VolumeX } from 'lucide-react';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
 interface SidebarFooterProps {

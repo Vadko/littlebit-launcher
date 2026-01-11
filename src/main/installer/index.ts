@@ -1,45 +1,46 @@
 // Re-export all installer utilities
-export { ManualSelectionError, RateLimitError, PausedSignal } from './errors';
-export {
-  abortCurrentDownload,
-  downloadFile,
-  setDownloadAbortController,
-  getDownloadAbortController,
-  setCurrentDownloadState,
-  updateCurrentDownloadedBytes,
-  pauseCurrentDownload,
-  getPausedDownloadState,
-  savePausedDownloadState,
-  clearPausedDownloadState,
-  getPartialFilePath,
-} from './download';
+
 export { extractArchive } from './archive';
 export {
+  BACKUP_SUFFIX,
   backupFiles,
+  cleanupEmptyDirectories,
   restoreBackupLegacy,
   restoreBackupNew,
-  cleanupEmptyDirectories,
-  BACKUP_SUFFIX,
 } from './backup';
-export { getAllFiles, copyDirectory, cleanupDownloadDir, deleteDirectory } from './files';
+export {
+  checkInstallation,
+  deleteCachedInstallationInfo,
+  getAllInstalledGameIds,
+  getConflictingTranslation,
+  getPreviousInstallPath,
+  INSTALLATION_INFO_FILE,
+  invalidateInstalledGameIdsCache,
+  removeOrphanedInstallationMetadata,
+  saveInstallationInfo,
+} from './cache';
+export { checkDiskSpace, parseSizeToBytes } from './disk';
+export {
+  abortCurrentDownload,
+  clearPausedDownloadState,
+  downloadFile,
+  getDownloadAbortController,
+  getPartialFilePath,
+  getPausedDownloadState,
+  pauseCurrentDownload,
+  savePausedDownloadState,
+  setCurrentDownloadState,
+  setDownloadAbortController,
+  updateCurrentDownloadedBytes,
+} from './download';
+export { ManualSelectionError, PausedSignal, RateLimitError } from './errors';
+export { cleanupDownloadDir, copyDirectory, deleteDirectory, getAllFiles } from './files';
+export { verifyFileHash } from './hash';
 export {
   checkPlatformCompatibility,
   getInstallerFileName,
-  hasExecutableInstaller,
-  runInstaller,
   getSteamAchievementsPath,
+  hasExecutableInstaller,
   isExecutableInstaller,
+  runInstaller,
 } from './platform';
-export { verifyFileHash } from './hash';
-export {
-  saveInstallationInfo,
-  checkInstallation,
-  getPreviousInstallPath,
-  invalidateInstalledGameIdsCache,
-  removeOrphanedInstallationMetadata,
-  getAllInstalledGameIds,
-  deleteCachedInstallationInfo,
-  getConflictingTranslation,
-  INSTALLATION_INFO_FILE,
-} from './cache';
-export { parseSizeToBytes, checkDiskSpace } from './disk';

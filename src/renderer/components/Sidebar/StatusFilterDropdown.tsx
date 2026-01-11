@@ -1,14 +1,14 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ListFilter, Check, X } from 'lucide-react';
-import {
-  STATUS_OPTIONS,
-  SPECIAL_FILTER_OPTIONS,
-  SORT_OPTIONS,
-  type SpecialFilterType,
-  type SortOrderType,
-} from './types';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, ListFilter, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { FilterCounts } from '../../hooks/useFilterCounts';
+import {
+  SORT_OPTIONS,
+  type SortOrderType,
+  SPECIAL_FILTER_OPTIONS,
+  type SpecialFilterType,
+  STATUS_OPTIONS,
+} from './types';
 
 interface StatusFilterDropdownProps {
   selectedStatuses: string[];

@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  X,
   Bell,
-  Trash2,
   CheckCircle,
-  RefreshCw,
-  Languages,
-  Settings,
-  Download,
   ChevronLeft,
+  Download,
+  Languages,
+  RefreshCw,
+  Settings,
+  Sparkles,
+  Trash2,
   TrendingUp,
   Users,
-  Sparkles,
+  X,
 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { useStore } from '../../store/useStore';
+import {
+  type Notification,
+  useSubscriptionsStore,
+} from '../../store/useSubscriptionsStore';
 import { Modal } from '../Modal/Modal';
 import { Button } from '../ui/Button';
 import { Switch } from '../ui/Switch';
-import {
-  useSubscriptionsStore,
-  type Notification,
-} from '../../store/useSubscriptionsStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { useStore } from '../../store/useStore';
 
 interface NotificationModalProps {
   isOpen: boolean;

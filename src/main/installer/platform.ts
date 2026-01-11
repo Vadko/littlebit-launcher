@@ -1,10 +1,10 @@
-import fs from 'fs';
-import path from 'path';
 import { exec } from 'child_process';
 import { shell } from 'electron';
+import fs from 'fs';
+import path from 'path';
 import type { Game } from '../../shared/types';
-import { isWindows, isLinux, getPlatform } from '../utils/platform';
 import { getSteamPath } from '../game-detector';
+import { getPlatform, isLinux, isWindows } from '../utils/platform';
 
 /**
  * Check if file is an executable installer

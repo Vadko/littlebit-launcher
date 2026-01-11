@@ -1,8 +1,8 @@
 import type {
+  FilterCountsResult,
   Game,
   GetGamesParams,
   GetGamesResult,
-  FilterCountsResult,
 } from '../shared/types';
 import { GamesRepository } from './db/games-repository';
 

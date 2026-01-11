@@ -1,5 +1,5 @@
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react-swc';
+import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import path from 'path';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 

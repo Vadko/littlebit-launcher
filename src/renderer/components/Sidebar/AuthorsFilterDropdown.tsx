@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Check, Search, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, Search, Users, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGamepadModeStore } from '../../store/useGamepadModeStore';
 
 interface AuthorsFilterDropdownProps {

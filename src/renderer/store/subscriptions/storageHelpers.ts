@@ -1,9 +1,9 @@
 import { createJSONStorage } from 'zustand/middleware';
 import type {
+  GameProgress,
+  PersistedSubscriptionsState,
   SerializedMap,
   SerializedSet,
-  PersistedSubscriptionsState,
-  GameProgress,
 } from './types';
 
 /**

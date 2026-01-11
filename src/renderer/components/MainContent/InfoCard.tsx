@@ -1,18 +1,18 @@
-import React from 'react';
-import type { Game } from '../../types/game';
 import {
-  Gamepad2,
-  Calendar,
-  CalendarPlus,
-  CalendarClock,
-  HardDrive,
-  Download,
-  Volume2,
-  Trophy,
-  Bell,
   Award,
+  Bell,
+  Calendar,
+  CalendarClock,
+  CalendarPlus,
+  Download,
+  Gamepad2,
+  HardDrive,
+  Trophy,
+  Volume2,
 } from 'lucide-react';
+import React from 'react';
 import { getFeaturedInfo } from '../../constants/featuredTranslations';
+import type { Game } from '../../types/game';
 import { Tooltip } from '../ui/Tooltip';
 
 interface InfoCardProps {

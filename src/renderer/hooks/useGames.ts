@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Game, GetGamesParams } from '../types/game';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SpecialFilterType } from '../components/Sidebar/types';
-import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
 import { useStore } from '../store/useStore';
+import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
+import type { Game, GetGamesParams } from '../types/game';
 
 interface UseGamesParams {
   selectedStatuses: string[];

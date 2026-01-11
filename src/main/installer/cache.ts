@@ -2,9 +2,9 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import type { InstallationInfo, Game, ConflictingTranslation } from '../../shared/types';
-import { getFirstAvailableGamePath } from '../game-detector';
+import type { ConflictingTranslation, Game, InstallationInfo } from '../../shared/types';
 import { GamesRepository } from '../db/games-repository';
+import { getFirstAvailableGamePath } from '../game-detector';
 
 const mkdir = promisify(fs.mkdir);
 const readdir = promisify(fs.readdir);

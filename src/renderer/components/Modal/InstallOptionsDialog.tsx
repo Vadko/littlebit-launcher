@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Modal } from './Modal';
 import {
-  Volume2,
   Archive,
-  Shield,
-  Trophy,
   Check,
-  Trash2,
   FileText,
   Info,
+  Shield,
+  Trash2,
+  Trophy,
+  Volume2,
 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { Game, InstallationInfo, InstallOptions } from '../../../shared/types';
+import { Modal } from './Modal';
 
 interface InstallOptionsDialogProps {
   isOpen: boolean;

@@ -25,8 +25,8 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "find-unused": "knip",
-    "format": "biome format --write .",
-    "format:check": "biome check .",
+    "format": "biome check --write .",
+    "format:check": "biome check --max-diagnostics=200 .",
     "types:generate": "npx --yes supabase gen types typescript --project-id qgylrzebvqayqswhewyz > src/lib/database.types.ts",
     "postinstall": "electron-builder install-app-deps",
     "generate:icns": "bash scripts/generate-icns.sh"

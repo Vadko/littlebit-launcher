@@ -1,11 +1,11 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
-import type { InstallPath } from '../shared/types';
+import * as path from 'path';
 import type { Database } from '../lib/database.types';
-import { parseLibraryFolders, parseAppManifest } from './utils/vdf-parser';
-import { isWindows, isMacOS, isLinux, getPlatform } from './utils/platform';
+import type { InstallPath } from '../shared/types';
+import { getPlatform, isLinux, isMacOS, isWindows } from './utils/platform';
+import { parseAppManifest, parseLibraryFolders } from './utils/vdf-parser';
 
 interface GamePath {
   platform: Database['public']['Enums']['install_source'];

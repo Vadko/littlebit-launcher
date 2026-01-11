@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { generateSearchableString, getSearchVariations } from '../../shared/search-utils';
 import type {
   Game,
   GetGamesParams,
@@ -6,7 +7,6 @@ import type {
   Database as SupabaseDatabase,
 } from '../../shared/types';
 import { getDatabase } from './database';
-import { generateSearchableString, getSearchVariations } from '../../shared/search-utils';
 
 /**
  * Поля, які не зберігаються в локальній БД

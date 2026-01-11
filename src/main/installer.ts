@@ -1,54 +1,54 @@
 import { app } from 'electron';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { promisify } from 'util';
-import { getFirstAvailableGamePath } from './game-detector';
+import { formatBytes } from '../shared/formatters';
 import type {
-  InstallationInfo,
-  Game,
   DownloadProgress,
+  Game,
+  InstallationInfo,
   InstallationStatus,
   InstallOptions,
   PausedDownloadState,
 } from '../shared/types';
-import { formatBytes } from '../shared/formatters';
+import { getFirstAvailableGamePath } from './game-detector';
 
 // Import all utilities from installer modules
 import {
-  ManualSelectionError,
-  RateLimitError,
-  PausedSignal,
   abortCurrentDownload,
-  downloadFile,
-  setDownloadAbortController,
-  setCurrentDownloadState,
-  clearPausedDownloadState,
-  extractArchive,
+  BACKUP_SUFFIX,
   backupFiles,
+  checkDiskSpace,
+  checkInstallation,
+  checkPlatformCompatibility,
+  cleanupDownloadDir,
+  cleanupEmptyDirectories,
+  clearPausedDownloadState,
+  copyDirectory,
+  deleteCachedInstallationInfo,
+  deleteDirectory,
+  downloadFile,
+  extractArchive,
+  getAllFiles,
+  getAllInstalledGameIds,
+  getConflictingTranslation,
+  getInstallerFileName,
+  getSteamAchievementsPath,
+  hasExecutableInstaller,
+  INSTALLATION_INFO_FILE,
+  invalidateInstalledGameIdsCache,
+  ManualSelectionError,
+  PausedSignal,
+  parseSizeToBytes,
+  RateLimitError,
+  removeOrphanedInstallationMetadata,
   restoreBackupLegacy,
   restoreBackupNew,
-  cleanupEmptyDirectories,
-  BACKUP_SUFFIX,
-  getAllFiles,
-  copyDirectory,
-  cleanupDownloadDir,
-  deleteDirectory,
-  checkPlatformCompatibility,
-  getInstallerFileName,
-  hasExecutableInstaller,
   runInstaller,
-  getSteamAchievementsPath,
-  verifyFileHash,
   saveInstallationInfo,
-  checkInstallation,
-  invalidateInstalledGameIdsCache,
-  removeOrphanedInstallationMetadata,
-  getAllInstalledGameIds,
-  deleteCachedInstallationInfo,
-  getConflictingTranslation,
-  INSTALLATION_INFO_FILE,
-  parseSizeToBytes,
-  checkDiskSpace,
+  setCurrentDownloadState,
+  setDownloadAbortController,
+  verifyFileHash,
 } from './installer/index';
 
 const mkdir = promisify(fs.mkdir);

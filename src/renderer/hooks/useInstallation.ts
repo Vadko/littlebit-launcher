@@ -1,17 +1,17 @@
-import { useState, useCallback } from 'react';
-import { useStore } from '../store/useStore';
-import { useModalStore } from '../store/useModalStore';
-import { useConfirmStore } from '../store/useConfirmStore';
-import { useSettingsStore } from '../store/useSettingsStore';
-import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
+import { useCallback, useState } from 'react';
 import type {
-  Game,
-  InstallResult,
-  DownloadProgress,
-  InstallOptions,
-  InstallationInfo,
   ConflictingTranslation,
+  DownloadProgress,
+  Game,
+  InstallationInfo,
+  InstallOptions,
+  InstallResult,
 } from '../../shared/types';
+import { useConfirmStore } from '../store/useConfirmStore';
+import { useModalStore } from '../store/useModalStore';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { useStore } from '../store/useStore';
+import { useSubscriptionsStore } from '../store/useSubscriptionsStore';
 
 interface UseInstallationParams {
   selectedGame: Game | null;

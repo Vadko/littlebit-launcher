@@ -1,6 +1,6 @@
+import { app, type BrowserWindow } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
-import { app, type BrowserWindow } from 'electron';
 import { invalidateInstalledGameIdsCache } from './installer';
 
 let watcher: fs.FSWatcher | null = null;

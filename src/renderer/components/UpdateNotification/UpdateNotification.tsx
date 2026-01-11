@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useGamepadModeStore } from '../../store/useGamepadModeStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
-import { useGamepadModeStore } from '../../store/useGamepadModeStore';
 import { Modal } from '../Modal/Modal';
 
 export const UpdateNotification = () => {

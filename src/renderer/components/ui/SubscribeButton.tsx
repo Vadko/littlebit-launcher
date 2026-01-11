@@ -1,7 +1,7 @@
-import React from 'react';
 import { Bell, BellOff } from 'lucide-react';
-import { Button } from './Button';
+import React from 'react';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
+import { Button } from './Button';
 
 interface SubscribeButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   gameId: string;

@@ -1,5 +1,5 @@
-import fs from 'fs';
 import { createHash } from 'crypto';
+import fs from 'fs';
 
 /**
  * Verify file hash - supports both new fingerprint hash and legacy full SHA-256

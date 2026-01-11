@@ -1,18 +1,18 @@
-import { app, ipcMain, shell } from 'electron';
 import { exec, spawn } from 'child_process';
+import { app, ipcMain, shell } from 'electron';
 import { promisify } from 'util';
+import type { Game, GetGamesParams } from '../../shared/types';
 import {
+  fetchFilterCounts,
   fetchGames,
   fetchGamesByIds,
-  findGamesByInstallPaths,
   fetchTeams,
-  fetchFilterCounts,
+  findGamesByInstallPaths,
 } from '../api';
-import type { GetGamesParams, Game } from '../../shared/types';
 import {
-  getFirstAvailableGamePath,
   getAllInstalledGamePaths,
   getAllInstalledSteamGames,
+  getFirstAvailableGamePath,
 } from '../game-detector';
 import { getMachineId, trackSubscription } from '../tracking';
 

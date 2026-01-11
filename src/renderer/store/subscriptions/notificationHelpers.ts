@@ -1,6 +1,6 @@
-import type { Notification, ToastNotification } from './types';
 import { playNotificationSound } from '../../utils/notificationSounds';
 import { useSettingsStore } from '../useSettingsStore';
+import type { Notification, ToastNotification } from './types';
 
 const TOAST_DURATION = 8000; // 8 seconds
 

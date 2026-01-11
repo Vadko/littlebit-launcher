@@ -1,13 +1,13 @@
+import { app } from 'electron';
 import fs from 'fs';
+import got from 'got';
 import path from 'path';
 import { promisify } from 'util';
-import got from 'got';
-import { app } from 'electron';
 import type {
   DownloadProgress,
   InstallationStatus,
-  PausedDownloadState,
   InstallOptions,
+  PausedDownloadState,
 } from '../../shared/types';
 
 const unlink = promisify(fs.unlink);
