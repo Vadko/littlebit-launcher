@@ -1,8 +1,8 @@
-import fs from 'fs';
-import { promisify } from 'util';
-import { execSync } from 'child_process';
-import { extractFull } from 'node-7z';
 import { path7z as originalPath7z, path7zzs } from '7zip-bin-full';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import { extractFull } from 'node-7z';
+import { promisify } from 'util';
 import type { InstallationStatus } from '../../shared/types';
 
 const mkdir = promisify(fs.mkdir);

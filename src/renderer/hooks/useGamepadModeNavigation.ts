@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGamepads } from 'react-ts-gamepads';
 import { useGamepadModeStore } from '../store/useGamepadModeStore';
 import { useSettingsStore } from '../store/useSettingsStore';

@@ -1,7 +1,7 @@
-import { app, session, ipcMain } from 'electron';
-import { isLinux, isMacOS, isWindows } from './utils/platform';
-import { initLogger } from './utils/logger';
+import { app, ipcMain, session } from 'electron';
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
+import { initLogger } from './utils/logger';
+import { isLinux, isMacOS, isWindows } from './utils/platform';
 
 // Deep link handling
 const PROTOCOL = 'littlebit';
@@ -65,24 +65,25 @@ if (isLinux()) {
   // Enable gamepad support
   app.commandLine.appendSwitch('enable-gamepad-extensions');
 }
-import { createMainWindow, getMainWindow } from './window';
-import { setupWindowControls, initTray } from './ipc/window-controls';
-import { setupGamesHandlers } from './ipc/games';
-import { setupInstallerHandlers } from './ipc/installer';
-import { setupAutoUpdater, checkForUpdates } from './auto-updater';
-import { startSteamWatcher, stopSteamWatcher } from './steam-watcher';
+
+import { checkForUpdates, setupAutoUpdater } from './auto-updater';
+import { closeDatabase, initDatabase } from './db/database';
+import { SupabaseRealtimeManager } from './db/supabase-realtime';
+import {
+  fetchAllGamesFromSupabase,
+  fetchDeletedGameIdsFromSupabase,
+  fetchUpdatedGamesFromSupabase,
+} from './db/supabase-sync-api';
+import { SyncManager } from './db/sync-manager';
 import {
   startInstallationWatcher,
   stopInstallationWatcher,
 } from './installation-watcher';
-import { initDatabase, closeDatabase } from './db/database';
-import { SyncManager } from './db/sync-manager';
-import {
-  fetchAllGamesFromSupabase,
-  fetchUpdatedGamesFromSupabase,
-  fetchDeletedGameIdsFromSupabase,
-} from './db/supabase-sync-api';
-import { SupabaseRealtimeManager } from './db/supabase-realtime';
+import { setupGamesHandlers } from './ipc/games';
+import { setupInstallerHandlers } from './ipc/installer';
+import { initTray, setupWindowControls } from './ipc/window-controls';
+import { startSteamWatcher, stopSteamWatcher } from './steam-watcher';
+import { createMainWindow, getMainWindow } from './window';
 
 // Глобальні менеджери
 let syncManager: SyncManager | null = null;

@@ -1,8 +1,8 @@
+import { exec, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
-import { isWindows, isMacOS } from './utils/platform';
+import { isMacOS, isWindows } from './utils/platform';
 
 const execAsync = promisify(exec);
 

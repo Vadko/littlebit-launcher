@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
 import { EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { useImagePreload } from '../../hooks/useImagePreload';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import type { Game } from '../../types/game';
 import { getGameImageUrl } from '../../utils/imageUrl';
 import { Loader } from '../ui/Loader';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { useImagePreload } from '../../hooks/useImagePreload';
 
 interface GameListItemProps {
   game: Game;

@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
+import type { Game } from '../../shared/types';
 import { getDatabase } from './database';
 import { GamesRepository } from './games-repository';
-import type { Game } from '../../shared/types';
 
 /**
  * Менеджер синхронізації між Supabase та локальною базою даних

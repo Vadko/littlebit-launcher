@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal } from './Modal';
 import { useConfirmStore } from '../../store/useConfirmStore';
+import { Modal } from './Modal';
 
 export const ConfirmModal: React.FC = () => {
   const { isOpen, config, closeConfirm, confirm } = useConfirmStore();

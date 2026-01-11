@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron';
-import { supportsMacOSLiquidGlass, shouldEnableLiquidGlass } from './utils/platform';
+import { shouldEnableLiquidGlass, supportsMacOSLiquidGlass } from './utils/platform';
 
 // Conditionally import based on platform
 const liquidGlass =

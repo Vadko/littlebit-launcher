@@ -1,28 +1,28 @@
-import { ipcMain, dialog, shell } from 'electron';
+import { dialog, ipcMain, shell } from 'electron';
+import fs from 'fs';
+import type { Game, InstallOptions } from '../../shared/types';
 import {
-  installTranslation,
-  checkInstallation,
-  uninstallTranslation,
-  getAllInstalledGameIds,
-  ManualSelectionError,
-  RateLimitError,
-  PausedSignal,
   abortCurrentDownload,
-  removeOrphanedInstallationMetadata,
-  removeComponents,
+  checkInstallation,
   checkPlatformCompatibility,
-  resumeDownload,
+  getAllInstalledGameIds,
   getConflictingTranslation,
+  installTranslation,
+  ManualSelectionError,
+  PausedSignal,
+  RateLimitError,
+  removeComponents,
+  removeOrphanedInstallationMetadata,
+  resumeDownload,
+  uninstallTranslation,
 } from '../installer';
 import {
-  pauseCurrentDownload,
-  getPausedDownloadState,
   clearPausedDownloadState,
   getPartialFilePath,
+  getPausedDownloadState,
+  pauseCurrentDownload,
 } from '../installer/download';
-import fs from 'fs';
 import { getMainWindow } from '../window';
-import type { Game, InstallOptions } from '../../shared/types';
 
 export function setupInstallerHandlers(): void {
   ipcMain.handle(
