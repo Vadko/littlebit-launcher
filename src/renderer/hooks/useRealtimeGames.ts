@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import type { Game } from '../types/game';
 import { useStore } from '../store/useStore';
+import type { Game } from '../types/game';
 
 /**
  * Хук для підписки на real-time оновлення ігор

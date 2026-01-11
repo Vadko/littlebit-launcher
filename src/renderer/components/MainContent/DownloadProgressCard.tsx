@@ -1,5 +1,5 @@
-import React from 'react';
 import { Pause, Play, X } from 'lucide-react';
+import React from 'react';
 import { formatBytes, formatTime } from '../../../shared/formatters';
 import type { DownloadProgress } from '../../../shared/types';
 

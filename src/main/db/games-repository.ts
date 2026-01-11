@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import { generateSearchableString, getSearchVariations } from '../../shared/search-utils';
 import type {
   Game,
   GetGamesParams,
@@ -6,7 +7,6 @@ import type {
   Database as SupabaseDatabase,
 } from '../../shared/types';
 import { getDatabase } from './database';
-import { generateSearchableString, getSearchVariations } from '../../shared/search-utils';
 
 /**
  * Поля, які не зберігаються в локальній БД
@@ -30,10 +30,10 @@ type GameInsertParams = {
     SupabaseDatabase['public']['Tables']['games']['Row'],
     ExcludedLocalFields
   >]: K extends 'approved' | 'is_adult' | 'license_only' | 'ai' | 'hide'
-  ? number // boolean перетворюється на 0/1 для SQLite
-  : K extends 'platforms' | 'install_paths'
-  ? string | null // JSON.stringify для SQLite
-  : SupabaseDatabase['public']['Tables']['games']['Row'][K];
+    ? number // boolean перетворюється на 0/1 для SQLite
+    : K extends 'platforms' | 'install_paths'
+      ? string | null // JSON.stringify для SQLite
+      : SupabaseDatabase['public']['Tables']['games']['Row'][K];
 } & {
   // Local-only field for search (not in Supabase)
   name_search: string;
@@ -145,7 +145,13 @@ export class GamesRepository {
    * Оскільки це local-first застосунок, повертаємо всі ігри одразу
    */
   getGames(params: GetGamesParams = {}): GetGamesResult {
-    const { searchQuery = '', statuses = [], authors = [], sortOrder = 'name', showAiTranslations = false } = params;
+    const {
+      searchQuery = '',
+      statuses = [],
+      authors = [],
+      sortOrder = 'name',
+      showAiTranslations = false,
+    } = params;
 
     const whereConditions: string[] = ['approved = 1', 'hide = 0'];
     const queryParams: (string | number)[] = [];
@@ -166,14 +172,15 @@ export class GamesRepository {
     if (searchQuery) {
       const variations = getSearchVariations(searchQuery);
       const ftsQuery = variations.map((v) => `"${v}"*`).join(' OR ');
-      whereConditions.push(`id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`);
+      whereConditions.push(
+        `id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`
+      );
       queryParams.push(ftsQuery);
     }
 
     const whereClause = whereConditions.join(' AND ');
-    const orderClause = sortOrder === 'downloads'
-      ? 'downloads DESC NULLS LAST, name ASC'
-      : 'name ASC';
+    const orderClause =
+      sortOrder === 'downloads' ? 'downloads DESC NULLS LAST, name ASC' : 'name ASC';
 
     const gamesStmt = this.db.prepare(`
       SELECT *
@@ -228,7 +235,11 @@ export class GamesRepository {
   /**
    * Отримати ігри за ID
    */
-  getGamesByIds(gameIds: string[], searchQuery?: string, showAiTranslations = false): Game[] {
+  getGamesByIds(
+    gameIds: string[],
+    searchQuery?: string,
+    showAiTranslations = false
+  ): Game[] {
     if (gameIds.length === 0) return [];
 
     const whereConditions = [
@@ -246,7 +257,9 @@ export class GamesRepository {
     if (searchQuery) {
       const variations = getSearchVariations(searchQuery);
       const ftsQuery = variations.map((v) => `"${v}"*`).join(' OR ');
-      whereConditions.push(`id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`);
+      whereConditions.push(
+        `id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`
+      );
       queryParams.push(ftsQuery);
     }
 
@@ -264,7 +277,11 @@ export class GamesRepository {
   /**
    * Знайти ігри за install paths
    */
-  findGamesByInstallPaths(installPaths: string[], searchQuery?: string, showAiTranslations = false): GetGamesResult {
+  findGamesByInstallPaths(
+    installPaths: string[],
+    searchQuery?: string,
+    showAiTranslations = false
+  ): GetGamesResult {
     if (installPaths.length === 0) {
       return { games: [], total: 0 };
     }
@@ -280,7 +297,9 @@ export class GamesRepository {
     if (searchQuery) {
       const variations = getSearchVariations(searchQuery);
       const ftsQuery = variations.map((v) => `"${v}"*`).join(' OR ');
-      whereConditions.push(`id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`);
+      whereConditions.push(
+        `id IN (SELECT game_id FROM games_fts WHERE games_fts MATCH ?)`
+      );
       queryParams.push(ftsQuery);
     }
 
@@ -342,7 +361,9 @@ export class GamesRepository {
     // Delete existing entry
     this.db.prepare('DELETE FROM games_fts WHERE game_id = ?').run(gameId);
     // Insert new entry
-    this.db.prepare('INSERT INTO games_fts (game_id, name_search) VALUES (?, ?)').run(gameId, nameSearch);
+    this.db
+      .prepare('INSERT INTO games_fts (game_id, name_search) VALUES (?, ?)')
+      .run(gameId, nameSearch);
   }
 
   /**
@@ -417,7 +438,9 @@ export class GamesRepository {
       `);
 
       const ftsDeleteStmt = this.db.prepare('DELETE FROM games_fts WHERE game_id = ?');
-      const ftsInsertStmt = this.db.prepare('INSERT INTO games_fts (game_id, name_search) VALUES (?, ?)');
+      const ftsInsertStmt = this.db.prepare(
+        'INSERT INTO games_fts (game_id, name_search) VALUES (?, ?)'
+      );
 
       for (const game of gamesToInsert) {
         const params = this.gameToInsertParams(game);

@@ -1,9 +1,9 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check, Users, X } from 'lucide-react';
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Users } from 'lucide-react';
-import type { Game } from '../../types/game';
-import { useStore } from '../../store/useStore';
 import { useGamepadModeStore } from '../../store/useGamepadModeStore';
+import { useStore } from '../../store/useStore';
+import type { Game } from '../../types/game';
 import { getGameImageUrl } from '../../utils/imageUrl';
 import { StatusBadge } from '../Elements/StatusBadge';
 

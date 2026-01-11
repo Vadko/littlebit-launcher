@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Modal } from './Modal';
-import { Users, Bell, Star } from 'lucide-react';
-import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
+import { Bell, Star, Users } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { getSpecialTranslatorInfo } from '../../constants/specialTranslators';
+import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
 import { Tooltip } from '../ui/Tooltip';
+import { Modal } from './Modal';
 
 interface AuthorSubscriptionModalProps {
   isOpen: boolean;

@@ -1,12 +1,12 @@
 import { app } from 'electron';
 import {
-  writeFileSync,
   appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
-  unlinkSync,
   statSync,
+  unlinkSync,
+  writeFileSync,
 } from 'fs';
 import { appendFile } from 'fs/promises';
 import { join } from 'path';

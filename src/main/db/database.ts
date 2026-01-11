@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { app } from 'electron';
-import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
 import { runMigrations } from './migrations';
 
 /**

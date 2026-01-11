@@ -1,5 +1,5 @@
-import React from 'react';
 import { DollarSign } from 'lucide-react';
+import React from 'react';
 
 interface FundraisingProgressCardProps {
   current: number;

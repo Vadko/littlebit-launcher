@@ -1,23 +1,23 @@
 import {
-  ipcMain,
-  Tray,
-  Menu,
   app,
-  nativeImage,
+  ipcMain,
+  Menu,
   Notification,
+  nativeImage,
   session,
   shell,
+  Tray,
 } from 'electron';
 import { existsSync, mkdirSync } from 'fs';
-import { getMainWindow } from '../window';
 import { join } from 'path';
-import { isLinux, isMacOS } from '../utils/platform';
 import { closeDatabase, deleteDatabaseFile } from '../db/database';
 import {
-  setSaveLogsEnabled,
-  isSaveLogsEnabled,
   getLogFileDirectory,
+  isSaveLogsEnabled,
+  setSaveLogsEnabled,
 } from '../utils/logger';
+import { isLinux, isMacOS } from '../utils/platform';
+import { getMainWindow } from '../window';
 
 // Get the app icon path for notifications
 function getNotificationIcon(): string | undefined {

@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import {
-  MessageCircle,
-  RefreshCw,
   FolderOpen,
-  Trash2,
   Heart,
-  Volume2,
+  MessageCircle,
   Play,
+  RefreshCw,
+  Trash2,
+  Volume2,
 } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { SPECIAL_TRANSLATORS } from '../../constants/specialTranslators';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import {
+  playBackSound,
+  playConfirmSound,
+  playNavigateSound,
+} from '../../utils/gamepadSounds';
+import { playNotificationSound } from '../../utils/notificationSounds';
 import { Modal } from '../Modal/Modal';
 import { Switch } from '../ui/Switch';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { SPECIAL_TRANSLATORS } from '../../constants/specialTranslators';
-import { playNotificationSound } from '../../utils/notificationSounds';
-import {
-  playNavigateSound,
-  playConfirmSound,
-  playBackSound,
-} from '../../utils/gamepadSounds';
 
 const SettingItem = React.memo<{
   id: string;
@@ -57,7 +57,9 @@ export const SettingsModal: React.FC = () => {
   const showAdultGames = useSettingsStore((state) => state.showAdultGames);
   const toggleShowAdultGames = useSettingsStore((state) => state.toggleShowAdultGames);
   const showAiTranslations = useSettingsStore((state) => state.showAiTranslations);
-  const toggleShowAiTranslations = useSettingsStore((state) => state.toggleShowAiTranslations);
+  const toggleShowAiTranslations = useSettingsStore(
+    (state) => state.toggleShowAiTranslations
+  );
   const liquidGlassEnabled = useSettingsStore((state) => state.liquidGlassEnabled);
   const toggleLiquidGlass = useSettingsStore((state) => state.toggleLiquidGlass);
   // Logging settings

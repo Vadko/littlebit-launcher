@@ -1,7 +1,7 @@
-import React from 'react';
 import { BellOff, Users } from 'lucide-react';
-import { Button } from './Button';
+import React from 'react';
 import { useSubscriptionsStore } from '../../store/useSubscriptionsStore';
+import { Button } from './Button';
 
 interface TeamSubscribeButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   teamName: string;

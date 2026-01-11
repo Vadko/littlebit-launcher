@@ -1,4 +1,9 @@
-import type { Game, GetGamesParams, GetGamesResult, FilterCountsResult } from '../shared/types';
+import type {
+  FilterCountsResult,
+  Game,
+  GetGamesParams,
+  GetGamesResult,
+} from '../shared/types';
 import { GamesRepository } from './db/games-repository';
 
 const gamesRepo = new GamesRepository();
@@ -12,7 +17,11 @@ export function fetchGames(params: GetGamesParams = {}): GetGamesResult {
   }
 }
 
-export function fetchGamesByIds(gameIds: string[], searchQuery?: string, showAiTranslations = false): Game[] {
+export function fetchGamesByIds(
+  gameIds: string[],
+  searchQuery?: string,
+  showAiTranslations = false
+): Game[] {
   try {
     return gamesRepo.getGamesByIds(gameIds, searchQuery, showAiTranslations);
   } catch (error) {
@@ -21,9 +30,17 @@ export function fetchGamesByIds(gameIds: string[], searchQuery?: string, showAiT
   }
 }
 
-export function findGamesByInstallPaths(installPaths: string[], searchQuery?: string, showAiTranslations = false): GetGamesResult {
+export function findGamesByInstallPaths(
+  installPaths: string[],
+  searchQuery?: string,
+  showAiTranslations = false
+): GetGamesResult {
   try {
-    return gamesRepo.findGamesByInstallPaths(installPaths, searchQuery, showAiTranslations);
+    return gamesRepo.findGamesByInstallPaths(
+      installPaths,
+      searchQuery,
+      showAiTranslations
+    );
   } catch (error) {
     console.error('[API] Error finding games by install paths:', error);
     return { games: [], total: 0 };

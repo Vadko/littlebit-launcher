@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FilterCountsResult } from '../../shared/types';
 
 export type FilterCounts = FilterCountsResult & {
@@ -65,7 +65,8 @@ export function useFilterCounts() {
     isMountedRef.current = true;
     fetchCounts();
 
-    const unsubInstalled = window.electronAPI?.onInstalledGamesChanged?.(debouncedFetchCounts);
+    const unsubInstalled =
+      window.electronAPI?.onInstalledGamesChanged?.(debouncedFetchCounts);
     const unsubSteam = window.electronAPI?.onSteamLibraryChanged?.(debouncedFetchCounts);
     const unsubGame = window.electronAPI?.onGameUpdated?.(debouncedFetchCounts);
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { SpecialFilterType, SortOrderType } from '../components/Sidebar/types';
+import type { SortOrderType, SpecialFilterType } from '../components/Sidebar/types';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 

@@ -1,11 +1,11 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { Download, Languages, RefreshCw, TrendingUp, X } from 'lucide-react';
 import React, { useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, RefreshCw, Languages, Download, TrendingUp } from 'lucide-react';
-import {
-  useSubscriptionsStore,
-  type ToastNotification,
-} from '../../store/useSubscriptionsStore';
 import { useStore } from '../../store/useStore';
+import {
+  type ToastNotification,
+  useSubscriptionsStore,
+} from '../../store/useSubscriptionsStore';
 
 const getToastIcon = (type: ToastNotification['type']) => {
   switch (type) {

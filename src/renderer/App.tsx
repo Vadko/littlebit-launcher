@@ -1,24 +1,24 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useGamepads } from 'react-ts-gamepads';
 import { AnimatePresence } from 'framer-motion';
+import React, { useEffect, useRef, useState } from 'react';
+import { useGamepads } from 'react-ts-gamepads';
+import { AppLoader } from './components/AppLoader/AppLoader';
+import { GamepadHints } from './components/GamepadHints/GamepadHints';
 import { AmbientBackground } from './components/Layout/AmbientBackground';
 import { TitleBar } from './components/Layout/TitleBar';
-import { Sidebar } from './components/Sidebar/Sidebar';
 import { MainContent } from './components/MainContent/MainContent';
-import { UpdateNotification } from './components/UpdateNotification/UpdateNotification';
-import { ToastNotifications } from './components/Notifications/ToastNotifications';
-import { GlobalModal } from './components/Modal/GlobalModal';
 import { ConfirmModal } from './components/Modal/ConfirmModal';
-import { SettingsModal } from './components/Settings/SettingsModal';
+import { GlobalModal } from './components/Modal/GlobalModal';
 import { NotificationModal } from './components/Notifications/NotificationModal';
-import { GamepadHints } from './components/GamepadHints/GamepadHints';
-import { AppLoader } from './components/AppLoader/AppLoader';
-import { useStore } from './store/useStore';
-import { useSettingsStore } from './store/useSettingsStore';
-import { useGamepadModeStore } from './store/useGamepadModeStore';
-import { useRealtimeGames } from './hooks/useRealtimeGames';
-import { useGamepadModeNavigation } from './hooks/useGamepadModeNavigation';
+import { ToastNotifications } from './components/Notifications/ToastNotifications';
+import { SettingsModal } from './components/Settings/SettingsModal';
+import { Sidebar } from './components/Sidebar/Sidebar';
+import { UpdateNotification } from './components/UpdateNotification/UpdateNotification';
 import { useDeepLink } from './hooks/useDeepLink';
+import { useGamepadModeNavigation } from './hooks/useGamepadModeNavigation';
+import { useRealtimeGames } from './hooks/useRealtimeGames';
+import { useGamepadModeStore } from './store/useGamepadModeStore';
+import { useSettingsStore } from './store/useSettingsStore';
+import { useStore } from './store/useStore';
 
 // Higher deadzone for mode switching to prevent accidental triggers from stick drift
 const MODE_SWITCH_DEADZONE = 0.8;

@@ -2,8 +2,8 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { join } from 'path';
 import {
   applyLiquidGlass,
-  removeLiquidGlass,
   isLiquidGlassSupported,
+  removeLiquidGlass,
 } from './liquid-glass';
 import { supportsMacOSLiquidGlass } from './utils/platform';
 

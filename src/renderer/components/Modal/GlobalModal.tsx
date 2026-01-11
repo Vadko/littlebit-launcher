@@ -1,7 +1,7 @@
+import { CheckCircle, Info, XCircle } from 'lucide-react';
 import React from 'react';
-import { CheckCircle, XCircle, Info } from 'lucide-react';
-import { Modal } from './Modal';
 import { useModalStore } from '../../store/useModalStore';
+import { Modal } from './Modal';
 
 export const GlobalModal: React.FC = () => {
   const { isOpen, config, closeModal } = useModalStore();

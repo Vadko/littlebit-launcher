@@ -1,34 +1,34 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  Notification,
-  ToastNotification,
-  GameProgress,
-  PersistedSubscriptionsState,
-} from './subscriptions/types';
 import {
-  getNotificationMessage,
   createNotification,
   createToast,
-  showSystemNotificationIfHidden,
-  scheduleToastDismissal,
-  trackSubscription,
+  getNotificationMessage,
   playNotificationSoundIfEnabled,
+  scheduleToastDismissal,
+  showSystemNotificationIfHidden,
+  trackSubscription,
 } from './subscriptions/notificationHelpers';
 import {
   customStorage,
-  isValidSet,
-  isValidMap,
-  ensureSet,
   ensureMap,
+  ensureSet,
+  isValidMap,
+  isValidSet,
   migrateStoreData,
 } from './subscriptions/storageHelpers';
+import type {
+  GameProgress,
+  Notification,
+  PersistedSubscriptionsState,
+  ToastNotification,
+} from './subscriptions/types';
 
 // Re-export types for external use
 export type {
+  GameProgress,
   Notification,
   ToastNotification,
-  GameProgress,
 } from './subscriptions/types';
 
 interface SubscriptionsStore extends PersistedSubscriptionsState {

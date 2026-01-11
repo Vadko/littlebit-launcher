@@ -110,7 +110,11 @@ export interface ElectronAPI {
   fetchGames: (params?: GetGamesParams) => Promise<GetGamesResult>;
   fetchTeams: () => Promise<string[]>;
   fetchFilterCounts: () => Promise<FilterCountsResult>;
-  fetchGamesByIds: (gameIds: string[], searchQuery?: string, showAiTranslations?: boolean) => Promise<Game[]>;
+  fetchGamesByIds: (
+    gameIds: string[],
+    searchQuery?: string,
+    showAiTranslations?: boolean
+  ) => Promise<Game[]>;
   getAllInstalledGamePaths: () => Promise<string[]>;
   getAllInstalledSteamGames: () => Promise<Record<string, string>>;
   findGamesByInstallPaths: (

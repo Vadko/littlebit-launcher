@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { MinimizeIcon } from '../Icons/MinimizeIcon';
-import { MaximizeIcon } from '../Icons/MaximizeIcon';
-import { RestoreIcon } from '../Icons/RestoreIcon';
+import React, { useEffect, useState } from 'react';
 import { CloseIcon } from '../Icons/CloseIcon';
+import { MaximizeIcon } from '../Icons/MaximizeIcon';
+import { MinimizeIcon } from '../Icons/MinimizeIcon';
+import { RestoreIcon } from '../Icons/RestoreIcon';
 
 interface TitleBarProps {
   online: boolean;

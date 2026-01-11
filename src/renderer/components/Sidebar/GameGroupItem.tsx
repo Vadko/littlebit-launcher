@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, EyeOff } from 'lucide-react';
-import { GameListItem } from './GameListItem';
-import { Loader } from '../ui/Loader';
-import { getGameImageUrl } from '../../utils/imageUrl';
+import React, { useState } from 'react';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import type { GameGroup } from './types';
 import type { Game } from '../../types/game';
+import { getGameImageUrl } from '../../utils/imageUrl';
+import { Loader } from '../ui/Loader';
+import { GameListItem } from './GameListItem';
+import type { GameGroup } from './types';
 
 interface GameGroupItemProps {
   group: GameGroup;
