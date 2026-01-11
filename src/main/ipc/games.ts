@@ -1,7 +1,13 @@
 import { app, ipcMain, shell } from 'electron';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
-import { fetchGames, fetchGamesByIds, findGamesByInstallPaths, fetchTeams, fetchFilterCounts } from '../api';
+import {
+  fetchGames,
+  fetchGamesByIds,
+  findGamesByInstallPaths,
+  fetchTeams,
+  fetchFilterCounts,
+} from '../api';
 import type { GetGamesParams, Game } from '../../shared/types';
 import {
   getFirstAvailableGamePath,
@@ -40,14 +46,17 @@ export function setupGamesHandlers(): void {
   });
 
   // Fetch games by IDs - SYNC
-  ipcMain.handle('fetch-games-by-ids', (_, gameIds: string[], searchQuery?: string, showAiTranslations = false) => {
-    try {
-      return fetchGamesByIds(gameIds, searchQuery, showAiTranslations);
-    } catch (error) {
-      console.error('Error fetching games by IDs:', error);
-      return [];
+  ipcMain.handle(
+    'fetch-games-by-ids',
+    (_, gameIds: string[], searchQuery?: string, showAiTranslations = false) => {
+      try {
+        return fetchGamesByIds(gameIds, searchQuery, showAiTranslations);
+      } catch (error) {
+        console.error('Error fetching games by IDs:', error);
+        return [];
+      }
     }
-  });
+  );
 
   // Fetch unique teams - SYNC
   ipcMain.handle('fetch-teams', () => {
@@ -97,14 +106,17 @@ export function setupGamesHandlers(): void {
   });
 
   // Find games by install paths - SYNC
-  ipcMain.handle('find-games-by-install-paths', (_, installPaths: string[], searchQuery?: string, showAiTranslations = false) => {
-    try {
-      return findGamesByInstallPaths(installPaths, searchQuery, showAiTranslations);
-    } catch (error) {
-      console.error('Error finding games by install paths:', error);
-      return { games: [], total: 0 };
+  ipcMain.handle(
+    'find-games-by-install-paths',
+    (_, installPaths: string[], searchQuery?: string, showAiTranslations = false) => {
+      try {
+        return findGamesByInstallPaths(installPaths, searchQuery, showAiTranslations);
+      } catch (error) {
+        console.error('Error finding games by install paths:', error);
+        return { games: [], total: 0 };
+      }
     }
-  });
+  );
 
   // Launch game
   ipcMain.handle('launch-game', async (_, game: Game) => {

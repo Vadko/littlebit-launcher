@@ -5,12 +5,24 @@ const electronAPI: ElectronAPI = {
   fetchGames: (params) => ipcRenderer.invoke('fetch-games', params),
   fetchTeams: () => ipcRenderer.invoke('fetch-teams'),
   fetchFilterCounts: () => ipcRenderer.invoke('fetch-filter-counts'),
-  fetchGamesByIds: (gameIds: string[], searchQuery?: string, showAiTranslations?: boolean) =>
-    ipcRenderer.invoke('fetch-games-by-ids', gameIds, searchQuery, showAiTranslations),
+  fetchGamesByIds: (
+    gameIds: string[],
+    searchQuery?: string,
+    showAiTranslations?: boolean
+  ) => ipcRenderer.invoke('fetch-games-by-ids', gameIds, searchQuery, showAiTranslations),
   getAllInstalledGamePaths: () => ipcRenderer.invoke('get-all-installed-game-paths'),
   getAllInstalledSteamGames: () => ipcRenderer.invoke('get-all-installed-steam-games'),
-  findGamesByInstallPaths: (installPaths: string[], searchQuery?: string, showAiTranslations?: boolean) =>
-    ipcRenderer.invoke('find-games-by-install-paths', installPaths, searchQuery, showAiTranslations),
+  findGamesByInstallPaths: (
+    installPaths: string[],
+    searchQuery?: string,
+    showAiTranslations?: boolean
+  ) =>
+    ipcRenderer.invoke(
+      'find-games-by-install-paths',
+      installPaths,
+      searchQuery,
+      showAiTranslations
+    ),
   installTranslation: (
     game: Game,
     platform: string,

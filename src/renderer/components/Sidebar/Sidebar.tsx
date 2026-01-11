@@ -372,10 +372,11 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
           {sortOrder === 'name' && (
             <button
               onClick={toggleAlphabetSidebar}
-              className={`p-1 flex-shrink-0 transition-all hover:scale-110 ${alphabetSidebarEnabled
-                ? 'text-[var(--text-main)]'
-                : 'text-text-muted hover:text-[var(--text-main)]'
-                }`}
+              className={`p-1 flex-shrink-0 transition-all hover:scale-110 ${
+                alphabetSidebarEnabled
+                  ? 'text-[var(--text-main)]'
+                  : 'text-text-muted hover:text-[var(--text-main)]'
+              }`}
               title={alphabetSidebarEnabled ? 'Сховати алфавіт' : 'Показати алфавіт'}
             >
               <SortAsc size={18} />
@@ -466,13 +467,16 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(
           </div>
 
           {/* Alphabet sidebar - only show when sorting by name */}
-          {!isLoading && totalGames > 0 && alphabetSidebarEnabled && sortOrder === 'name' && (
-            <AlphabetSidebar
-              alphabet={sortedAlphabet}
-              onLetterClick={handleLetterClick}
-              activeHighlight={activeLetter || undefined}
-            />
-          )}
+          {!isLoading &&
+            totalGames > 0 &&
+            alphabetSidebarEnabled &&
+            sortOrder === 'name' && (
+              <AlphabetSidebar
+                alphabet={sortedAlphabet}
+                onLetterClick={handleLetterClick}
+                activeHighlight={activeLetter || undefined}
+              />
+            )}
         </div>
 
         <SidebarFooter

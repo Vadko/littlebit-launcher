@@ -35,11 +35,17 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
 
     const currentLabel = useMemo(() => {
       if (specialFilter) {
-        return SPECIAL_FILTER_OPTIONS.find((o) => o.value === specialFilter)?.label || specialFilter;
+        return (
+          SPECIAL_FILTER_OPTIONS.find((o) => o.value === specialFilter)?.label ||
+          specialFilter
+        );
       }
       if (selectedStatuses.length === 0) return 'Всі стани';
       if (selectedStatuses.length === 1) {
-        return STATUS_OPTIONS.find((o) => o.value === selectedStatuses[0])?.label || selectedStatuses[0];
+        return (
+          STATUS_OPTIONS.find((o) => o.value === selectedStatuses[0])?.label ||
+          selectedStatuses[0]
+        );
       }
       return `${selectedStatuses.length} стани`;
     }, [selectedStatuses, specialFilter]);
@@ -109,7 +115,12 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
 
@@ -145,12 +156,16 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
                     onClick={() => handleStatusToggle(option.value)}
                     data-gamepad-dropdown-item
                     className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                      isSelected ? 'bg-glass-hover text-text-main' : 'text-text-muted hover:bg-glass hover:text-text-main'
+                      isSelected
+                        ? 'bg-glass-hover text-text-main'
+                        : 'text-text-muted hover:bg-glass hover:text-text-main'
                     }`}
                   >
-                    <span className={`w-4 h-4 flex-shrink-0 flex items-center justify-center rounded border ${
-                      isSelected ? 'bg-neon-blue border-neon-blue' : 'border-text-muted'
-                    }`}>
+                    <span
+                      className={`w-4 h-4 flex-shrink-0 flex items-center justify-center rounded border ${
+                        isSelected ? 'bg-neon-blue border-neon-blue' : 'border-text-muted'
+                      }`}
+                    >
                       {isSelected && <Check size={12} className="text-white" />}
                     </span>
                     <span className="flex-1 text-left">{option.label}</span>
@@ -169,12 +184,16 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
                 const isSelected = specialFilter === option.value;
                 return (
                   <React.Fragment key={option.value}>
-                    {option.value === 'with-achievements' && <div className="border-t border-border my-1" />}
+                    {option.value === 'with-achievements' && (
+                      <div className="border-t border-border my-1" />
+                    )}
                     <button
                       onClick={() => handleSpecialFilterSelect(option.value)}
                       data-gamepad-dropdown-item
                       className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
-                        isSelected ? 'bg-glass-hover text-text-main' : 'text-text-muted hover:bg-glass hover:text-text-main'
+                        isSelected
+                          ? 'bg-glass-hover text-text-main'
+                          : 'text-text-muted hover:bg-glass hover:text-text-main'
                       }`}
                     >
                       <span>{option.label}</span>
@@ -204,7 +223,9 @@ export const StatusFilterDropdown: React.FC<StatusFilterDropdownProps> = React.m
                     onClick={() => handleSortChange(option.value)}
                     data-gamepad-dropdown-item
                     className={`w-full flex items-center justify-between px-3 py-2 text-sm transition-colors ${
-                      isSelected ? 'bg-glass-hover text-text-main' : 'text-text-muted hover:bg-glass hover:text-text-main'
+                      isSelected
+                        ? 'bg-glass-hover text-text-main'
+                        : 'text-text-muted hover:bg-glass hover:text-text-main'
                     }`}
                   >
                     <span>{option.label}</span>

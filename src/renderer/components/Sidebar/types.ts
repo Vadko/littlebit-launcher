@@ -11,7 +11,10 @@ export interface GameGroup {
 export type StatusType = Database['public']['Enums']['game_status'];
 
 // Special filters that are single-select
-export type SpecialFilterType = 'installed-translations' | 'installed-games' | 'with-achievements';
+export type SpecialFilterType =
+  | 'installed-translations'
+  | 'installed-games'
+  | 'with-achievements';
 
 export type SortOrderType = 'name' | 'downloads';
 

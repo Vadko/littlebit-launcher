@@ -57,7 +57,9 @@ export const SettingsModal: React.FC = () => {
   const showAdultGames = useSettingsStore((state) => state.showAdultGames);
   const toggleShowAdultGames = useSettingsStore((state) => state.toggleShowAdultGames);
   const showAiTranslations = useSettingsStore((state) => state.showAiTranslations);
-  const toggleShowAiTranslations = useSettingsStore((state) => state.toggleShowAiTranslations);
+  const toggleShowAiTranslations = useSettingsStore(
+    (state) => state.toggleShowAiTranslations
+  );
   const liquidGlassEnabled = useSettingsStore((state) => state.liquidGlassEnabled);
   const toggleLiquidGlass = useSettingsStore((state) => state.toggleLiquidGlass);
   // Logging settings

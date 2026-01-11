@@ -376,7 +376,9 @@ const migrations: Migration[] = [
         INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
         VALUES ('migration_resync_fts5_done', '1', datetime('now'))
       `);
-      console.log('[Migrations] Completed: resync_for_fts5 - will resync on next startup');
+      console.log(
+        '[Migrations] Completed: resync_for_fts5 - will resync on next startup'
+      );
     },
   },
   {

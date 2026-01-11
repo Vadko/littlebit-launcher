@@ -176,7 +176,14 @@ export function useGames({
         setIsLoading(false);
       }
     }
-  }, [specialFilter, searchQuery, selectedStatuses, selectedAuthors, sortOrder, showAiTranslations]);
+  }, [
+    specialFilter,
+    searchQuery,
+    selectedStatuses,
+    selectedAuthors,
+    sortOrder,
+    showAiTranslations,
+  ]);
 
   /**
    * Перезавантажити
@@ -274,7 +281,8 @@ export function useGames({
         // Перевірити чи гра відповідає поточному фільтру пошуку
         // Проста перевірка - повна фільтрація відбудеться при наступному reload
         const matchesSearch =
-          !searchQuery || updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
+          !searchQuery ||
+          updatedGame.name.toLowerCase().includes(searchQuery.toLowerCase());
 
         // Перевірити чи гра відповідає поточному фільтру статусу (multi-select)
         const matchesStatus =

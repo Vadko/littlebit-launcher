@@ -65,7 +65,8 @@ export function useFilterCounts() {
     isMountedRef.current = true;
     fetchCounts();
 
-    const unsubInstalled = window.electronAPI?.onInstalledGamesChanged?.(debouncedFetchCounts);
+    const unsubInstalled =
+      window.electronAPI?.onInstalledGamesChanged?.(debouncedFetchCounts);
     const unsubSteam = window.electronAPI?.onSteamLibraryChanged?.(debouncedFetchCounts);
     const unsubGame = window.electronAPI?.onGameUpdated?.(debouncedFetchCounts);
 
